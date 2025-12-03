@@ -1,81 +1,106 @@
-
 from flask import Flask, render_template, request
+import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-import requests
-import pandas as pd
 import re
-import locale
+import pandas as pd
 
 app = Flask(__name__)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
-UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+SALARIO_MINIMO = 12000
+PALAVRAS_EXCLUIR = [
+    'prefeitura', 'médico', 'médico superior', 'polícia militar',
+    'Engenheiro Mecânico Superior', 'bombeiro militar', 'Corpo de Bombeiros Militar'
+]
+UFS = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+    'SP', 'SE', 'TO'
+]
+
+
+def formatar_moeda(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def buscar_concursos(url):
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, timeout=20, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        concursos = soup.find_all('div', class_='ca')
+        return concursos
+    except requests.exceptions.RequestException:
+        return None
+
+
+def processar_dados(concursos):
+    concursos_filtrados = []
+    hoje = datetime.now().date()
+
+    regex_data = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
+    regex_excluir = re.compile(r'\b(' + '|'.join(map(re.escape, PALAVRAS_EXCLUIR)) + r')\b', re.IGNORECASE)
+    regex_salario = re.compile(r'R\$[\s]*([\d\.]+,\d{2})')
+    regex_ufs = re.compile(r'\b(' + '|'.join(UFS) + r')\b')
+
+    for concurso in concursos:
+        info_completa = concurso.get_text(separator=' ', strip=True)
+
+        todas_as_datas = regex_data.findall(info_completa)
+        if not todas_as_datas:
+            continue
+
+        data_fim_str = todas_as_datas[-1]
+        try:
+            data_fim = datetime.strptime(data_fim_str, '%d/%m/%Y').date()
+            if hoje > data_fim:
+                continue
+        except ValueError:
+            continue
+
+        if regex_excluir.search(info_completa):
+            continue
+
+        salario_match = regex_salario.search(info_completa)
+        if not salario_match:
+            continue
+
+        try:
+            salario_float = float(salario_match.group(1).replace('.', '').replace(',', '.'))
+            if salario_float < SALARIO_MINIMO:
+                continue
+        except ValueError:
+            continue
+
+        uf_match = regex_ufs.search(info_completa)
+        uf = uf_match.group(1) if uf_match else 'Nacional/Outro'
+
+        concursos_filtrados.append({
+            'Data Fim Inscrição': data_fim.strftime('%d/%m/%Y'),
+            'UF': uf,
+            'Salário': formatar_moeda(salario_float),
+            'Salario_Numerico': salario_float,
+            'Informações do Concurso': info_completa
+        })
+
+    concursos_filtrados.sort(key=lambda x: (-x['Salario_Numerico'], x['UF']))
+    return concursos_filtrados
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    resultados = []
-
+    concursos_filtrados = []
     if request.method == 'POST':
-        salario_min = float(request.form.get('salario', 12000))
-        palavra = request.form.get('palavra', '').lower()
-        excluir = request.form.get('excluir', '').lower()
-        uf = request.form.get('uf', '')
+        lista_concursos_html = buscar_concursos(URL_BASE)
+        if lista_concursos_html:
+            concursos_filtrados = processar_dados(lista_concursos_html)
 
-        try:
-            locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-        except:
-            locale.setlocale(locale.LC_ALL, 'Portuguese_Brazil.1252')
+    return render_template('index.html', concursos=concursos_filtrados)
 
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(URL_BASE, headers=headers, timeout=15)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        concursos = soup.find_all('div', class_='ca')
-
-        regex_data = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
-        regex_salario = re.compile(r'R\$[\s]*([\d\.]+,\d{2})')
-
-        hoje = datetime.now().date()
-
-        for concurso in concursos:
-            texto = concurso.get_text(separator=' ', strip=True).lower()
-            link = concurso.find('a')['href'] if concurso.find('a') else '#'
-
-            datas = regex_data.findall(texto)
-            if not datas:
-                continue
-            data_fim = datetime.strptime(datas[-1], '%d/%m/%Y').date()
-            if hoje > data_fim:
-                continue
-
-            if excluir and excluir in texto:
-                continue
-
-            if palavra and palavra not in texto:
-                continue
-
-            sal_match = regex_salario.search(texto)
-            if not sal_match:
-                continue
-            salario = float(sal_match.group(1).replace('.', '').replace(',', '.'))
-            if salario < salario_min:
-                continue
-
-            uf_match = next((uf_sigla for uf_sigla in UFS if uf_sigla.lower() in texto), 'Outro')
-            if uf and uf != uf_match:
-                continue
-
-            resultados.append({
-                'UF': uf_match.upper(),
-                'Salário': f"{salario:,.2f}".replace('.', '#').replace(',', '.').replace('#', ','),
-                'Data Fim Inscrição': data_fim.strftime('%d/%m/%Y'),
-                'Informações do Concurso': texto,
-                'link': link
-            })
-
-        resultados.sort(key=lambda x: float(x['Salário'].replace('.', '').replace(',', '.')), reverse=True)
-
-    return render_template("index.html", resultados=resultados)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(debug=True, host='0.0.0.0')
