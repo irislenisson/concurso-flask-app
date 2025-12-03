@@ -7,7 +7,6 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-SALARIO_MINIMO = 12000
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 PALAVRAS_EXCLUIR = [
     'prefeitura', 'médico', 'médico superior', 'polícia militar',
@@ -33,7 +32,7 @@ def buscar_concursos(url):
     except Exception as e:
         return str(e)
 
-def processar_dados(concursos):
+def processar_dados(concursos, salario_minimo, uf_filtro):
     concursos_filtrados = []
     hoje = datetime.now().date()
 
@@ -44,15 +43,6 @@ def processar_dados(concursos):
 
     for concurso in concursos:
         info_completa = concurso.get_text(separator=' ', strip=True)
-        todas_as_datas = regex_data.findall(info_completa)
-        if not todas_as_datas:
-            continue
-        try:
-            data_fim = datetime.strptime(todas_as_datas[-1], '%d/%m/%Y').date()
-            if hoje > data_fim:
-                continue
-        except:
-            continue
 
         if regex_excluir.search(info_completa):
             continue
@@ -63,13 +53,26 @@ def processar_dados(concursos):
 
         try:
             salario_float = float(salario_match.group(1).replace('.', '').replace(',', '.'))
-            if salario_float < SALARIO_MINIMO:
+            if salario_float < salario_minimo:
+                continue
+        except:
+            continue
+
+        todas_as_datas = regex_data.findall(info_completa)
+        if not todas_as_datas:
+            continue
+        try:
+            data_fim = datetime.strptime(todas_as_datas[-1], '%d/%m/%Y').date()
+            if hoje > data_fim:
                 continue
         except:
             continue
 
         uf_match = regex_ufs.search(info_completa)
         uf = uf_match.group(1) if uf_match else 'Nacional/Outro'
+
+        if uf_filtro and uf != uf_filtro:
+            continue
 
         concursos_filtrados.append({
             'Data Fim Inscrição': data_fim.strftime('%d/%m/%Y'),
@@ -84,12 +87,23 @@ def processar_dados(concursos):
 def index():
     concursos = []
     erro = None
+    salario_minimo = 0
+    uf_filtro = ''
+
     if request.method == 'POST':
+        try:
+            salario_minimo = float(request.form.get('salario_minimo', '0').replace('.', '').replace(',', '.'))
+        except:
+            salario_minimo = 0
+
+        uf_filtro = request.form.get('uf', '').strip().upper()
+
         resultado = buscar_concursos(URL_BASE)
-        if isinstance(resultado, str):  # houve erro
+        if isinstance(resultado, str):
             erro = f"Erro ao buscar concursos: {resultado}"
         else:
-            concursos = processar_dados(resultado)
+            concursos = processar_dados(resultado, salario_minimo, uf_filtro)
+
     return render_template('index.html', concursos=concursos, erro=erro)
 
 if __name__ == '__main__':
