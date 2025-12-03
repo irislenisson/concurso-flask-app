@@ -8,10 +8,6 @@ from datetime import datetime
 app = Flask(__name__)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
-PALAVRAS_EXCLUIR = [
-    'prefeitura', 'médico', 'médico superior', 'polícia militar',
-    'Engenheiro Mecânico Superior', 'bombeiro militar', 'Corpo de Bombeiros Militar'
-]
 UFS = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
     'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
@@ -32,19 +28,19 @@ def buscar_concursos(url):
     except Exception as e:
         return str(e)
 
-def processar_dados(concursos, salario_minimo, uf_filtro):
+def processar_dados(concursos, salario_minimo, uf_filtro, palavra_excluir):
     concursos_filtrados = []
     hoje = datetime.now().date()
 
     regex_data = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
-    regex_excluir = re.compile(r'\b(' + '|'.join(map(re.escape, PALAVRAS_EXCLUIR)) + r')\b', re.IGNORECASE)
     regex_salario = re.compile(r'R\$[\s]*([\d\.]+,\d{2})')
     regex_ufs = re.compile(r'\b(' + '|'.join(UFS) + r')\b')
+    regex_excluir = re.compile(r'\b(' + '|'.join(map(re.escape, palavra_excluir)) + r')\b', re.IGNORECASE) if palavra_excluir else None
 
     for concurso in concursos:
         info_completa = concurso.get_text(separator=' ', strip=True)
 
-        if regex_excluir.search(info_completa):
+        if regex_excluir and regex_excluir.search(info_completa):
             continue
 
         salario_match = regex_salario.search(info_completa)
@@ -89,6 +85,7 @@ def index():
     erro = None
     salario_minimo = 0
     uf_filtro = ''
+    palavra_excluir = ''
 
     if request.method == 'POST':
         try:
@@ -97,12 +94,14 @@ def index():
             salario_minimo = 0
 
         uf_filtro = request.form.get('uf', '').strip().upper()
+        palavra_excluir = request.form.get('palavra_excluir', '').strip()
+        lista_excluir = [palavra.strip() for palavra in palavra_excluir.split(',')] if palavra_excluir else []
 
         resultado = buscar_concursos(URL_BASE)
         if isinstance(resultado, str):
             erro = f"Erro ao buscar concursos: {resultado}"
         else:
-            concursos = processar_dados(resultado, salario_minimo, uf_filtro)
+            concursos = processar_dados(resultado, salario_minimo, uf_filtro, lista_excluir)
 
     return render_template('index.html', concursos=concursos, erro=erro)
 
