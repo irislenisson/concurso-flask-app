@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Pesquisa de Concursos Públicos</title>
+
+<style>
+    body {
+        background-color: #121212;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        width: 90%;
+        max-width: 1200px;
+        margin: 30px auto;
+        background: #1e1e1e;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    }
+
+    h2 {
+        text-align: center;
+        color: #00aaff;
+        margin-bottom: 25px;
+        font-size: 28px;
+    }
+
+    .row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .row div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Redução do campo UF conforme solicitado */
+    .campo-uf {
+        flex: 0.33 !important;
+    }
+
+    label {
+        margin-bottom: 5px;
+        font-size: 14px;
+        color: #ccc;
+    }
+
+    input, select {
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        background: #2a2a2a;
+        color: #fff;
+    }
+
+    .btn {
+        background: #00aaff;
+        padding: 14px;
+        border-radius: 8px;
+        border: none;
+        width: 100%;
+        font-size: 18px;
+        margin-top: 5px;
+        cursor: pointer;
+        color: #000;
+        font-weight: bold;
+    }
+
+    table {
+        width: 100%;
+        margin-top: 25px;
+        border-collapse: collapse;
+        background: #1b1b1b;
+    }
+
+    th {
+        background: #0d0d0d;
+        padding: 12px;
+        text-align: center;
+        color: #00aaff;
+    }
+
+    td {
+        text-align: center;
+        padding: 12px;
+        border-bottom: 1px solid #333;
+    }
+
+    a {
+        color: #00aaff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .msg-vazia {
+        text-align: center;
+        padding: 18px;
+        background: #222;
+        border-radius: 8px;
+        color: #bbb;
+        margin-top: 15px;
+    }
+
+    .contador {
+        text-align: right;
+        color: #00aaff;
+        font-size: 14px;
+        margin-top: 5px;
+        margin-right: 5px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>🔎 Pesquisa de Concursos Públicos</h2>
+
+    <form method="POST">
+        <div class="row">
+            <div>
+                <label>Salário mínimo (R$):</label>
+                <input type="number" step="0.01" name="salario">
+            </div>
+
+            <div>
+                <label>Palavra-chave:</label>
+                <input type="text" name="palavra">
+            </div>
+
+            <div class="campo-uf">
+                <label>UF:</label>
+                <select name="uf">
+                    <option value="">Todas</option>
+                    <option value="AC">AC</option>
+                    <option value="AL">AL</option>
+                    <option value="AM">AM</option>
+                    <option value="AP">AP</option>
+                    <option value="BA">BA</option>
+                    <option value="CE">CE</option>
+                    <option value="DF">DF</option>
+                    <option value="ES">ES</option>
+                    <option value="GO">GO</option>
+                    <option value="MA">MA</option>
+                    <option value="MG">MG</option>
+                    <option value="MS">MS</option>
+                    <option value="MT">MT</option>
+                    <option value="PA">PA</option>
+                    <option value="PB">PB</option>
+                    <option value="PE">PE</option>
+                    <option value="PI">PI</option>
+                    <option value="PR">PR</option>
+                    <option value="RJ">RJ</option>
+                    <option value="RN">RN</option>
+                    <option value="RO">RO</option>
+                    <option value="RR">RR</option>
+                    <option value="RS">RS</option>
+                    <option value="SC">SC</option>
+                    <option value="SE">SE</option>
+                    <option value="SP">SP</option>
+                    <option value="TO">TO</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Excluir palavra:</label>
+                <input type="text" name="excluir">
+            </div>
+        </div>
+
+        <button class="btn">🔍 Buscar Concursos</button>
+    </form>
+
+    {% if resultados %}
+        <div class="contador">{{ resultados|length }} concursos encontrados</div>
+
+        <table>
+            <tr>
+                <th>UF</th>
+                <th>SALÁRIO</th>
+                <th>FIM DA INSCRIÇÃO</th>
+                <th>CONCURSO</th>
+            </tr>
+
+            {% for item in resultados %}
+            <tr>
+                <td>{{ item["UF"] }}</td>
+                <td>R$ {{ item["Salário"] }}</td>
+                <td>{{ item["Data Fim Inscrição"] }}</td>
+                <td><a href="{{ item['link'] }}" target="_blank">Abrir Concurso</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <div class="msg-vazia">
+            Nenhum concurso encontrado com os filtros informados.
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
