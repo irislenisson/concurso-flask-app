@@ -1,85 +1,135 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Concursos com Altos Salários</title>
+    <title>Pesquisa de Concursos Públicos</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            color: #333;
-        }
-        form {
-            margin-bottom: 30px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        label {
-            margin-right: 10px;
-        }
-        input[type="number"], input[type="text"], select {
-            padding: 6px;
-            margin-right: 10px;
-        }
-        input[type="submit"] {
-            padding: 8px 16px;
-            background-color: #2c3e50;
+            background-color: #1c1c1c;
             color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: auto;
+            padding: 20px;
+            background-color: #2a2a2a;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00aaff;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            font-size: 14px;
             border: none;
             border-radius: 5px;
+        }
+
+        input, select {
+            background-color: #333;
+            color: #fff;
+        }
+
+        button {
+            grid-column: span 4;
+            background-color: #00aaff;
+            color: #000;
+            font-weight: bold;
             cursor: pointer;
         }
-        .concurso {
-            background: #fff;
-            margin-bottom: 20px;
-            padding: 15px;
-            border-left: 6px solid #2c3e50;
-            border-radius: 5px;
+
+        button:hover {
+            background-color: #0099dd;
         }
-        .concurso h3 {
-            margin: 0 0 5px;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #333;
         }
-        .concurso p {
-            margin: 0;
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            text-align: left;
+        }
+
+        th {
+            background-color: #222;
+        }
+
+        tr:hover {
+            background-color: #3d3d3d;
         }
     </style>
 </head>
 <body>
-    <h1>🔍 Concursos com Altos Salários</h1>
-
-    <form method="POST">
-        <label for="salario_minimo">Salário mínimo:</label>
-        <input type="number" name="salario_minimo" value="{{ salario_minimo }}" placeholder="Ex: 10000">
-
-        <label for="palavras_excluir">Palavras para excluir:</label>
-        <input type="text" name="palavras_excluir" value="{{ palavras_excluir }}" placeholder="Ex: médico, bombeiro">
-
-        <label for="uf">UF:</label>
-        <select name="uf">
-            <option value="">Todos</option>
-            {% for sigla in ufs %}
-                <option value="{{ sigla }}" {% if sigla == uf %}selected{% endif %}>{{ sigla }}</option>
-            {% endfor %}
-        </select>
-
-        <input type="submit" value="Buscar concursos">
-    </form>
-
-    {% if concursos %}
-        <h2>🗂️ Resultados encontrados: {{ concursos|length }}</h2>
-        {% for c in concursos %}
-            <div class="concurso">
-                <h3>{{ c['Informações do Concurso'] }}</h3>
-                <p><strong>Salário:</strong> {{ c['Salário'] }}</p>
-                <p><strong>UF:</strong> {{ c['UF'] }} | <strong>Encerramento:</strong> {{ c['Data Fim Inscrição'] }}</p>
+    <div class="container">
+        <h1>🔍 Pesquisa de Concursos Públicos</h1>
+        <form method="POST">
+            <div>
+                <label>Salário mínimo (R$):</label>
+                <input type="number" name="salario_minimo" min="0" step="1000" value="{{ salario_minimo or '' }}">
             </div>
-        {% endfor %}
-    {% else %}
-        <p>Nenhum concurso encontrado com os filtros informados.</p>
-    {% endif %}
+            <div>
+                <label>Palavra-chave:</label>
+                <input type="text" name="palavra_chave" value="{{ palavra_chave or '' }}">
+            </div>
+            <div>
+                <label>UF:</label>
+                <select name="uf">
+                    <option value="">Todas</option>
+                    {% for estado in ufs %}
+                        <option value="{{ estado }}" {% if uf == estado %}selected{% endif %}>{{ estado }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Excluir palavra:</label>
+                <input type="text" name="excluir_palavra" value="{{ excluir_palavra or '' }}">
+            </div>
+            <button type="submit">🔍 Buscar Concursos</button>
+        </form>
+
+        {% if concursos %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Salário</th>
+                    <th>UF</th>
+                    <th>Data Fim Inscrição</th>
+                    <th>Informações do Concurso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in concursos %}
+                <tr>
+                    <td>{{ c['Salário'] }}</td>
+                    <td>{{ c['UF'] }}</td>
+                    <td>{{ c['Data Fim Inscrição'] }}</td>
+                    <td>{{ c['Informações do Concurso'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center;">Nenhum concurso encontrado com os filtros informados.</p>
+        {% endif %}
+    </div>
 </body>
 </html>
