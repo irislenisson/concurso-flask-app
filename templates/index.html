@@ -2,55 +2,89 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Concursos com Altos Salários</title>
+    <title>🔍 Pesquisa de Concursos Públicos</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 20px; }
-        h1 { color: #333; }
-        form { margin-bottom: 20px; }
-        button { padding: 10px 20px; font-size: 16px; }
-        .erro { background-color: #fdd; border: 1px solid #f99; padding: 10px; margin-bottom: 20px; color: #900; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
-        th { background-color: #eee; }
+        body {
+            background-color: #1e1e1e;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1 {
+            color: #00bfff;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #00bfff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            text-align: left;
+        }
+        th {
+            background-color: #333;
+        }
+        .center {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>Concursos com Salários Acima de R$ 12.000</h1>
-
+    <h1>🔍 Pesquisa de Concursos Públicos</h1>
     <form method="POST">
-        <button type="submit">Buscar Concursos</button>
+        <input type="number" name="salario_minimo" placeholder="Salário mínimo (R$)">
+        <input type="text" name="palavra_incluir" placeholder="Palavra-chave">
+        <input type="text" name="palavra_excluir" placeholder="Excluir palavra">
+        <select name="uf">
+            <option value="">Todas as UFs</option>
+            {% for uf in ufs %}
+                <option value="{{ uf }}">{{ uf }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">🔎 Buscar Concursos</button>
     </form>
 
-    {% if erro %}
-    <div class="erro">
-        <strong>Erro:</strong> {{ erro }}
-    </div>
-    {% endif %}
-
     {% if concursos %}
-    <table>
-        <thead>
-            <tr>
-                <th>Salário</th>
-                <th>UF</th>
-                <th>Data Fim Inscrição</th>
-                <th>Informações do Concurso</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for concurso in concursos %}
-            <tr>
-                <td>{{ concurso['Salário'] }}</td>
-                <td>{{ concurso['UF'] }}</td>
-                <td>{{ concurso['Data Fim Inscrição'] }}</td>
-                <td>{{ concurso['Informações do Concurso'] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>Nenhum concurso encontrado com os filtros informados.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Salário</th>
+                    <th>UF</th>
+                    <th>Data Fim Inscrição</th>
+                    <th>Informações do Concurso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for concurso in concursos %}
+                    <tr>
+                        <td>{{ concurso['Salário'] }}</td>
+                        <td>{{ concurso['UF'] }}</td>
+                        <td>{{ concurso['Data Fim Inscrição'] }}</td>
+                        <td>{{ concurso['Informações do Concurso'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif concursos is not none %}
+        <p class="center">Nenhum concurso encontrado com os filtros informados.</p>
     {% endif %}
 </body>
 </html>

@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request
-from bs4 import BeautifulSoup
 import requests
-import pandas as pd
+from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 
@@ -9,101 +8,115 @@ app = Flask(__name__)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 UFS = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
-    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+    'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS',
+    'MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
 ]
 
-def formatar_moeda(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-def buscar_concursos(url):
+def buscar_concursos(salario_minimo: float, palavras_incluir: list, palavras_excluir: list, uf_filtro: str):
+    resultados = []
     try:
-        headers = {
+        resp = requests.get(URL_BASE, timeout=15, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        }
-        response = requests.get(url, timeout=20, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return soup.find_all('div', class_='ca')
+        })
+        resp.raise_for_status()
     except Exception as e:
-        return str(e)
+        print("❌ Erro ao acessar PCI Concursos:", e)
+        return [], f"Erro ao acessar site de concursos: {e}"
 
-def processar_dados(concursos, salario_minimo, uf_filtro, palavra_excluir):
-    concursos_filtrados = []
+    html = resp.text
+    # DEBUG: ver os primeiros 2000 caracteres (ajuste se quiser)
+    print("===== HTML capturado (início) =====")
+    print(html[:2000])
+    print("===================================")
+
+    soup = BeautifulSoup(html, 'html.parser')
+    blocos = soup.find_all('div', class_='ca')
+    print(f"🔎 Total de blocos encontrados: {len(blocos)}")
+
     hoje = datetime.now().date()
 
-    regex_data = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
-    regex_salario = re.compile(r'R\$[\s]*([\d\.]+,\d{2})')
-    regex_ufs = re.compile(r'\b(' + '|'.join(UFS) + r')\b')
-    regex_excluir = re.compile(r'\b(' + '|'.join(map(re.escape, palavra_excluir)) + r')\b', re.IGNORECASE) if palavra_excluir else None
+    for bloco in blocos:
+        info = bloco.get_text(separator=' ', strip=True)
 
-    for concurso in concursos:
-        info_completa = concurso.get_text(separator=' ', strip=True)
-
-        if regex_excluir and regex_excluir.search(info_completa):
+        # Data final de inscrição
+        datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', info)
+        if not datas:
             continue
-
-        salario_match = regex_salario.search(info_completa)
-        if not salario_match:
-            continue
-
         try:
-            salario_float = float(salario_match.group(1).replace('.', '').replace(',', '.'))
-            if salario_float < salario_minimo:
+            data_fim = datetime.strptime(datas[-1], '%d/%m/%Y').date()
+            if data_fim < hoje:
                 continue
         except:
             continue
 
-        todas_as_datas = regex_data.findall(info_completa)
-        if not todas_as_datas:
+        # Salário
+        sal_match = re.search(r'R\$[\s]*([\d\.]+,\d{2})', info)
+        if not sal_match:
             continue
         try:
-            data_fim = datetime.strptime(todas_as_datas[-1], '%d/%m/%Y').date()
-            if hoje > data_fim:
-                continue
+            sal = float(sal_match.group(1).replace('.', '').replace(',', '.'))
         except:
             continue
-
-        uf_match = regex_ufs.search(info_completa)
-        uf = uf_match.group(1) if uf_match else 'Nacional/Outro'
-
-        if uf_filtro and uf != uf_filtro:
+        if sal < salario_minimo:
             continue
 
-        concursos_filtrados.append({
+        # UF
+        uf = None
+        for candidate in UFS:
+            if f" {candidate} " in f" {info} ":
+                uf = candidate
+                break
+        if uf_filtro and uf_filtro != "" and uf_filtro != uf:
+            continue
+
+        # Incluir / Excluir palavras
+        lower = info.lower()
+        if palavras_excluir:
+            if any(p.lower() in lower for p in palavras_excluir):
+                continue
+        if palavras_incluir:
+            if not all(p.lower() in lower for p in palavras_incluir):
+                continue
+
+        resultados.append({
+            'Salário': f"R$ {sal:,.2f}".replace('.', ','),
+            'UF': uf if uf else '',
             'Data Fim Inscrição': data_fim.strftime('%d/%m/%Y'),
-            'UF': uf,
-            'Salário': formatar_moeda(salario_float),
-            'Informações do Concurso': info_completa
+            'Informações do Concurso': info
         })
 
-    return concursos_filtrados
+    return resultados, None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     concursos = []
     erro = None
-    salario_minimo = 0
-    uf_filtro = ''
-    palavra_excluir = ''
+    # valores padrão do formulário
+    salario_minimo = 0.0
+    palavras_incluir = []
+    palavras_excluir = []
+    uf_filtro = ""
 
     if request.method == 'POST':
         try:
-            salario_minimo = float(request.form.get('salario_minimo', '0').replace('.', '').replace(',', '.'))
+            salario_minimo = float(request.form.get('salario_minimo') or 0)
         except:
-            salario_minimo = 0
-
+            salario_minimo = 0.0
+        incluir_raw = request.form.get('palavra_incluir', '').strip()
+        if incluir_raw:
+            palavras_incluir = [p.strip() for p in incluir_raw.split()]
+        excluir_raw = request.form.get('palavra_excluir', '').strip()
+        if excluir_raw:
+            palavras_excluir = [p.strip() for p in excluir_raw.split()]
         uf_filtro = request.form.get('uf', '').strip().upper()
-        palavra_excluir = request.form.get('palavra_excluir', '').strip()
-        lista_excluir = [palavra.strip() for palavra in palavra_excluir.split(',')] if palavra_excluir else []
 
-        resultado = buscar_concursos(URL_BASE)
-        if isinstance(resultado, str):
-            erro = f"Erro ao buscar concursos: {resultado}"
+        resultados, err = buscar_concursos(salario_minimo, palavras_incluir, palavras_excluir, uf_filtro)
+        if err:
+            erro = err
         else:
-            concursos = processar_dados(resultado, salario_minimo, uf_filtro, lista_excluir)
+            concursos = resultados
 
-    return render_template('index.html', concursos=concursos, erro=erro)
+    return render_template('index.html', concursos=concursos, erro=erro, ufs=UFS)
 
 if __name__ == '__main__':
     app.run(debug=True)
