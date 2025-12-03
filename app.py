@@ -34,8 +34,9 @@ def buscar_concursos(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         concursos = soup.find_all('div', class_='ca')
         return concursos
-    except requests.exceptions.RequestException:
-        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar concursos: {e}")
+        raise
 
 
 def processar_dados(concursos):
@@ -94,12 +95,16 @@ def processar_dados(concursos):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     concursos_filtrados = []
+    erro = None
     if request.method == 'POST':
-        lista_concursos_html = buscar_concursos(URL_BASE)
-        if lista_concursos_html:
-            concursos_filtrados = processar_dados(lista_concursos_html)
+        try:
+            lista_concursos_html = buscar_concursos(URL_BASE)
+            if lista_concursos_html:
+                concursos_filtrados = processar_dados(lista_concursos_html)
+        except Exception as e:
+            erro = str(e)
 
-    return render_template('index.html', concursos=concursos_filtrados)
+    return render_template('index.html', concursos=concursos_filtrados, erro=erro)
 
 
 if __name__ == '__main__':
