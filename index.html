@@ -7,26 +7,32 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
         .container { max-width: 800px; margin: 0 auto; }
-        h1 { text-align: center; color: #333; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
         
-        form { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: grid; gap: 15px; }
+        form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: grid; gap: 15px; }
         
-        label { font-weight: 600; color: #444; margin-bottom: 5px; display: block;}
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; font-size: 16px; }
+        label { font-weight: 600; color: #444; margin-bottom: 5px; display: block; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; transition: border-color 0.3s; }
+        input:focus, select:focus { border-color: #007bff; outline: none; }
         
-        input[type="submit"] { background-color: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 12px; transition: background 0.3s; margin-top: 10px;}
+        /* Estilo especial para o select múltiplo */
+        select[multiple] { height: 150px; background-image: none; }
+        .help-text { font-size: 0.8em; color: #666; margin-top: -10px; margin-bottom: 10px; font-style: italic;}
+
+        input[type="submit"] { background-color: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 15px; font-size: 16px; margin-top: 10px; border-radius: 8px; transition: background 0.3s; }
         input[type="submit"]:hover { background-color: #0056b3; }
         
-        #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 5px;}
+        #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
         .empty { color: #856404; background: #fff3cd; }
         .error { color: #721c24; background: #f8d7da; }
 
-        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #28a745; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #2c3e50; }
+        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #28a745; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .concurso-card:hover { transform: translateY(-2px); }
+        .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #2c3e50; line-height: 1.4; }
         
-        .badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; }
+        .badges { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
         .badge.money { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .badge.uf { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
         .badge.date { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
@@ -37,56 +43,56 @@
         <h1>🚀 Buscador de Concursos</h1>
 
         <form id="searchForm">
-            <div>
-                <label>Salário Mínimo (R$):</label>
-                <input type="number" id="salario_minimo" placeholder="Ex: 5000">
-            </div>
-            
-            <div>
-                <label>Palavra-chave:</label>
-                <input type="text" id="palavra_chave" placeholder="Ex: Analista, Fiscal, TI">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>💰 Salário Mínimo (R$)</label>
+                    <input type="number" id="salario_minimo" placeholder="Ex: 5000">
+                </div>
+                <div>
+                    <label>🔍 Palavra-chave</label>
+                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Tribunal">
+                </div>
             </div>
 
             <div>
-                <label>UF (Estado):</label>
-                <select id="uf">
-                    <option value="">Todas as UFs</option>
-                    <option value="AC">Acre (AC)</option>
-                    <option value="AL">Alagoas (AL)</option>
-                    <option value="AP">Amapá (AP)</option>
-                    <option value="AM">Amazonas (AM)</option>
-                    <option value="BA">Bahia (BA)</option>
-                    <option value="CE">Ceará (CE)</option>
-                    <option value="DF">Distrito Federal (DF)</option>
-                    <option value="ES">Espírito Santo (ES)</option>
-                    <option value="GO">Goiás (GO)</option>
-                    <option value="MA">Maranhão (MA)</option>
-                    <option value="MT">Mato Grosso (MT)</option>
-                    <option value="MS">Mato Grosso do Sul (MS)</option>
-                    <option value="MG">Minas Gerais (MG)</option>
-                    <option value="PA">Pará (PA)</option>
-                    <option value="PB">Paraíba (PB)</option>
-                    <option value="PR">Paraná (PR)</option>
-                    <option value="PE">Pernambuco (PE)</option>
-                    <option value="PI">Piauí (PI)</option>
-                    <option value="RJ">Rio de Janeiro (RJ)</option>
-                    <option value="RN">Rio Grande do Norte (RN)</option>
-                    <option value="RS">Rio Grande do Sul (RS)</option>
-                    <option value="RO">Rondônia (RO)</option>
-                    <option value="RR">Roraima (RR)</option>
-                    <option value="SC">Santa Catarina (SC)</option>
-                    <option value="SP">São Paulo (SP)</option>
-                    <option value="SE">Sergipe (SE)</option>
-                    <option value="TO">Tocantins (TO)</option>
+                <label>🌎 Filtrar por Região (Adiciona os estados automaticamente)</label>
+                <select id="regiao">
+                    <option value="">-- Nenhuma região específica --</option>
+                    <option value="Norte">Região Norte (AM, RR, AP, PA, TO, RO, AC)</option>
+                    <option value="Nordeste">Região Nordeste (MA, PI, CE, RN...)</option>
+                    <option value="Centro-Oeste">Região Centro-Oeste (MT, MS, GO, DF)</option>
+                    <option value="Sudeste">Região Sudeste (SP, RJ, ES, MG)</option>
+                    <option value="Sul">Região Sul (PR, RS, SC)</option>
                 </select>
             </div>
 
             <div>
-                <label>Excluir palavras:</label>
-                <input type="text" id="excluir_palavra" placeholder="Ex: médico, professor">
+                <label>📍 Selecionar UFs específicas (Segure Ctrl para selecionar várias)</label>
+                <select id="ufs" multiple size="6">
+                    <option value="AC">Acre (AC)</option> <option value="AL">Alagoas (AL)</option>
+                    <option value="AP">Amapá (AP)</option> <option value="AM">Amazonas (AM)</option>
+                    <option value="BA">Bahia (BA)</option> <option value="CE">Ceará (CE)</option>
+                    <option value="DF">Distrito Federal (DF)</option> <option value="ES">Espírito Santo (ES)</option>
+                    <option value="GO">Goiás (GO)</option> <option value="MA">Maranhão (MA)</option>
+                    <option value="MT">Mato Grosso (MT)</option> <option value="MS">Mato Grosso do Sul (MS)</option>
+                    <option value="MG">Minas Gerais (MG)</option> <option value="PA">Pará (PA)</option>
+                    <option value="PB">Paraíba (PB)</option> <option value="PR">Paraná (PR)</option>
+                    <option value="PE">Pernambuco (PE)</option> <option value="PI">Piauí (PI)</option>
+                    <option value="RJ">Rio de Janeiro (RJ)</option> <option value="RN">Rio Grande do Norte (RN)</option>
+                    <option value="RS">Rio Grande do Sul (RS)</option> <option value="RO">Rondônia (RO)</option>
+                    <option value="RR">Roraima (RR)</option> <option value="SC">Santa Catarina (SC)</option>
+                    <option value="SP">São Paulo (SP)</option> <option value="SE">Sergipe (SE)</option>
+                    <option value="TO">Tocantins (TO)</option>
+                </select>
+                <p class="help-text">Dica: Você pode combinar uma Região + Estados soltos (Ex: Sudeste + PR)</p>
             </div>
 
-            <input type="submit" value="🔍 Filtrar Concursos">
+            <div>
+                <label>🚫 Excluir palavras</label>
+                <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio, cadastro">
+            </div>
+
+            <input type="submit" value="Buscar Melhores Oportunidades">
         </form>
 
         <div id="status-msg"></div>
@@ -102,14 +108,19 @@
             
             container.innerHTML = '';
             statusDiv.className = 'loading';
-            statusDiv.innerText = '⏳ Buscando e ordenando melhores salários...';
+            statusDiv.innerText = '⏳ Buscando e filtrando...';
             statusDiv.style.display = 'block';
+
+            // Coleta todas as UFs selecionadas na caixa de lista múltipla
+            const ufSelect = document.getElementById('ufs');
+            const selectedUfs = Array.from(ufSelect.selectedOptions).map(option => option.value);
 
             const payload = {
                 salario_minimo: document.getElementById('salario_minimo').value,
                 palavra_chave: document.getElementById('palavra_chave').value,
                 excluir_palavra: document.getElementById('excluir_palavra').value,
-                uf: document.getElementById('uf').value
+                regiao: document.getElementById('regiao').value,
+                ufs: selectedUfs // Envia a lista (array) de UFs
             };
 
             try {
@@ -125,13 +136,12 @@
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado com esses filtros.';
+                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado.<br>Tente expandir a região ou reduzir o salário mínimo.';
                     return;
                 }
 
                 statusDiv.style.display = 'none';
 
-                // Cria os cards (já virão ordenados do Python)
                 concursos.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'concurso-card';
@@ -149,7 +159,7 @@
             } catch (error) {
                 console.error(error);
                 statusDiv.className = 'error';
-                statusDiv.innerHTML = `❌ Erro na busca. Tente novamente.`;
+                statusDiv.innerHTML = `❌ Erro na busca. Verifique sua conexão.`;
             }
         });
     </script>

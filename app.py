@@ -7,16 +7,25 @@ from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 
-# Configuração de Caminho Absoluto
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
 
-UFS = [
+# Lista completa de siglas para detecção
+UFS_SIGLAS = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
     'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
     'SP', 'SE', 'TO'
 ]
+
+# Mapeamento de Regiões conforme solicitado
+REGIOES = {
+    'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
+    'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
+    'Centro-Oeste': ['MT', 'MS', 'GO', 'DF'], # DF incluído pela relevância em concursos
+    'Sudeste': ['SP', 'RJ', 'ES', 'MG'],
+    'Sul': ['PR', 'RS', 'SC']
+}
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
@@ -34,9 +43,12 @@ def buscar_concursos():
         print(f"--> ERRO: {e}")
         return []
 
-def filtrar_concursos(concursos, salario_min, palavra_chave, uf_filtro, excluir_palavras):
+def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, excluir_palavras):
     hoje = datetime.now().date()
     resultados = []
+
+    # Se a lista de alvos estiver vazia, considera-se "Nacional/Todos"
+    filtrar_uf = len(lista_ufs_alvo) > 0
 
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
@@ -65,29 +77,30 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, uf_filtro, excluir_
         
         if salario_min > 0 and salario < salario_min: continue
 
-        # Identificação UF
+        # Identificação da UF do concurso
         uf_detectada = 'Nacional/Outro'
-        for sigla in UFS:
+        for sigla in UFS_SIGLAS:
             if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
                 uf_detectada = sigla
                 break
         
-        if uf_filtro and uf_filtro != '' and uf_detectada != uf_filtro: continue
+        # Lógica de Filtro de UF (Multi-seleção + Região)
+        if filtrar_uf:
+            # Se a UF detectada não estiver na lista de permitidos E não for um concurso nacional
+            if uf_detectada not in lista_ufs_alvo and uf_detectada != 'Nacional/Outro':
+                continue
 
         resultados.append({
             'Salário': f"R$ {salario:,.2f}".replace('.', ',') if salario > 0 else "Ver Edital/Variável",
             'UF': uf_detectada,
             'Data Fim Inscrição': data_formatada,
             'Informações do Concurso': texto,
-            'raw_salario': salario # Campo oculto usado apenas para ordenar
+            'raw_salario': salario
         })
 
-    # ORDENAÇÃO: Ordena a lista usando o valor numérico (raw_salario) do maior para o menor
+    # Ordenação por salário
     resultados.sort(key=lambda x: x['raw_salario'], reverse=True)
-
-    # Limpeza: Remove o campo auxiliar antes de enviar para o front
-    for r in resultados:
-        del r['raw_salario']
+    for r in resultados: del r['raw_salario']
 
     return resultados
 
@@ -98,18 +111,34 @@ def index():
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():
     data = request.json or {}
+    
+    # 1. Tratamento Salário
     try:
         s_raw = data.get('salario_minimo')
         salario_minimo = float(s_raw) if s_raw else 0.0
     except: salario_minimo = 0.0
 
+    # 2. Tratamento Textos
     palavra_chave = data.get('palavra_chave', '').strip()
-    uf = data.get('uf', '').strip()
     excluir_str = data.get('excluir_palavra', '')
     excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
+
+    # 3. Tratamento UF e Regiões (Lógica Combinada)
+    ufs_selecionadas = data.get('ufs', []) # Recebe lista ['SP', 'RJ']
+    regiao_selecionada = data.get('regiao', '')
+
+    # Cria um conjunto (set) para evitar duplicatas
+    conjunto_ufs_alvo = set(ufs_selecionadas)
+
+    # Se escolheu região, adiciona os estados daquela região ao alvo
+    if regiao_selecionada in REGIOES:
+        conjunto_ufs_alvo.update(REGIOES[regiao_selecionada])
+    
+    # Converte de volta para lista
+    lista_final_ufs = list(conjunto_ufs_alvo)
     
     todos = buscar_concursos()
-    resultados = filtrar_concursos(todos, salario_minimo, palavra_chave, uf, excluir_palavras)
+    resultados = filtrar_concursos(todos, salario_minimo, palavra_chave, lista_final_ufs, excluir_palavras)
     
     return jsonify(resultados)
 
