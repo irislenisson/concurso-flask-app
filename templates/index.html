@@ -1,64 +1,95 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Filtrar Concursos</title>
+    <title>Concursos com Altos Salários</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        form { margin-bottom: 20px; }
-        label { display: block; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .no-results { color: red; margin-top: 20px; }
+        /* Mantenha seu CSS aqui */
+        #loading { display: none; color: #2c3e50; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Filtrar Concursos Públicos</h1>
-    <form method="post">
-        <label for="salario_min">Salário mínimo:</label>
-        <input type="number" name="salario_min" value="{{ salario_min }}" required>
+    <h1>🔍 Concursos com Altos Salários</h1>
 
-        <label for="palavra">Contém a palavra:</label>
-        <input type="text" name="palavra" value="{{ palavra }}">
+    <form id="searchForm">
+        <label for="salario_minimo">Salário mínimo:</label>
+        <input type="number" id="salario_minimo" placeholder="Ex: 10000">
+
+        <label for="palavra_chave">Palavra Chave:</label>
+        <input type="text" id="palavra_chave" placeholder="Ex: Analista">
+
+        <label for="excluir_palavra">Excluir:</label>
+        <input type="text" id="excluir_palavra" placeholder="Ex: médico, bombeiro">
 
         <label for="uf">UF:</label>
-        <select name="uf">
+        <select id="uf">
             <option value="">Todos</option>
-            {% for estado in ufs %}
-                <option value="{{ estado }}" {% if estado == uf %}selected{% endif %}>{{ estado }}</option>
-            {% endfor %}
-        </select>
+            <option value="SP">SP</option>
+            <option value="RJ">RJ</option>
+            <option value="DF">DF</option>
+            </select>
 
-        <label for="palavras_excluir">Palavras para excluir (separadas por vírgula):</label>
-        <input type="text" name="palavras_excluir" value="{{ palavras_excluir }}">
-
-        <button type="submit">Filtrar</button>
+        <input type="submit" value="Buscar concursos">
     </form>
 
-    {% if concursos %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Salário</th>
-                    <th>UF</th>
-                    <th>Data Fim Inscrição</th>
-                    <th>Informações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for concurso in concursos %}
-                <tr>
-                    <td>{{ concurso.salario }}</td>
-                    <td>{{ concurso.uf }}</td>
-                    <td>{{ concurso.data_fim }}</td>
-                    <td>{{ concurso.info }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% elif concursos is not none %}
-        <p class="no-results">Nenhum concurso encontrado com os critérios especificados.</p>
-    {% endif %}
+    <div id="loading">Buscando dados no servidor...</div>
+    <div id="resultados-container"></div>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Impede o recarregamento da página
+            
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('resultados-container');
+            
+            loading.style.display = 'block';
+            container.innerHTML = '';
+
+            // Dados a serem enviados
+            const payload = {
+                salario_minimo: document.getElementById('salario_minimo').value,
+                palavra_chave: document.getElementById('palavra_chave').value,
+                excluir_palavra: document.getElementById('excluir_palavra').value,
+                uf: document.getElementById('uf').value
+            };
+
+            try {
+                // SUBSTITUA PELA URL DO SEU APP NO RENDER
+                const response = await fetch('https://concurso-app-2.onrender.com', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Erro na conexão');
+
+                const concursos = await response.json();
+                
+                loading.style.display = 'none';
+
+                if (concursos.length === 0) {
+                    container.innerHTML = '<p>Nenhum concurso encontrado.</p>';
+                    return;
+                }
+
+                // Gera o HTML dos resultados dinamicamente
+                concursos.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'concurso'; // Usa a classe CSS que você já tem
+                    div.innerHTML = `
+                        <h3>${c['Informações do Concurso']}</h3>
+                        <p><strong>Salário:</strong> ${c['Salário']}</p>
+                        <p><strong>UF:</strong> ${c['UF']} | <strong>Encerramento:</strong> ${c['Data Fim Inscrição']}</p>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch (error) {
+                console.error(error);
+                loading.style.display = 'none';
+                container.innerHTML = '<p style="color:red">Erro ao buscar dados. O servidor pode estar "dormindo" (cold start).</p>';
+            }
+        });
+    </script>
 </body>
 </html>
