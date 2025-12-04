@@ -3,21 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Pesquisa de Concursos Públicos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <style>
         body {
-            background-color: #1c1c1c;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            margin: 0;
+            background-color: #1e1e1e;
+            color: #f1f1f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-        }
-
-        .container {
-            max-width: 960px;
-            margin: auto;
-            padding: 20px;
-            background-color: #2a2a2a;
-            border-radius: 10px;
         }
 
         h1 {
@@ -26,87 +18,73 @@
         }
 
         form {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 10px;
             margin-bottom: 20px;
         }
 
-        input, select, button {
-            padding: 10px;
-            font-size: 14px;
-            border: none;
-            border-radius: 5px;
-        }
-
         input, select {
-            background-color: #333;
-            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            min-width: 150px;
         }
 
         button {
-            grid-column: span 4;
+            padding: 10px 20px;
             background-color: #00aaff;
-            color: #000;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
             font-weight: bold;
             cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0099dd;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            background-color: #333;
+            background-color: #2b2b2b;
         }
 
         th, td {
             padding: 10px;
-            border-bottom: 1px solid #444;
-            text-align: left;
+            border: 1px solid #444;
         }
 
         th {
-            background-color: #222;
+            background-color: #3a3a3a;
+            color: #ffffff;
         }
 
         tr:hover {
-            background-color: #3d3d3d;
+            background-color: #3f3f3f;
+        }
+
+        .center {
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 Pesquisa de Concursos Públicos</h1>
-        <form method="POST">
-            <div>
-                <label>Salário mínimo (R$):</label>
-                <input type="number" name="salario_minimo" min="0" step="1000" value="{{ salario_minimo or '' }}">
-            </div>
-            <div>
-                <label>Palavra-chave:</label>
-                <input type="text" name="palavra_chave" value="{{ palavra_chave or '' }}">
-            </div>
-            <div>
-                <label>UF:</label>
-                <select name="uf">
-                    <option value="">Todas</option>
-                    {% for estado in ufs %}
-                        <option value="{{ estado }}" {% if uf == estado %}selected{% endif %}>{{ estado }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label>Excluir palavra:</label>
-                <input type="text" name="excluir_palavra" value="{{ excluir_palavra or '' }}">
-            </div>
-            <button type="submit">🔍 Buscar Concursos</button>
-        </form>
 
-        {% if concursos %}
+    <h1>🔍 Pesquisa de Concursos Públicos</h1>
+
+    <form method="POST">
+        <input type="number" name="salario_min" placeholder="Salário mínimo (R$)">
+        <input type="text" name="palavra" placeholder="Palavra-chave">
+        <select name="uf">
+            <option value="Todas">Todas</option>
+            {% for sigla in ufs %}
+                <option value="{{ sigla }}">{{ sigla }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="excluir" placeholder="Excluir palavra">
+        <button type="submit">🔍 Buscar Concursos</button>
+    </form>
+
+    {% if concursos %}
         <table>
             <thead>
                 <tr>
@@ -119,17 +97,17 @@
             <tbody>
                 {% for c in concursos %}
                 <tr>
-                    <td>{{ c['Salário'] }}</td>
-                    <td>{{ c['UF'] }}</td>
-                    <td>{{ c['Data Fim Inscrição'] }}</td>
-                    <td>{{ c['Informações do Concurso'] }}</td>
+                    <td class="center">{{ c.salario }}</td>
+                    <td class="center">{{ c.uf }}</td>
+                    <td class="center">{{ c.data_fim }}</td>
+                    <td>{{ c.info }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <p style="text-align: center;">Nenhum concurso encontrado com os filtros informados.</p>
-        {% endif %}
-    </div>
+    {% else %}
+        <p class="center">Nenhum concurso encontrado com os filtros informados.</p>
+    {% endif %}
+
 </body>
 </html>
