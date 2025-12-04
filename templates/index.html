@@ -2,86 +2,38 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Pesquisa de Concursos Públicos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <title>Filtrar Concursos</title>
     <style>
-        body {
-            background-color: #1e1e1e;
-            color: #f1f1f1;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #00aaff;
-        }
-
-        form {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        input, select {
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
-            min-width: 150px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #00aaff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #2b2b2b;
-        }
-
-        th, td {
-            padding: 10px;
-            border: 1px solid #444;
-        }
-
-        th {
-            background-color: #3a3a3a;
-            color: #ffffff;
-        }
-
-        tr:hover {
-            background-color: #3f3f3f;
-        }
-
-        .center {
-            text-align: center;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        form { margin-bottom: 20px; }
+        label { display: block; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .no-results { color: red; margin-top: 20px; }
     </style>
 </head>
 <body>
+    <h1>Filtrar Concursos Públicos</h1>
+    <form method="post">
+        <label for="salario_min">Salário mínimo:</label>
+        <input type="number" name="salario_min" value="{{ salario_min }}" required>
 
-    <h1>🔍 Pesquisa de Concursos Públicos</h1>
+        <label for="palavra">Contém a palavra:</label>
+        <input type="text" name="palavra" value="{{ palavra }}">
 
-    <form method="POST">
-        <input type="number" name="salario_min" placeholder="Salário mínimo (R$)">
-        <input type="text" name="palavra" placeholder="Palavra-chave">
+        <label for="uf">UF:</label>
         <select name="uf">
-            <option value="Todas">Todas</option>
-            {% for sigla in ufs %}
-                <option value="{{ sigla }}">{{ sigla }}</option>
+            <option value="">Todos</option>
+            {% for estado in ufs %}
+                <option value="{{ estado }}" {% if estado == uf %}selected{% endif %}>{{ estado }}</option>
             {% endfor %}
         </select>
-        <input type="text" name="excluir" placeholder="Excluir palavra">
-        <button type="submit">🔍 Buscar Concursos</button>
+
+        <label for="palavras_excluir">Palavras para excluir (separadas por vírgula):</label>
+        <input type="text" name="palavras_excluir" value="{{ palavras_excluir }}">
+
+        <button type="submit">Filtrar</button>
     </form>
 
     {% if concursos %}
@@ -91,23 +43,22 @@
                     <th>Salário</th>
                     <th>UF</th>
                     <th>Data Fim Inscrição</th>
-                    <th>Informações do Concurso</th>
+                    <th>Informações</th>
                 </tr>
             </thead>
             <tbody>
-                {% for c in concursos %}
+                {% for concurso in concursos %}
                 <tr>
-                    <td class="center">{{ c.salario }}</td>
-                    <td class="center">{{ c.uf }}</td>
-                    <td class="center">{{ c.data_fim }}</td>
-                    <td>{{ c.info }}</td>
+                    <td>{{ concurso.salario }}</td>
+                    <td>{{ concurso.uf }}</td>
+                    <td>{{ concurso.data_fim }}</td>
+                    <td>{{ concurso.info }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p class="center">Nenhum concurso encontrado com os filtros informados.</p>
+    {% elif concursos is not none %}
+        <p class="no-results">Nenhum concurso encontrado com os critérios especificados.</p>
     {% endif %}
-
 </body>
 </html>
