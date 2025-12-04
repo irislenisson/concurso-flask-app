@@ -11,31 +11,60 @@
         
         form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: grid; gap: 15px; }
         
-        label { font-weight: 600; color: #444; margin-bottom: 5px; display: block; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;}
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; transition: border-color 0.3s; }
-        input:focus, select:focus { border-color: #007bff; outline: none; }
+        label { font-weight: 600; color: #444; margin-bottom: 8px; display: block; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; }
         
-        /* Estilo especial para o select múltiplo */
-        select[multiple] { height: 150px; background-image: none; }
-        .help-text { font-size: 0.8em; color: #666; margin-top: -10px; margin-bottom: 10px; font-style: italic;}
+        /* NOVO: Estilo para a grade de botões de UF */
+        .uf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 8px;
+            margin-top: 5px;
+        }
+        
+        .uf-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 0;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.2s;
+            user-select: none; /* Impede seleção de texto ao clicar rápido */
+        }
 
-        input[type="submit"] { background-color: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 15px; font-size: 16px; margin-top: 10px; border-radius: 8px; transition: background 0.3s; }
-        input[type="submit"]:hover { background-color: #0056b3; }
+        .uf-btn:hover { background-color: #e2e6ea; }
+        
+        /* Estado Ativo (Selecionado) */
+        .uf-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+        }
+
+        .help-text { font-size: 0.8em; color: #666; margin-top: 5px; font-style: italic;}
+
+        input[type="submit"] { background-color: #28a745; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 15px; font-size: 16px; margin-top: 15px; border-radius: 8px; transition: background 0.3s; }
+        input[type="submit"]:hover { background-color: #218838; }
         
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
         .empty { color: #856404; background: #fff3cd; }
         .error { color: #721c24; background: #f8d7da; }
 
-        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #28a745; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .concurso-card:hover { transform: translateY(-2px); }
+        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #007bff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #2c3e50; line-height: 1.4; }
         
         .badges { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
-        .badge.money { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .badge.uf { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
-        .badge.date { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .badge.money { background-color: #d4edda; color: #155724; }
+        .badge.uf { background-color: #cce5ff; color: #004085; }
+        .badge.date { background-color: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
@@ -45,54 +74,55 @@
         <form id="searchForm">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
-                    <label>💰 Salário Mínimo (R$)</label>
+                    <label>💰 Salário Mínimo</label>
                     <input type="number" id="salario_minimo" placeholder="Ex: 5000">
                 </div>
                 <div>
                     <label>🔍 Palavra-chave</label>
-                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Tribunal">
+                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal">
                 </div>
             </div>
 
             <div>
-                <label>🌎 Filtrar por Região (Adiciona os estados automaticamente)</label>
+                <label>🌎 Filtrar por Região</label>
                 <select id="regiao">
-                    <option value="">-- Nenhuma região específica --</option>
-                    <option value="Norte">Região Norte (AM, RR, AP, PA, TO, RO, AC)</option>
-                    <option value="Nordeste">Região Nordeste (MA, PI, CE, RN...)</option>
-                    <option value="Centro-Oeste">Região Centro-Oeste (MT, MS, GO, DF)</option>
-                    <option value="Sudeste">Região Sudeste (SP, RJ, ES, MG)</option>
+                    <option value="">-- Todas as Regiões --</option>
+                    <option value="Nacional">📍 Âmbito Nacional (Sem UF específica)</option>
+                    <option value="Sudeste">Região Sudeste (SP, RJ, MG, ES)</option>
                     <option value="Sul">Região Sul (PR, RS, SC)</option>
+                    <option value="Centro-Oeste">Região Centro-Oeste + DF</option>
+                    <option value="Nordeste">Região Nordeste</option>
+                    <option value="Norte">Região Norte</option>
                 </select>
             </div>
 
             <div>
-                <label>📍 Selecionar UFs específicas (Segure Ctrl para selecionar várias)</label>
-                <select id="ufs" multiple size="6">
-                    <option value="AC">Acre (AC)</option> <option value="AL">Alagoas (AL)</option>
-                    <option value="AP">Amapá (AP)</option> <option value="AM">Amazonas (AM)</option>
-                    <option value="BA">Bahia (BA)</option> <option value="CE">Ceará (CE)</option>
-                    <option value="DF">Distrito Federal (DF)</option> <option value="ES">Espírito Santo (ES)</option>
-                    <option value="GO">Goiás (GO)</option> <option value="MA">Maranhão (MA)</option>
-                    <option value="MT">Mato Grosso (MT)</option> <option value="MS">Mato Grosso do Sul (MS)</option>
-                    <option value="MG">Minas Gerais (MG)</option> <option value="PA">Pará (PA)</option>
-                    <option value="PB">Paraíba (PB)</option> <option value="PR">Paraná (PR)</option>
-                    <option value="PE">Pernambuco (PE)</option> <option value="PI">Piauí (PI)</option>
-                    <option value="RJ">Rio de Janeiro (RJ)</option> <option value="RN">Rio Grande do Norte (RN)</option>
-                    <option value="RS">Rio Grande do Sul (RS)</option> <option value="RO">Rondônia (RO)</option>
-                    <option value="RR">Roraima (RR)</option> <option value="SC">Santa Catarina (SC)</option>
-                    <option value="SP">São Paulo (SP)</option> <option value="SE">Sergipe (SE)</option>
-                    <option value="TO">Tocantins (TO)</option>
-                </select>
-                <p class="help-text">Dica: Você pode combinar uma Região + Estados soltos (Ex: Sudeste + PR)</p>
+                <label>📍 Filtrar por Estado (Clique para marcar/desmarcar)</label>
+                <div class="uf-grid" id="ufGrid">
+                    <div class="uf-btn" data-uf="AC">AC</div> <div class="uf-btn" data-uf="AL">AL</div>
+                    <div class="uf-btn" data-uf="AP">AP</div> <div class="uf-btn" data-uf="AM">AM</div>
+                    <div class="uf-btn" data-uf="BA">BA</div> <div class="uf-btn" data-uf="CE">CE</div>
+                    <div class="uf-btn" data-uf="DF">DF</div> <div class="uf-btn" data-uf="ES">ES</div>
+                    <div class="uf-btn" data-uf="GO">GO</div> <div class="uf-btn" data-uf="MA">MA</div>
+                    <div class="uf-btn" data-uf="MT">MT</div> <div class="uf-btn" data-uf="MS">MS</div>
+                    <div class="uf-btn" data-uf="MG">MG</div> <div class="uf-btn" data-uf="PA">PA</div>
+                    <div class="uf-btn" data-uf="PB">PB</div> <div class="uf-btn" data-uf="PR">PR</div>
+                    <div class="uf-btn" data-uf="PE">PE</div> <div class="uf-btn" data-uf="PI">PI</div>
+                    <div class="uf-btn" data-uf="RJ">RJ</div> <div class="uf-btn" data-uf="RN">RN</div>
+                    <div class="uf-btn" data-uf="RS">RS</div> <div class="uf-btn" data-uf="RO">RO</div>
+                    <div class="uf-btn" data-uf="RR">RR</div> <div class="uf-btn" data-uf="SC">SC</div>
+                    <div class="uf-btn" data-uf="SP">SP</div> <div class="uf-btn" data-uf="SE">SE</div>
+                    <div class="uf-btn" data-uf="TO">TO</div>
+                </div>
+                <p class="help-text">Dica: Selecione uma Região acima OU clique nos estados desejados abaixo.</p>
             </div>
 
             <div>
                 <label>🚫 Excluir palavras</label>
-                <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio, cadastro">
+                <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
             </div>
 
-            <input type="submit" value="Buscar Melhores Oportunidades">
+            <input type="submit" value="Buscar Oportunidades">
         </form>
 
         <div id="status-msg"></div>
@@ -100,6 +130,14 @@
     </div>
 
     <script>
+        // 1. Lógica para ativar/desativar botões de UF
+        document.querySelectorAll('.uf-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+            });
+        });
+
+        // 2. Lógica de Busca
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -108,19 +146,19 @@
             
             container.innerHTML = '';
             statusDiv.className = 'loading';
-            statusDiv.innerText = '⏳ Buscando e filtrando...';
+            statusDiv.innerText = '⏳ Filtrando melhores vagas...';
             statusDiv.style.display = 'block';
 
-            // Coleta todas as UFs selecionadas na caixa de lista múltipla
-            const ufSelect = document.getElementById('ufs');
-            const selectedUfs = Array.from(ufSelect.selectedOptions).map(option => option.value);
+            // Coleta apenas os botões que estão com a classe 'active'
+            const activeBtns = document.querySelectorAll('.uf-btn.active');
+            const selectedUfs = Array.from(activeBtns).map(btn => btn.getAttribute('data-uf'));
 
             const payload = {
                 salario_minimo: document.getElementById('salario_minimo').value,
                 palavra_chave: document.getElementById('palavra_chave').value,
                 excluir_palavra: document.getElementById('excluir_palavra').value,
                 regiao: document.getElementById('regiao').value,
-                ufs: selectedUfs // Envia a lista (array) de UFs
+                ufs: selectedUfs
             };
 
             try {
@@ -136,7 +174,7 @@
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado.<br>Tente expandir a região ou reduzir o salário mínimo.';
+                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado.<br>Tente "Todas as Regiões" ou reduza os filtros.';
                     return;
                 }
 
@@ -150,7 +188,7 @@
                         <div class="badges">
                             <span class="badge money">💰 ${c['Salário']}</span>
                             <span class="badge uf">📍 ${c['UF']}</span>
-                            <span class="badge date">📅 Até: ${c['Data Fim Inscrição']}</span>
+                            <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                         </div>
                     `;
                     container.appendChild(div);
@@ -159,7 +197,7 @@
             } catch (error) {
                 console.error(error);
                 statusDiv.className = 'error';
-                statusDiv.innerHTML = `❌ Erro na busca. Verifique sua conexão.`;
+                statusDiv.innerHTML = `❌ Erro de conexão.`;
             }
         });
     </script>

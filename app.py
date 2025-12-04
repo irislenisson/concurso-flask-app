@@ -11,20 +11,21 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
 
-# Lista completa de siglas para detecção
+# Lista completa de siglas
 UFS_SIGLAS = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
     'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
     'SP', 'SE', 'TO'
 ]
 
-# Mapeamento de Regiões conforme solicitado
+# Mapeamento de Regiões
 REGIOES = {
     'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
     'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
-    'Centro-Oeste': ['MT', 'MS', 'GO', 'DF'], # DF incluído pela relevância em concursos
+    'Centro-Oeste': ['MT', 'MS', 'GO', 'DF'],
     'Sudeste': ['SP', 'RJ', 'ES', 'MG'],
-    'Sul': ['PR', 'RS', 'SC']
+    'Sul': ['PR', 'RS', 'SC'],
+    # Nacional não tem estados, é uma categoria própria tratada no código abaixo
 }
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
@@ -47,8 +48,8 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
     hoje = datetime.now().date()
     resultados = []
 
-    # Se a lista de alvos estiver vazia, considera-se "Nacional/Todos"
-    filtrar_uf = len(lista_ufs_alvo) > 0
+    # Se a lista de alvos tiver itens, ativamos o modo restritivo
+    modo_restritivo = len(lista_ufs_alvo) > 0
 
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
@@ -63,11 +64,9 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
                 data_formatada = data_fim.strftime('%d/%m/%Y')
             except: pass 
 
-        # Filtro Palavras
         if excluir_palavras and any(ex.lower() in texto.lower() for ex in excluir_palavras): continue
         if palavra_chave and palavra_chave.lower() not in texto.lower(): continue
 
-        # Tratamento Salário
         salario = 0.0
         m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
         if m:
@@ -77,17 +76,17 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
         
         if salario_min > 0 and salario < salario_min: continue
 
-        # Identificação da UF do concurso
+        # Identificação da UF
         uf_detectada = 'Nacional/Outro'
         for sigla in UFS_SIGLAS:
             if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
                 uf_detectada = sigla
                 break
         
-        # Lógica de Filtro de UF (Multi-seleção + Região)
-        if filtrar_uf:
-            # Se a UF detectada não estiver na lista de permitidos E não for um concurso nacional
-            if uf_detectada not in lista_ufs_alvo and uf_detectada != 'Nacional/Outro':
+        # --- LÓGICA DE FILTRO GEOGRÁFICO AJUSTADA ---
+        if modo_restritivo:
+            # Só aceita se a UF (ou 'Nacional/Outro') estiver explicitamente na lista permitida
+            if uf_detectada not in lista_ufs_alvo:
                 continue
 
         resultados.append({
@@ -98,7 +97,6 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
             'raw_salario': salario
         })
 
-    # Ordenação por salário
     resultados.sort(key=lambda x: x['raw_salario'], reverse=True)
     for r in resultados: del r['raw_salario']
 
@@ -112,29 +110,26 @@ def index():
 def api_buscar():
     data = request.json or {}
     
-    # 1. Tratamento Salário
     try:
         s_raw = data.get('salario_minimo')
         salario_minimo = float(s_raw) if s_raw else 0.0
     except: salario_minimo = 0.0
 
-    # 2. Tratamento Textos
     palavra_chave = data.get('palavra_chave', '').strip()
     excluir_str = data.get('excluir_palavra', '')
     excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
 
-    # 3. Tratamento UF e Regiões (Lógica Combinada)
-    ufs_selecionadas = data.get('ufs', []) # Recebe lista ['SP', 'RJ']
+    ufs_selecionadas = data.get('ufs', []) 
     regiao_selecionada = data.get('regiao', '')
 
-    # Cria um conjunto (set) para evitar duplicatas
     conjunto_ufs_alvo = set(ufs_selecionadas)
 
-    # Se escolheu região, adiciona os estados daquela região ao alvo
-    if regiao_selecionada in REGIOES:
+    # Lógica de Regiões + Nacional
+    if regiao_selecionada == 'Nacional':
+        conjunto_ufs_alvo.add('Nacional/Outro')
+    elif regiao_selecionada in REGIOES:
         conjunto_ufs_alvo.update(REGIOES[regiao_selecionada])
     
-    # Converte de volta para lista
     lista_final_ufs = list(conjunto_ufs_alvo)
     
     todos = buscar_concursos()
