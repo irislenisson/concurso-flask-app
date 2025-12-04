@@ -44,12 +44,12 @@ def buscar_concursos():
 def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, excluir_palavras):
     hoje = datetime.now().date()
     resultados = []
-
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
         
+        # Filtro Data
         datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
         data_formatada = "Indefinida"
         if datas:
@@ -59,18 +59,22 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
                 data_formatada = data_fim.strftime('%d/%m/%Y')
             except: pass 
 
+        # Filtro Palavras
         if excluir_palavras and any(ex.lower() in texto.lower() for ex in excluir_palavras): continue
         if palavra_chave and palavra_chave.lower() not in texto.lower(): continue
 
+        # Tratamento Salário (Regex robusto)
         salario = 0.0
         m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
         if m:
             try:
+                # Remove pontos de milhar e troca vírgula por ponto decimal
                 salario = float(m.group(1).replace('.', '').replace(',', '.'))
             except: salario = 0.0
         
         if salario_min > 0 and salario < salario_min: continue
 
+        # Identificação UF
         uf_detectada = 'Nacional/Outro'
         for sigla in UFS_SIGLAS:
             if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
@@ -102,22 +106,28 @@ def index():
 def api_buscar():
     data = request.json or {}
     
+    # --- TRATAMENTO DO INPUT FORMATADO (R$ 5.000,00 -> 5000.00) ---
     try:
-        s_raw = data.get('salario_minimo')
-        salario_minimo = float(s_raw) if s_raw else 0.0
-    except: salario_minimo = 0.0
+        s_raw = str(data.get('salario_minimo', ''))
+        # Remove tudo que não for dígito ou vírgula (remove R$, pontos e espaços)
+        s_clean = re.sub(r'[^\d,]', '', s_raw)
+        # Troca vírgula por ponto para o Python entender como float
+        s_clean = s_clean.replace(',', '.')
+        
+        salario_minimo = float(s_clean) if s_clean else 0.0
+    except Exception as e:
+        print(f"Erro ao converter salario: {e}")
+        salario_minimo = 0.0
+    # ---------------------------------------------------------------
 
     palavra_chave = data.get('palavra_chave', '').strip()
     excluir_str = data.get('excluir_palavra', '')
     excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
 
     ufs_selecionadas = data.get('ufs', []) 
-    # Agora aceita uma LISTA de regiões
     regioes_selecionadas = data.get('regioes', []) 
 
     conjunto_ufs_alvo = set(ufs_selecionadas)
-
-    # Processa todas as regiões selecionadas
     for reg in regioes_selecionadas:
         if reg == 'Nacional':
             conjunto_ufs_alvo.add('Nacional/Outro')

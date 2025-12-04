@@ -6,7 +6,7 @@
     <title>Buscador de Concursos</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 850px; margin: 0 auto; }
+        .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; } /* Padding extra pro footer não colar */
         h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-weight: 800; }
         
         form { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: grid; gap: 20px; }
@@ -15,43 +15,17 @@
         input { padding: 12px; border: 1px solid #e9ecef; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; background: #f8f9fa; transition: all 0.2s;}
         input:focus { border-color: #007bff; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
         
-        /* GRID DE BOTÕES (Usado para UFs e Regiões) */
-        .btn-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+        .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
         
-        /* Estilo base dos Chips/Botões */
         .filter-btn {
-            background-color: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 20px; /* Arredondado estilo Chip */
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 600;
-            color: #6c757d;
-            transition: all 0.2s;
-            user-select: none;
+            background-color: #fff; border: 1px solid #dee2e6; border-radius: 20px;
+            padding: 8px 16px; cursor: pointer; font-size: 0.9em; font-weight: 600; color: #6c757d;
+            transition: all 0.2s; user-select: none;
         }
-
         .filter-btn:hover { background-color: #e9ecef; transform: translateY(-1px); }
-        
-        /* Estado Ativo (Selecionado) */
-        .filter-btn.active {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
-            box-shadow: 0 4px 6px rgba(0,123,255,0.2);
-        }
+        .filter-btn.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
 
-        /* Estilo Específico para Regiões (Um pouco maiores) */
-        .region-btn {
-            padding: 10px 20px;
-            font-size: 0.95em;
-            border-radius: 8px; /* Mais quadrado para diferenciar */
-        }
+        .region-btn { padding: 10px 20px; font-size: 0.95em; border-radius: 8px; }
         .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
         .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
@@ -74,6 +48,16 @@
         .badge.money { background-color: #d1e7dd; color: #0f5132; }
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
+
+        /* Estilo Discreto do Rodapé Legal */
+        .legal-footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.75em;
+            color: #b0b8c1;
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -83,8 +67,8 @@
         <form id="searchForm">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <label>💰 Salário Mínimo</label>
-                    <input type="number" id="salario_minimo" placeholder="Ex: 5000">
+                    <label>💰 Salário Inicial</label>
+                    <input type="tel" id="salario_minimo" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
                 </div>
                 <div>
                     <label>🔍 Palavra-chave</label>
@@ -139,10 +123,30 @@
 
         <div id="status-msg"></div>
         <div id="resultados-container"></div>
+        
+        <div class="legal-footer">
+            agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
+        </div>
     </div>
 
     <script>
-        // Lógica Genérica para ativar/desativar qualquer botão de filtro
+        // Função de Máscara de Moeda
+        function formatarMoeda(elemento) {
+            let valor = elemento.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+            
+            if (valor === "") {
+                elemento.value = "";
+                return;
+            }
+            
+            valor = (valor / 100).toFixed(2) + ""; // Divide por 100 para ter os centavos
+            valor = valor.replace(".", ",");       // Troca ponto por vírgula
+            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); // Adiciona pontos de milhar
+            
+            elemento.value = "R$ " + valor;
+        }
+
+        // Ativar/Desativar botões
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.classList.toggle('active');
@@ -160,11 +164,9 @@
             statusDiv.innerText = '⏳ Buscando...';
             statusDiv.style.display = 'block';
 
-            // Coleta UFs ativas
             const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active'))
                                    .map(btn => btn.getAttribute('data-value'));
 
-            // Coleta Regiões ativas
             const activeRegions = Array.from(document.querySelectorAll('.region-btn.active'))
                                        .map(btn => btn.getAttribute('data-value'));
 
@@ -172,8 +174,8 @@
                 salario_minimo: document.getElementById('salario_minimo').value,
                 palavra_chave: document.getElementById('palavra_chave').value,
                 excluir_palavra: document.getElementById('excluir_palavra').value,
-                regioes: activeRegions, // Envia lista de regiões
-                ufs: activeUfs         // Envia lista de UFs
+                regioes: activeRegions,
+                ufs: activeUfs
             };
 
             try {
