@@ -11,21 +11,18 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
 
-# Lista completa de siglas
 UFS_SIGLAS = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
     'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
     'SP', 'SE', 'TO'
 ]
 
-# Mapeamento de Regiões
 REGIOES = {
     'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
     'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
     'Centro-Oeste': ['MT', 'MS', 'GO', 'DF'],
     'Sudeste': ['SP', 'RJ', 'ES', 'MG'],
     'Sul': ['PR', 'RS', 'SC'],
-    # Nacional não tem estados, é uma categoria própria tratada no código abaixo
 }
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
@@ -48,13 +45,11 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
     hoje = datetime.now().date()
     resultados = []
 
-    # Se a lista de alvos tiver itens, ativamos o modo restritivo
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
         
-        # Filtro Data
         datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
         data_formatada = "Indefinida"
         if datas:
@@ -76,16 +71,13 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, lista_ufs_alvo, exc
         
         if salario_min > 0 and salario < salario_min: continue
 
-        # Identificação da UF
         uf_detectada = 'Nacional/Outro'
         for sigla in UFS_SIGLAS:
             if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
                 uf_detectada = sigla
                 break
         
-        # --- LÓGICA DE FILTRO GEOGRÁFICO AJUSTADA ---
         if modo_restritivo:
-            # Só aceita se a UF (ou 'Nacional/Outro') estiver explicitamente na lista permitida
             if uf_detectada not in lista_ufs_alvo:
                 continue
 
@@ -120,15 +112,17 @@ def api_buscar():
     excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
 
     ufs_selecionadas = data.get('ufs', []) 
-    regiao_selecionada = data.get('regiao', '')
+    # Agora aceita uma LISTA de regiões
+    regioes_selecionadas = data.get('regioes', []) 
 
     conjunto_ufs_alvo = set(ufs_selecionadas)
 
-    # Lógica de Regiões + Nacional
-    if regiao_selecionada == 'Nacional':
-        conjunto_ufs_alvo.add('Nacional/Outro')
-    elif regiao_selecionada in REGIOES:
-        conjunto_ufs_alvo.update(REGIOES[regiao_selecionada])
+    # Processa todas as regiões selecionadas
+    for reg in regioes_selecionadas:
+        if reg == 'Nacional':
+            conjunto_ufs_alvo.add('Nacional/Outro')
+        elif reg in REGIOES:
+            conjunto_ufs_alvo.update(REGIOES[reg])
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     

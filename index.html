@@ -5,66 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
+        .container { max-width: 850px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-weight: 800; }
         
-        form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: grid; gap: 15px; }
+        form { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: grid; gap: 20px; }
         
-        label { font-weight: 600; color: #444; margin-bottom: 8px; display: block; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;}
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; }
+        label { font-weight: 700; color: #34495e; margin-bottom: 8px; display: block; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;}
+        input { padding: 12px; border: 1px solid #e9ecef; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; background: #f8f9fa; transition: all 0.2s;}
+        input:focus { border-color: #007bff; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
         
-        /* NOVO: Estilo para a grade de botões de UF */
-        .uf-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        /* GRID DE BOTÕES (Usado para UFs e Regiões) */
+        .btn-grid {
+            display: flex;
+            flex-wrap: wrap;
             gap: 8px;
-            margin-top: 5px;
         }
         
-        .uf-btn {
-            background-color: #f8f9fa;
+        /* Estilo base dos Chips/Botões */
+        .filter-btn {
+            background-color: #fff;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 8px 0;
-            text-align: center;
+            border-radius: 20px; /* Arredondado estilo Chip */
+            padding: 8px 16px;
             cursor: pointer;
             font-size: 0.9em;
             font-weight: 600;
-            color: #495057;
+            color: #6c757d;
             transition: all 0.2s;
-            user-select: none; /* Impede seleção de texto ao clicar rápido */
+            user-select: none;
         }
 
-        .uf-btn:hover { background-color: #e2e6ea; }
+        .filter-btn:hover { background-color: #e9ecef; transform: translateY(-1px); }
         
         /* Estado Ativo (Selecionado) */
-        .uf-btn.active {
+        .filter-btn.active {
             background-color: #007bff;
             color: white;
-            border-color: #0056b3;
-            transform: scale(1.05);
-            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+            border-color: #007bff;
+            box-shadow: 0 4px 6px rgba(0,123,255,0.2);
         }
 
-        .help-text { font-size: 0.8em; color: #666; margin-top: 5px; font-style: italic;}
+        /* Estilo Específico para Regiões (Um pouco maiores) */
+        .region-btn {
+            padding: 10px 20px;
+            font-size: 0.95em;
+            border-radius: 8px; /* Mais quadrado para diferenciar */
+        }
+        .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
+        .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
-        input[type="submit"] { background-color: #28a745; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 15px; font-size: 16px; margin-top: 15px; border-radius: 8px; transition: background 0.3s; }
-        input[type="submit"]:hover { background-color: #218838; }
+        .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
+        .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
+
+        input[type="submit"] { background-color: #2c3e50; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 16px; font-size: 16px; margin-top: 10px; border-radius: 8px; transition: transform 0.2s; width: 100%; }
+        input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
         
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
         .empty { color: #856404; background: #fff3cd; }
         .error { color: #721c24; background: #f8d7da; }
 
-        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #007bff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #2c3e50; line-height: 1.4; }
+        .concurso-card { background: #fff; margin-bottom: 15px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
-        .badges { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
-        .badge.money { background-color: #d4edda; color: #155724; }
-        .badge.uf { background-color: #cce5ff; color: #004085; }
-        .badge.date { background-color: #fff3cd; color: #856404; }
+        .badges { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px;}
+        .badge.money { background-color: #d1e7dd; color: #0f5132; }
+        .badge.uf { background-color: #cfe2ff; color: #084298; }
+        .badge.date { background-color: #fff3cd; color: #664d03; }
     </style>
 </head>
 <body>
@@ -72,7 +81,7 @@
         <h1>🚀 Buscador de Concursos</h1>
 
         <form id="searchForm">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
                     <label>💰 Salário Mínimo</label>
                     <input type="number" id="salario_minimo" placeholder="Ex: 5000">
@@ -83,39 +92,42 @@
                 </div>
             </div>
 
+            <div class="section-divider"></div>
+
             <div>
-                <label>🌎 Filtrar por Região</label>
-                <select id="regiao">
-                    <option value="">-- Todas as Regiões --</option>
-                    <option value="Nacional">📍 Âmbito Nacional (Sem UF específica)</option>
-                    <option value="Sudeste">Região Sudeste (SP, RJ, MG, ES)</option>
-                    <option value="Sul">Região Sul (PR, RS, SC)</option>
-                    <option value="Centro-Oeste">Região Centro-Oeste + DF</option>
-                    <option value="Nordeste">Região Nordeste</option>
-                    <option value="Norte">Região Norte</option>
-                </select>
+                <label>🌎 Regiões (Clique para ativar)</label>
+                <div class="btn-grid">
+                    <div class="filter-btn region-btn" data-value="Nacional">Nacional</div>
+                    <div class="filter-btn region-btn" data-value="Norte">Norte</div>
+                    <div class="filter-btn region-btn" data-value="Nordeste">Nordeste</div>
+                    <div class="filter-btn region-btn" data-value="Centro-Oeste">Centro-Oeste</div>
+                    <div class="filter-btn region-btn" data-value="Sudeste">Sudeste</div>
+                    <div class="filter-btn region-btn" data-value="Sul">Sul</div>
+                </div>
             </div>
 
             <div>
-                <label>📍 Filtrar por Estado (Clique para marcar/desmarcar)</label>
-                <div class="uf-grid" id="ufGrid">
-                    <div class="uf-btn" data-uf="AC">AC</div> <div class="uf-btn" data-uf="AL">AL</div>
-                    <div class="uf-btn" data-uf="AP">AP</div> <div class="uf-btn" data-uf="AM">AM</div>
-                    <div class="uf-btn" data-uf="BA">BA</div> <div class="uf-btn" data-uf="CE">CE</div>
-                    <div class="uf-btn" data-uf="DF">DF</div> <div class="uf-btn" data-uf="ES">ES</div>
-                    <div class="uf-btn" data-uf="GO">GO</div> <div class="uf-btn" data-uf="MA">MA</div>
-                    <div class="uf-btn" data-uf="MT">MT</div> <div class="uf-btn" data-uf="MS">MS</div>
-                    <div class="uf-btn" data-uf="MG">MG</div> <div class="uf-btn" data-uf="PA">PA</div>
-                    <div class="uf-btn" data-uf="PB">PB</div> <div class="uf-btn" data-uf="PR">PR</div>
-                    <div class="uf-btn" data-uf="PE">PE</div> <div class="uf-btn" data-uf="PI">PI</div>
-                    <div class="uf-btn" data-uf="RJ">RJ</div> <div class="uf-btn" data-uf="RN">RN</div>
-                    <div class="uf-btn" data-uf="RS">RS</div> <div class="uf-btn" data-uf="RO">RO</div>
-                    <div class="uf-btn" data-uf="RR">RR</div> <div class="uf-btn" data-uf="SC">SC</div>
-                    <div class="uf-btn" data-uf="SP">SP</div> <div class="uf-btn" data-uf="SE">SE</div>
-                    <div class="uf-btn" data-uf="TO">TO</div>
+                <label>📍 Estados Específicos</label>
+                <div class="btn-grid">
+                    <div class="filter-btn uf-btn" data-value="AC">AC</div> <div class="filter-btn uf-btn" data-value="AL">AL</div>
+                    <div class="filter-btn uf-btn" data-value="AP">AP</div> <div class="filter-btn uf-btn" data-value="AM">AM</div>
+                    <div class="filter-btn uf-btn" data-value="BA">BA</div> <div class="filter-btn uf-btn" data-value="CE">CE</div>
+                    <div class="filter-btn uf-btn" data-value="DF">DF</div> <div class="filter-btn uf-btn" data-value="ES">ES</div>
+                    <div class="filter-btn uf-btn" data-value="GO">GO</div> <div class="filter-btn uf-btn" data-value="MA">MA</div>
+                    <div class="filter-btn uf-btn" data-value="MT">MT</div> <div class="filter-btn uf-btn" data-value="MS">MS</div>
+                    <div class="filter-btn uf-btn" data-value="MG">MG</div> <div class="filter-btn uf-btn" data-value="PA">PA</div>
+                    <div class="filter-btn uf-btn" data-value="PB">PB</div> <div class="filter-btn uf-btn" data-value="PR">PR</div>
+                    <div class="filter-btn uf-btn" data-value="PE">PE</div> <div class="filter-btn uf-btn" data-value="PI">PI</div>
+                    <div class="filter-btn uf-btn" data-value="RJ">RJ</div> <div class="filter-btn uf-btn" data-value="RN">RN</div>
+                    <div class="filter-btn uf-btn" data-value="RS">RS</div> <div class="filter-btn uf-btn" data-value="RO">RO</div>
+                    <div class="filter-btn uf-btn" data-value="RR">RR</div> <div class="filter-btn uf-btn" data-value="SC">SC</div>
+                    <div class="filter-btn uf-btn" data-value="SP">SP</div> <div class="filter-btn uf-btn" data-value="SE">SE</div>
+                    <div class="filter-btn uf-btn" data-value="TO">TO</div>
                 </div>
-                <p class="help-text">Dica: Selecione uma Região acima OU clique nos estados desejados abaixo.</p>
+                <p class="help-text">Dica: O filtro soma Regiões + Estados selecionados.</p>
             </div>
+
+            <div class="section-divider"></div>
 
             <div>
                 <label>🚫 Excluir palavras</label>
@@ -130,14 +142,13 @@
     </div>
 
     <script>
-        // 1. Lógica para ativar/desativar botões de UF
-        document.querySelectorAll('.uf-btn').forEach(btn => {
+        // Lógica Genérica para ativar/desativar qualquer botão de filtro
+        document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.classList.toggle('active');
             });
         });
 
-        // 2. Lógica de Busca
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -146,19 +157,23 @@
             
             container.innerHTML = '';
             statusDiv.className = 'loading';
-            statusDiv.innerText = '⏳ Filtrando melhores vagas...';
+            statusDiv.innerText = '⏳ Buscando...';
             statusDiv.style.display = 'block';
 
-            // Coleta apenas os botões que estão com a classe 'active'
-            const activeBtns = document.querySelectorAll('.uf-btn.active');
-            const selectedUfs = Array.from(activeBtns).map(btn => btn.getAttribute('data-uf'));
+            // Coleta UFs ativas
+            const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active'))
+                                   .map(btn => btn.getAttribute('data-value'));
+
+            // Coleta Regiões ativas
+            const activeRegions = Array.from(document.querySelectorAll('.region-btn.active'))
+                                       .map(btn => btn.getAttribute('data-value'));
 
             const payload = {
                 salario_minimo: document.getElementById('salario_minimo').value,
                 palavra_chave: document.getElementById('palavra_chave').value,
                 excluir_palavra: document.getElementById('excluir_palavra').value,
-                regiao: document.getElementById('regiao').value,
-                ufs: selectedUfs
+                regioes: activeRegions, // Envia lista de regiões
+                ufs: activeUfs         // Envia lista de UFs
             };
 
             try {
@@ -174,7 +189,7 @@
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado.<br>Tente "Todas as Regiões" ou reduza os filtros.';
+                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado para os filtros selecionados.';
                     return;
                 }
 
