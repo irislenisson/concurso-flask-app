@@ -7,8 +7,12 @@ from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 
-app = Flask(__name__, template_folder='.')
+# --- CORREÇÃO DO CAMINHO ---
+# Garante que o Flask ache o html onde quer que o Render rode o script
+basedir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
+# ---------------------------
 
 UFS = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
@@ -28,7 +32,7 @@ def buscar_concursos():
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
         itens = soup.find_all('div', class_='ca')
-        print(f"--> Download concluído. {len(itens)} itens encontrados para processar.")
+        print(f"--> Download concluído. {len(itens)} itens encontrados.")
         return itens
     except Exception as e:
         print(f"--> ERRO DE CONEXÃO: {e}")
@@ -37,53 +41,42 @@ def buscar_concursos():
 def filtrar_concursos(concursos, salario_min, palavra_chave, uf_filtro, excluir_palavras):
     hoje = datetime.now().date()
     resultados = []
-    print(f"--> Iniciando filtro: Min R${salario_min} | Chave: '{palavra_chave}'")
-
+    
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
         
-        # 1. Filtro de Data (Mantém apenas inscrições abertas)
         datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
         data_fim = None
         data_formatada = "Indefinida"
         
         if datas:
             try:
-                # Pega a última data encontrada no texto
                 data_fim = datetime.strptime(datas[-1], '%d/%m/%Y').date()
                 if data_fim < hoje:
-                    continue # Ignora concursos vencidos
+                    continue 
                 data_formatada = data_fim.strftime('%d/%m/%Y')
             except:
-                pass # Se der erro na data, não joga fora, apenas segue
+                pass 
 
-        # 2. Filtro de Exclusão
         if excluir_palavras and any(ex.lower() in texto.lower() for ex in excluir_palavras):
             continue
 
-        # 3. Filtro de Palavra Chave
         if palavra_chave and palavra_chave.lower() not in texto.lower():
             continue
 
-        # 4. Tratamento de Salário (CORREÇÃO PRINCIPAL)
         salario = 0.0
-        # Regex flexível para achar R$ 1.000,00 ou R$1000,00
         m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
-        
         if m:
             try:
                 salario = float(m.group(1).replace('.', '').replace(',', '.'))
             except:
                 salario = 0.0
         
-        # Se o usuário pediu um salário mínimo e este concurso paga menos (ou não informa), ignora
         if salario_min > 0 and salario < salario_min:
             continue
 
-        # 5. Filtro de UF
         uf_detectada = 'Nacional/Outro'
         for sigla in UFS:
-            # Procura a sigla isolada (ex: " SP ", mas não dentro de "VESPA")
             if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
                 uf_detectada = sigla
                 break
@@ -98,19 +91,21 @@ def filtrar_concursos(concursos, salario_min, palavra_chave, uf_filtro, excluir_
             'Informações do Concurso': texto
         })
 
-    print(f"--> Resultados finais filtrados: {len(resultados)}")
     return resultados
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    # Tenta renderizar o template. Se der erro, mostra o caminho que ele tentou usar para ajudar no debug
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        return f"Erro Crítico: Não achei o index.html na pasta {basedir}. Erro: {e}"
 
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():
     data = request.json or {}
     
     try:
-        # Garante que o salário seja número
         s_raw = data.get('salario_minimo')
         salario_minimo = float(s_raw) if s_raw else 0.0
     except:
