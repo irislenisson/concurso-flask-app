@@ -6,25 +6,30 @@
     <title>Buscador de Concursos</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
-        h1 { color: #1a1a1a; text-align: center; }
         .container { max-width: 800px; margin: 0 auto; }
-        form { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: grid; gap: 15px; }
-        label { font-weight: 600; color: #444; }
+        h1 { text-align: center; color: #333; }
+        
+        form { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: grid; gap: 15px; }
+        
+        label { font-weight: 600; color: #444; margin-bottom: 5px; display: block;}
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; font-size: 16px; }
-        input[type="submit"] { background-color: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 12px; transition: background 0.3s; }
+        
+        input[type="submit"] { background-color: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 12px; transition: background 0.3s; margin-top: 10px;}
         input[type="submit"]:hover { background-color: #0056b3; }
         
-        #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 10px; border-radius: 5px;}
+        #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 5px;}
         .loading { color: #0056b3; background: #e7f1ff; }
-        .error { color: #721c24; background: #f8d7da; }
         .empty { color: #856404; background: #fff3cd; }
+        .error { color: #721c24; background: #f8d7da; }
 
-        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #007bff; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #333; }
-        .badges { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .badge { background: #e9ecef; padding: 5px 10px; border-radius: 15px; font-size: 0.9em; font-weight: 600; color: #495057; }
-        .badge.money { background: #d4edda; color: #155724; }
-        .badge.date { background: #fff3cd; color: #856404; }
+        .concurso-card { background: #fff; margin-bottom: 15px; padding: 20px; border-left: 5px solid #28a745; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .concurso-card h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #2c3e50; }
+        
+        .badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; }
+        .badge.money { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .badge.uf { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .badge.date { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     </style>
 </head>
 <body>
@@ -34,30 +39,54 @@
         <form id="searchForm">
             <div>
                 <label>Salário Mínimo (R$):</label>
-                <input type="number" id="salario_minimo" placeholder="Ex: 3000 (Deixe vazio para ver todos)">
+                <input type="number" id="salario_minimo" placeholder="Ex: 5000">
             </div>
             
             <div>
                 <label>Palavra-chave:</label>
-                <input type="text" id="palavra_chave" placeholder="Ex: Analista, Prefeitura, TI">
+                <input type="text" id="palavra_chave" placeholder="Ex: Analista, Fiscal, TI">
             </div>
 
             <div>
-                <label>UF:</label>
+                <label>UF (Estado):</label>
                 <select id="uf">
                     <option value="">Todas as UFs</option>
-                    <option value="SP">SP</option> <option value="RJ">RJ</option> <option value="MG">MG</option>
-                    <option value="DF">DF</option> <option value="RS">RS</option> <option value="PR">PR</option>
-                    <option value="SC">SC</option> <option value="BA">BA</option> <option value="PE">PE</option>
+                    <option value="AC">Acre (AC)</option>
+                    <option value="AL">Alagoas (AL)</option>
+                    <option value="AP">Amapá (AP)</option>
+                    <option value="AM">Amazonas (AM)</option>
+                    <option value="BA">Bahia (BA)</option>
+                    <option value="CE">Ceará (CE)</option>
+                    <option value="DF">Distrito Federal (DF)</option>
+                    <option value="ES">Espírito Santo (ES)</option>
+                    <option value="GO">Goiás (GO)</option>
+                    <option value="MA">Maranhão (MA)</option>
+                    <option value="MT">Mato Grosso (MT)</option>
+                    <option value="MS">Mato Grosso do Sul (MS)</option>
+                    <option value="MG">Minas Gerais (MG)</option>
+                    <option value="PA">Pará (PA)</option>
+                    <option value="PB">Paraíba (PB)</option>
+                    <option value="PR">Paraná (PR)</option>
+                    <option value="PE">Pernambuco (PE)</option>
+                    <option value="PI">Piauí (PI)</option>
+                    <option value="RJ">Rio de Janeiro (RJ)</option>
+                    <option value="RN">Rio Grande do Norte (RN)</option>
+                    <option value="RS">Rio Grande do Sul (RS)</option>
+                    <option value="RO">Rondônia (RO)</option>
+                    <option value="RR">Roraima (RR)</option>
+                    <option value="SC">Santa Catarina (SC)</option>
+                    <option value="SP">São Paulo (SP)</option>
+                    <option value="SE">Sergipe (SE)</option>
+                    <option value="TO">Tocantins (TO)</option>
                 </select>
             </div>
 
             <div>
                 <label>Excluir palavras:</label>
-                <input type="text" id="excluir_palavra" placeholder="Ex: estágio, fundamental">
+                <input type="text" id="excluir_palavra" placeholder="Ex: médico, professor">
             </div>
 
-            <input type="submit" value="🔍 Buscar Concursos">
+            <input type="submit" value="🔍 Filtrar Concursos">
         </form>
 
         <div id="status-msg"></div>
@@ -71,10 +100,9 @@
             const statusDiv = document.getElementById('status-msg');
             const container = document.getElementById('resultados-container');
             
-            // Limpa tela e mostra loading
             container.innerHTML = '';
             statusDiv.className = 'loading';
-            statusDiv.innerText = '⏳ Conectando ao servidor e buscando dados... (Isso pode levar até 30s se o servidor estiver acordando)';
+            statusDiv.innerText = '⏳ Buscando e ordenando melhores salários...';
             statusDiv.style.display = 'block';
 
             const payload = {
@@ -91,18 +119,19 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error(`Erro do Servidor: ${response.status}`);
+                if (!response.ok) throw new Error(`Erro: ${response.status}`);
 
                 const concursos = await response.json();
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado.<br>Tente diminuir o salário mínimo ou remover palavras-chave.';
+                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado com esses filtros.';
                     return;
                 }
 
                 statusDiv.style.display = 'none';
 
+                // Cria os cards (já virão ordenados do Python)
                 concursos.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'concurso-card';
@@ -110,7 +139,7 @@
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="badges">
                             <span class="badge money">💰 ${c['Salário']}</span>
-                            <span class="badge">📍 ${c['UF']}</span>
+                            <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 Até: ${c['Data Fim Inscrição']}</span>
                         </div>
                     `;
@@ -120,7 +149,7 @@
             } catch (error) {
                 console.error(error);
                 statusDiv.className = 'error';
-                statusDiv.innerHTML = `❌ Falha na busca.<br>Erro técnico: ${error.message}`;
+                statusDiv.innerHTML = `❌ Erro na busca. Tente novamente.`;
             }
         });
     </script>
