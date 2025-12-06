@@ -115,7 +115,7 @@
                 <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
             </div>
 
-            <input type="submit" value="Buscar Oportunidades">
+            <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
         </form>
 
         <div id="status-msg"></div>
@@ -151,12 +151,18 @@
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const btnBuscar = document.getElementById('btn-buscar');
             const statusDiv = document.getElementById('status-msg');
             const container = document.getElementById('resultados-container');
             
+            // Feedback Visual de Carregamento
+            const textoOriginal = "Buscar Oportunidades";
+            btnBuscar.value = "⏳ Buscando...";
+            btnBuscar.disabled = true; // Evita cliques duplos
+            
             container.innerHTML = '';
             statusDiv.className = 'loading';
-            statusDiv.innerText = '⏳ Buscando...';
+            statusDiv.innerText = 'Processando sua busca...';
             statusDiv.style.display = 'block';
 
             const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active'))
@@ -183,6 +189,11 @@
                 if (!response.ok) throw new Error(`Erro: ${response.status}`);
 
                 const concursos = await response.json();
+                
+                // --- ATUALIZAÇÃO DO TEXTO DO BOTÃO COM A QUANTIDADE ---
+                btnBuscar.value = `Buscar Oportunidades (${concursos.length})`;
+                btnBuscar.disabled = false;
+                // -----------------------------------------------------
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
@@ -210,6 +221,10 @@
                 console.error(error);
                 statusDiv.className = 'error';
                 statusDiv.innerHTML = `❌ Erro de conexão.`;
+                
+                // Em caso de erro, reseta o botão
+                btnBuscar.value = textoOriginal;
+                btnBuscar.disabled = false;
             }
         });
     </script>
