@@ -6,7 +6,7 @@
     <title>Buscador de Concursos</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; } /* Padding extra pro footer não colar */
+        .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-weight: 800; }
         
         form { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: grid; gap: 20px; }
@@ -40,7 +40,12 @@
         .empty { color: #856404; background: #fff3cd; }
         .error { color: #721c24; background: #f8d7da; }
 
-        .concurso-card { background: #fff; margin-bottom: 15px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        /* AQUI O ESPAÇAMENTO SOLICITADO ENTRE A BUSCA E OS RESULTADOS */
+        #resultados-container {
+            margin-top: 40px; 
+        }
+
+        .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
         .badges { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
@@ -49,7 +54,6 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* Estilo Discreto do Rodapé Legal */
         .legal-footer {
             margin-top: 40px;
             text-align: center;
@@ -125,28 +129,26 @@
         <div id="resultados-container"></div>
         
         <div class="legal-footer">
-            *Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
+            agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
         </div>
     </div>
 
     <script>
-        // Função de Máscara de Moeda
         function formatarMoeda(elemento) {
-            let valor = elemento.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+            let valor = elemento.value.replace(/\D/g, "");
             
             if (valor === "") {
                 elemento.value = "";
                 return;
             }
             
-            valor = (valor / 100).toFixed(2) + ""; // Divide por 100 para ter os centavos
-            valor = valor.replace(".", ",");       // Troca ponto por vírgula
-            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); // Adiciona pontos de milhar
+            valor = (valor / 100).toFixed(2) + "";
+            valor = valor.replace(".", ",");
+            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
             
             elemento.value = "R$ " + valor;
         }
 
-        // Ativar/Desativar botões
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.classList.toggle('active');
