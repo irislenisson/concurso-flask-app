@@ -25,6 +25,15 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
+# NOVA LISTA DE PRIORIDADE PARA INSCRIÇÃO
+# Termos que identificam as bancas na URL ou no Texto
+BANCAS_ALVO = [
+    'ibade', 'objetiva', 'cespe', 'cebraspe', 'ibam', 'fgv', 'vunesp', 'ibfc',
+    'idecan', 'institutomais', 'consulpam', 'aocp', 'selecon', 'fcc', 'consulplan',
+    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'pr-4',
+    'avalias', 'quadrix', 'legalle', 'fundatec', 'nossorumo'
+]
+
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
 def buscar_concursos():
@@ -111,7 +120,7 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
 
     return resultados
 
-# --- NOVA FUNÇÃO PARA ENTRAR NA PÁGINA E CAÇAR LINKS ---
+# --- FUNÇÃO APRIMORADA COM BUSCA POR BANCAS ---
 def extrair_link_final(url_base, tipo):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -119,64 +128,67 @@ def extrair_link_final(url_base, tipo):
     try:
         resp = requests.get(url_base, timeout=10, headers=headers)
         soup = BeautifulSoup(resp.text, 'html.parser')
-        
-        # Procura todos os links da página de detalhes
         todos_links = soup.find_all('a', href=True)
         
-        link_encontrado = None
+        candidato_melhor = None
 
         if tipo == 'edital':
-            # Prioridade 1: Link que tenha "pdf" no final
-            # Prioridade 2: Link que tenha a palavra "edital" no texto ou link
+            # Lógica de Edital (Prioriza PDF)
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
-                
-                # Regra forte para edital
                 if 'edital' in text or 'abertura' in text or href.endswith('.pdf'):
-                     # Evita links genéricos demais
                     if 'facebook' not in href and 'twitter' not in href:
-                        link_encontrado = a['href']
-                        # Se for PDF, é o melhor candidato, para e retorna
-                        if href.endswith('.pdf'): 
-                            break
+                        candidato_melhor = a['href']
+                        if href.endswith('.pdf'): break # PDF é ouro
                             
         elif tipo == 'inscricao':
-            # Procura links externos (sites das bancas) ou com texto "inscrição"
+            # --- FASE 1: Busca na Lista de Bancas (Prioridade Máxima) ---
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
-                if 'inscriç' in text or 'inscreva' in text or 'site' in text or 'banca' in text:
-                    # Ignora links internos do próprio PCI
-                    if 'pciconcursos.com.br' not in href and 'facebook' not in href:
-                        link_encontrado = a['href']
+                # Verifica se alguma banca da lista está na URL ou no Texto do link
+                for banca in BANCAS_ALVO:
+                    if banca in href or banca in text:
+                        # Filtros de segurança para não pegar notícias sobre a banca
+                        if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
+                            return a['href'] # Achou a banca oficial? Retorna na hora!
+
+            # --- FASE 2: Busca Genérica (Se não achou banca conhecida) ---
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                
+                # Palavras fortes de inscrição
+                termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário']
+                
+                if any(t in text for t in termos_fortes):
+                    if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
+                        candidato_melhor = a['href']
                         break
 
-        # Se não achou nada específico, retorna o link da página original mesmo
-        return link_encontrado if link_encontrado else url_base
+        return candidato_melhor if candidato_melhor else url_base
 
     except Exception as e:
-        print(f"Erro ao extrair link profundo: {e}")
+        print(f"Erro deep link: {e}")
         return url_base
 
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
 
-# --- NOVA ROTA PARA O CLIQUE DOS BOTÕES ---
 @app.route('/api/link-profundo', methods=['POST'])
 def api_link_profundo():
     data = request.json or {}
     url_concurso = data.get('url', '')
-    tipo = data.get('tipo', 'edital') # 'edital' ou 'inscricao'
+    tipo = data.get('tipo', 'edital')
     
     if not url_concurso or url_concurso == '#':
         return jsonify({'url': '#'})
 
     url_final = extrair_link_final(url_concurso, tipo)
     return jsonify({'url': url_final})
-# ------------------------------------------
 
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():

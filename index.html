@@ -54,7 +54,6 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* Estilo dos Botões Inteligentes (button, não mais 'a') */
         .action-btn {
             font-size: 0.85em;
             font-weight: 600;
@@ -69,15 +68,9 @@
             font-family: inherit;
         }
         
-        /* Botão quando está carregando */
-        .action-btn:disabled {
-            opacity: 0.7;
-            cursor: wait;
-        }
-        
+        .action-btn:disabled { opacity: 0.7; cursor: wait; }
         .btn-edital { background-color: #f8f9fa; color: #495057; border-color: #dee2e6; }
         .btn-edital:hover { background-color: #e2e6ea; color: #212529; }
-        
         .btn-inscricao { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
@@ -170,17 +163,12 @@
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        // FUNÇÃO INTELIGENTE: Busca o link profundo antes de abrir
         async function abrirLinkInteligente(botao, urlBase, tipo) {
-            // Salva texto original
             const textoOriginal = botao.innerHTML;
-            
-            // Muda estado visual para "Carregando"
             botao.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
             botao.disabled = true;
 
             try {
-                // Chama nosso backend
                 const response = await fetch('/api/link-profundo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -188,15 +176,11 @@
                 });
                 
                 const data = await response.json();
-                
-                // Abre o link retornado (ou o original se falhar)
                 window.open(data.url, '_blank');
             } catch (err) {
                 console.error(err);
-                // Se der erro, abre a página base mesmo
                 window.open(urlBase, '_blank');
             } finally {
-                // Restaura o botão
                 botao.innerHTML = textoOriginal;
                 botao.disabled = false;
             }
@@ -256,7 +240,6 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // HTML com Botões que chamam a função JS
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
