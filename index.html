@@ -2,10 +2,12 @@
 <html lang="pt-BR">
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-     crossorigin="anonymous"></script>
+      crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
@@ -67,11 +69,26 @@
         /* Estado desabilitado simulado para link */
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         
-        .btn-edital { background-color: #f8f9fa; color: #495057; border: 1px solid #dee2e6; }
-        .btn-edital:hover { background-color: #e2e6ea; color: #212529; }
+        /* BOTÃO EDITAL - VERMELHO SUAVE COM ÍCONE */
+        .btn-edital { 
+            background-color: #ef5350; /* Vermelho suave (Material Design Red 400) */
+            color: white; 
+            border: 1px solid #ef5350; 
+        }
+        .btn-edital:hover { 
+            background-color: #e53935; /* Um tom um pouco mais escuro ao passar o mouse */
+            color: white; 
+        }
         
-        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
-        .btn-inscricao:hover { background-color: #0b5ed7; }
+        /* BOTÃO INSCRIÇÃO - AZUL (MANTIDO ORIGINAL) */
+        .btn-inscricao { 
+            background-color: #0d6efd; 
+            color: white; 
+            border: 1px solid #0d6efd; 
+        }
+        .btn-inscricao:hover { 
+            background-color: #0b5ed7; 
+        }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -169,7 +186,8 @@
             
             // Trava o botão visualmente
             el.classList.add('disabled');
-            el.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
+            // Mantém ícone de loading apropriado
+            el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
 
             try {
                 const response = await fetch('/api/link-profundo', {
@@ -247,8 +265,9 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // AQUI ESTÁ A MÁGICA: Tag <a> com href="javascript:void(0)"
-                    // Isso anula nativamente qualquer tentativa de reload ou submit.
+                    // AQUI ESTÁ A ATUALIZAÇÃO VISUAL:
+                    // 1. Botão Edital agora usa ícone de PDF e cor vermelha (via classe CSS)
+                    // 2. Botão Inscrição continua com o emoji da mãozinha, sem alterações.
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
@@ -257,7 +276,7 @@
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                             
                             <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
-                                📄 Ver Edital
+                                <i class="fas fa-file-pdf"></i> Ver Edital
                             </a>
                             <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
                                 ✍️ Inscrição
