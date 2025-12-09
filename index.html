@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-     crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
@@ -147,7 +145,7 @@
         <div id="resultados-container"></div>
         
         <div class="legal-footer">
-            *Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis.
+            agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
         </div>
     </div>
 
@@ -242,6 +240,7 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
+                    // CORREÇÃO AQUI: Adicionado type="button" para evitar submit do formulário
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
@@ -249,10 +248,10 @@
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                             
-                            <button class="action-btn btn-edital" onclick="abrirLinkInteligente(this, '${linkBase}', 'edital')">
+                            <button type="button" class="action-btn btn-edital" onclick="abrirLinkInteligente(this, '${linkBase}', 'edital')">
                                 📄 Ver Edital
                             </button>
-                            <button class="action-btn btn-inscricao" onclick="abrirLinkInteligente(this, '${linkBase}', 'inscricao')">
+                            <button type="button" class="action-btn btn-inscricao" onclick="abrirLinkInteligente(this, '${linkBase}', 'inscricao')">
                                 ✍️ Inscrição
                             </button>
                         </div>
