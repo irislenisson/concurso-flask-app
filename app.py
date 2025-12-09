@@ -32,7 +32,7 @@ def buscar_concursos():
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
     try:
-        print("--> Baixando dados...")
+        print("--> Baixando dados da lista...")
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
@@ -42,7 +42,6 @@ def buscar_concursos():
         return []
 
 def formatar_real(valor):
-    # Formata para padrão BR (R$ 1.000,00)
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -55,7 +54,6 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
         texto = c.get_text(separator=' ', strip=True)
         texto_lower = texto.lower()
         
-        # Extração do Link Original
         link_original = "#"
         try:
             tag_link = c.find('a')
@@ -113,23 +111,83 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
 
     return resultados
 
+# --- NOVA FUNÇÃO PARA ENTRAR NA PÁGINA E CAÇAR LINKS ---
+def extrair_link_final(url_base, tipo):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    try:
+        resp = requests.get(url_base, timeout=10, headers=headers)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        
+        # Procura todos os links da página de detalhes
+        todos_links = soup.find_all('a', href=True)
+        
+        link_encontrado = None
+
+        if tipo == 'edital':
+            # Prioridade 1: Link que tenha "pdf" no final
+            # Prioridade 2: Link que tenha a palavra "edital" no texto ou link
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                
+                # Regra forte para edital
+                if 'edital' in text or 'abertura' in text or href.endswith('.pdf'):
+                     # Evita links genéricos demais
+                    if 'facebook' not in href and 'twitter' not in href:
+                        link_encontrado = a['href']
+                        # Se for PDF, é o melhor candidato, para e retorna
+                        if href.endswith('.pdf'): 
+                            break
+                            
+        elif tipo == 'inscricao':
+            # Procura links externos (sites das bancas) ou com texto "inscrição"
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                
+                if 'inscriç' in text or 'inscreva' in text or 'site' in text or 'banca' in text:
+                    # Ignora links internos do próprio PCI
+                    if 'pciconcursos.com.br' not in href and 'facebook' not in href:
+                        link_encontrado = a['href']
+                        break
+
+        # Se não achou nada específico, retorna o link da página original mesmo
+        return link_encontrado if link_encontrado else url_base
+
+    except Exception as e:
+        print(f"Erro ao extrair link profundo: {e}")
+        return url_base
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
+
+# --- NOVA ROTA PARA O CLIQUE DOS BOTÕES ---
+@app.route('/api/link-profundo', methods=['POST'])
+def api_link_profundo():
+    data = request.json or {}
+    url_concurso = data.get('url', '')
+    tipo = data.get('tipo', 'edital') # 'edital' ou 'inscricao'
+    
+    if not url_concurso or url_concurso == '#':
+        return jsonify({'url': '#'})
+
+    url_final = extrair_link_final(url_concurso, tipo)
+    return jsonify({'url': url_final})
+# ------------------------------------------
 
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():
     data = request.json or {}
     
-    # Tratamento do Salário
     try:
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw)
         s_clean = s_clean.replace(',', '.')
         salario_minimo = float(s_clean) if s_clean else 0.0
-    except Exception as e:
-        print(f"Erro salario: {e}")
-        salario_minimo = 0.0
+    except: salario_minimo = 0.0
 
     palavra_chave_raw = data.get('palavra_chave', '')
     lista_palavras_chave = [p.strip() for p in palavra_chave_raw.split(',') if p.strip()]

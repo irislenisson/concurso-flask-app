@@ -45,33 +45,34 @@
         .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
-        /* LINHA ÚNICA PARA BADGES E BOTÕES */
         .meta-line {
-            display: flex;
-            flex-wrap: wrap; /* Quebra linha se a tela for muito pequena */
-            gap: 10px;
-            align-items: center;
-            margin-top: 15px;
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 15px;
         }
 
-        /* Estilo das Badges (Infos) */
         .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px; display: inline-block; }
         .badge.money { background-color: #d1e7dd; color: #0f5132; }
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* Estilo dos Botões de Ação (Links) */
+        /* Estilo dos Botões Inteligentes (button, não mais 'a') */
         .action-btn {
-            text-decoration: none;
             font-size: 0.85em;
             font-weight: 600;
-            padding: 6px 12px;
+            padding: 7px 14px;
             border-radius: 6px;
-            transition: background 0.2s;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 5px;
             border: 1px solid transparent;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        /* Botão quando está carregando */
+        .action-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
         }
         
         .btn-edital { background-color: #f8f9fa; color: #495057; border-color: #dee2e6; }
@@ -158,24 +159,48 @@
     <script>
         function formatarMoeda(elemento) {
             let valor = elemento.value.replace(/\D/g, "");
-            
-            if (valor === "") {
-                elemento.value = "";
-                return;
-            }
-            
+            if (valor === "") { elemento.value = ""; return; }
             valor = (valor / 100).toFixed(2) + "";
             valor = valor.replace(".", ",");
             valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-            
             elemento.value = "R$ " + valor;
         }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.classList.toggle('active');
-            });
+            btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
+
+        // FUNÇÃO INTELIGENTE: Busca o link profundo antes de abrir
+        async function abrirLinkInteligente(botao, urlBase, tipo) {
+            // Salva texto original
+            const textoOriginal = botao.innerHTML;
+            
+            // Muda estado visual para "Carregando"
+            botao.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
+            botao.disabled = true;
+
+            try {
+                // Chama nosso backend
+                const response = await fetch('/api/link-profundo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlBase, tipo: tipo })
+                });
+                
+                const data = await response.json();
+                
+                // Abre o link retornado (ou o original se falhar)
+                window.open(data.url, '_blank');
+            } catch (err) {
+                console.error(err);
+                // Se der erro, abre a página base mesmo
+                window.open(urlBase, '_blank');
+            } finally {
+                // Restaura o botão
+                botao.innerHTML = textoOriginal;
+                botao.disabled = false;
+            }
+        }
 
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -193,11 +218,8 @@
             statusDiv.innerText = 'Processando sua busca...';
             statusDiv.style.display = 'block';
 
-            const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active'))
-                                   .map(btn => btn.getAttribute('data-value'));
-
-            const activeRegions = Array.from(document.querySelectorAll('.region-btn.active'))
-                                       .map(btn => btn.getAttribute('data-value'));
+            const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
+            const activeRegions = Array.from(document.querySelectorAll('.region-btn.active')).map(btn => btn.getAttribute('data-value'));
 
             const payload = {
                 salario_minimo: document.getElementById('salario_minimo').value,
@@ -215,7 +237,6 @@
                 });
 
                 if (!response.ok) throw new Error(`Erro: ${response.status}`);
-
                 const concursos = await response.json();
                 
                 btnBuscar.value = `Buscar Oportunidades (${concursos.length})`;
@@ -233,9 +254,9 @@
                     const div = document.createElement('div');
                     div.className = 'concurso-card';
                     
-                    const linkDestino = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
+                    const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // AQUI ESTÁ A MUDANÇA: Tudo dentro de 'meta-line'
+                    // HTML com Botões que chamam a função JS
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
@@ -243,12 +264,12 @@
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                             
-                            <a href="${linkDestino}" target="_blank" class="action-btn btn-edital">
+                            <button class="action-btn btn-edital" onclick="abrirLinkInteligente(this, '${linkBase}', 'edital')">
                                 📄 Ver Edital
-                            </a>
-                            <a href="${linkDestino}" target="_blank" class="action-btn btn-inscricao">
+                            </button>
+                            <button class="action-btn btn-inscricao" onclick="abrirLinkInteligente(this, '${linkBase}', 'inscricao')">
                                 ✍️ Inscrição
-                            </a>
+                            </button>
                         </div>
                     `;
                     container.appendChild(div);
