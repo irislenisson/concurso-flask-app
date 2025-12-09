@@ -71,6 +71,7 @@
         .action-btn:disabled { opacity: 0.7; cursor: wait; }
         .btn-edital { background-color: #f8f9fa; color: #495057; border-color: #dee2e6; }
         .btn-edital:hover { background-color: #e2e6ea; color: #212529; }
+        
         .btn-inscricao { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
@@ -163,7 +164,11 @@
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        async function abrirLinkInteligente(botao, urlBase, tipo) {
+        // --- FUNÇÃO CORRIGIDA: Recebe 'event' e para o reload ---
+        async function abrirLinkInteligente(event, botao, urlBase, tipo) {
+            event.preventDefault();  // BLOQUEIA O RELOAD DA PÁGINA
+            event.stopPropagation(); // Garante que o form não perceba o clique
+
             const textoOriginal = botao.innerHTML;
             botao.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
             botao.disabled = true;
@@ -240,7 +245,7 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // CORREÇÃO AQUI: Adicionado type="button" para evitar submit do formulário
+                    // --- HTML DO BOTÃO CORRIGIDO: Passa 'event' no onclick ---
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
@@ -248,10 +253,10 @@
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                             
-                            <button type="button" class="action-btn btn-edital" onclick="abrirLinkInteligente(this, '${linkBase}', 'edital')">
+                            <button type="button" class="action-btn btn-edital" onclick="abrirLinkInteligente(event, this, '${linkBase}', 'edital')">
                                 📄 Ver Edital
                             </button>
-                            <button type="button" class="action-btn btn-inscricao" onclick="abrirLinkInteligente(this, '${linkBase}', 'inscricao')">
+                            <button type="button" class="action-btn btn-inscricao" onclick="abrirLinkInteligente(event, this, '${linkBase}', 'inscricao')">
                                 ✍️ Inscrição
                             </button>
                         </div>
