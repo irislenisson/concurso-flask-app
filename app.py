@@ -26,53 +26,52 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA DE BANCAS (BLINDADA) ---
-# Usamos texto puro para evitar erros de sintaxe do Python.
+# --- LISTA DE BANCAS (ORGANIZADA DE A-Z) ---
+# Dica: Para adicionar uma nova, basta inserir na ordem alfabética e colocar uma vírgula.
 RAW_BANCAS = """
-ibade, objetiva, cespe, cebraspe, ibam, fgv, vunesp, ibfc, idecan, institutomais, 
-consulpam, aocp, selecon, fcc, consulplan, ibgp, rbo, igeduc, fundep, fafipa, 
-ufrj, pr4, pr-4, avalias, quadrix, legalle, fundatec, nossorumo, amigapublica, 
-access, 2dn, omni, facet, cesgranrio, seprod, shdias, idib, consesp, epl, itame, 
-funatec, igecs, cefet, publiconsult, ibdo, indepac, msconcursos, fuvest, 
-concepcao, lasalle, ctd, carlosbittencourt, avalia, faed, cogeps, fepese, 
-avancasp, unifil, ieds, advise, imam, upe, fapec, icap, patativa, uel, iad, 
-klc, legatus, ibido, uespi, compec, unicentro, aroeira, ieses, ufpr, educapb, 
-uepb, adm&tec, imparh, funvapi, verbena, uece, sousandrade, fumarc, creative, 
-sigma, conscam, funece, vicentenelson, furb, cetap, gsassessoria, master, agirh, 
-fab.mil, uni.rv, promun, ufma, amac, idht, wedo, fenix, iadhed, uneb, fadesp, 
-ufac, ufpe, cetro, unisul, planexcon, ameosc, esaf, dedalus, excelencia, ciee, 
-ufmt, cev, funrio, comperve, direcao, fenaz, ibest, abcp, fcm, facape, uerr, 
-exercito, copeve, urca, funiversa, iasp, sipros, metodo, usp, faepesul, conesul, 
-caip, cetrede, ejud, ian, gsa, cmm, ufrgs, ipefae, iuds, covest, acep, fec, 
-consultec, nce, fade, air, unesp, pge, spdm, gualimp, fapems, seap, pontua, 
-mpt, cfc, ceperj, ejef, ceps, promunicipio, maranatha, tj-ap, lj, cepros, 
-nemesis, fcpc, idesul, fucap, ajuri, ganzaroli, actio, metrocapital, ifsul, 
-ufrpe, ufsc, planejar, ufv, metropole, ufam, ufgd, uerj, ufscar, inep, ufla, 
-coseac, biorio, movens, faurgs, qconcursos, ares, idesg, tupy, fadenor, mds, 
-unesc, fema, serctam, seduc, dae, senai, bigadvice, iniciativa, opgp, alternative, 
-perfas, ioplan, cursiva, csc, unicamp, calegariox, schnorr, centec, hcrp, unoesc, 
-status, directa, apice, ccv, aprender, mga, assconpp, ufrb, ufrr, omini, iat, 
-iff, inqc, ibeg, ineaa, conpass, ibc, framinas, iobv, ufsm, makiyama, puc, 
-ufop, unifal, fmz, fesmip, ufba, paqtcpb, integri, unimontes, uff, progepe, 
-funjab, fmp, fae, fip, zambini, acafe, reis, fgr, exatus, coned, brb, acaplam, 
-fjpf, unifase, referencia, assege, jvl, iasd, unique, econrio, ifbaiano, ufr, 
-isba, ufsba, ciesp, mpf, unifeso, esmarn, unichristus, fps, sead, ses, fsa, 
-furg, ceaf, ibec, jbo, auctor, darwin, profnit, espm, asconprev, ntcs, fspss, 
-avmoreira, univali, fastef, fundepes, ideap, imagine, atena, amazul, fundect, 
-banpara, alfa, iamspe, unibave, faepol, nbs, seletiva, crescer, semasa, progesp, 
-fiocruz, uva, uri, ethos, consel, jota, epbazi, ckm, rhs, scgas, proam, unespar, 
-ufersa, fundape, egp, uem, prograd, inaz, ufca, agata, ciscopar, prime, unilavras, 
-igdrh, coelhoneto, progep, segplan, funcepe, funvapi, unifei, indec, orhion, 
-nubes, click, iesap, depsec, una, femperj, cislipa, agu, unifesp, sustente, 
-uniuv, mgs, utfpr, srh, contemax, funec, copese, funtef, anima, noroeste, ufsj, 
-unilab, funcefet, sugep, comvest, ufcg, uepa, coperve, udesc, ueg, fujb, isae, 
-ifc, fapese, fadurpe, ufabc, ufpa, ufrrj, ufmg, cepuerj, unemat, unirio, fundec, 
-consep, fidesa, unitins, officium, ufpel, cec, unifap, unama, seta, mouramelo, 
-magnus, jcm, ipad, igetec, fluxo, fdrh, faperp, fapeu, espp, fat, asperhs, pgt, 
-group, idep, uno, educax, fama, comagsul, fronte, jlz, avaliar, exata, flem, 
-ibptec, secplan, iset, evo, wisdom, jk, univida, intec, policon, icece, fucapsul, 
-avancar, bios, inovaty, fenix, facto, hl, gama, decorp, cl, maxima, arespcj, 
-intelectus, abare, univasf, itco
+2dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, agata, 
+agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, amigapublica, 
+anima, aocp, apice, aprender, ares, arespcj, aroeira, asconprev, asperhs, 
+assege, assconpp, atena, auctor, avalia, avaliar, avalias, avancar, avancasp, 
+avmoreira, banpara, bigadvice, biorio, bios, brb, caip, calegariox, 
+carlosbittencourt, ccv, ceaf, cebraspe, cec, cefet, ceperj, cepros, ceps, 
+cepuerj, cesgranrio, cespe, cetap, cetrede, cetro, cev, cfc, ciee, ciesp, 
+ciscopar, cislipa, ckm, cl, click, cmm, coelhoneto, cogeps, comagsul, compec, 
+comperve, comvest, concepca, coned, conesul, conpass, conscam, consel, conesp, 
+consesp, consulplan, consulpam, consultec, contemax, coperve, copese, copeve, 
+covest, creative, crescer, csc, ctd, cursiva, dae, darwin, decorp, dedalus, 
+depsec, direcao, directa, educapb, educax, egp, ejud, ejef, epl, epbazi, esaf, 
+esmarn, espm, espp, ethos, evo, exata, exatus, excelencia, exercito, fab.mil, 
+facet, facto, fade, fadenor, fadesp, fadurpe, fae, faed, faepesul, faepol, 
+fafipa, fama, fapec, faperp, fapeu, fastef, fat, faurgs, fcc, fcm, fcpc, fec, 
+fema, femperj, fenaz, fenix, fepese, fesmip, fgv, fidesa, fiocruz, fip, fjpf, 
+flem, fluxo, fmp, fmz, fps, framinas, fronte, fsa, fspss, fujb, fucap, fucapsul, 
+fumarc, funatec, funcefet, funcepe, fundape, fundatec, fundect, fundec, fundep, 
+fundepes, funece, funec, funiversa, funjab, funrio, funtef, funvapi, furb, furg, 
+fuvest, gama, ganzaroli, gsa, gsassessoria, group, gualimp, hcrp, hl, iad, 
+iadhed, iamspe, ian, iasp, iat, ibade, ibam, ibc, ibdo, ibec, ibeg, ibest, ibfc, 
+ibgp, ibido, ibptec, icap, icece, ideap, idecan, idep, idesg, idesul, idht, idib, 
+ieds, iesap, ieses, ifbaiano, ifc, iff, ifsul, igdrh, igecs, igeduc, igetec, 
+imam, imagine, imparh, inaz, inqc, incp, indec, indepac, ineaa, inep, iniciativa, 
+inovaty, institutomais, intec, integri, intelectus, iobv, ioplan, ipad, ipefae, 
+isba, isae, iset, itame, itco, iuds, jbo, jcm, jk, jlz, jota, jvl, klc, lasalle, 
+legalle, legatus, lj, magnus, makiyama, maranatha, master, maxima, mds, metodo, 
+metrocapital, metropole, mgs, mouramelo, movens, mpf, mpt, msconcursos, mds, 
+nc.ufpr, nbs, nce, nemesis, noroeste, nossorumo, ntcs, nubes, objetiva, officium, 
+omni, omini, opgp, orhion, paqtcpb, patativa, perfas, pge, pgt, planexcon, 
+planejar, policon, pontua, pr-4, pr4, prime, proam, profnit, progep, progepe, 
+progesp, prograd, promun, promunicipio, publiconsult, puc, qconcursos, quadrix, 
+rbo, referencia, reis, rhs, scgas, schnorr, sead, seap, secplan, seduc, segplan, 
+selecon, seletiva, semasa, senai, seprod, serctam, ses, seta, shdias, sigma, 
+sipros, sousandrade, spdm, srh, status, sugep, sustente, tupy, tj-ap, uece, 
+ueg, uel, uem, uepb, uepa, uerj, uerr, uespi, ufabc, ufac, ufam, ufba, ufca, 
+ufcg, ufersa, uff, ufgd, ufla, ufma, ufmg, ufmt, ufop, ufpa, ufpe, ufpel, ufpr, 
+ufr, ufrb, ufrgs, ufrj, ufrn, ufrpe, ufrr, ufrrj, ufsba, ufsc, ufscar, ufsj, 
+ufsm, uftm, ufv, una, unama, uneb, unemat, unesp, unespar, unesc, unibave, 
+unicamp, unicentro, unichristus, unifal, unifap, unifase, unifei, unifesp, 
+unifeso, unifil, unilab, unilavras, unimontes, unioeste, unipalmares, unirio, 
+unisul, unitins, univali, univasf, univida, uniuv, uno, unoesc, upe, urca, usp, 
+utfpr, verbena, vicentenelson, vunesp, wedo, wisdom, zambini
 """
 
 # Tratamento Automático da Lista
@@ -190,11 +189,12 @@ def extrair_link_final(url_base, tipo):
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
+                # Otimização: Regex roda C-level, muito rápido
                 if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
                     if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
                         return a['href']
 
-            # FASE 2: Busca Genérica
+            # FASE 2: Busca Genérica (Backup)
             termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
             for a in todos_links:
                 href = a['href'].lower()
@@ -262,5 +262,9 @@ def api_buscar():
     return jsonify(resultados)
 
 if __name__ == '__main__':
+    try:
+        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    except:
+        pass
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
