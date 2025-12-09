@@ -25,166 +25,68 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# NOVA LISTA DE PRIORIDADE PARA INSCRIÇÃO
-# Termos que identificam as bancas na URL ou no Texto
-BANCAS_ALVO = [
+# --- LISTA OTIMIZADA (Principais siglas e identificadores de URL) ---
+# Focamos em termos únicos que aparecem na URL ou no texto do link.
+# Frases longas como "Prefeitura Municipal de..." foram removidas pois
+# raramente aparecem dentro do href (o link geralmente é o nome da banca).
+TERMOS_BANCAS = [
     'ibade', 'objetiva', 'cespe', 'cebraspe', 'ibam', 'fgv', 'vunesp', 'ibfc',
     'idecan', 'institutomais', 'consulpam', 'aocp', 'selecon', 'fcc', 'consulplan',
-    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'pr-4',
-    'avalias', 'quadrix', 'legalle', 'fundatec', 'nossorumo', 'fcc', 'amigapublica', 'access'
-    '2dn', 'OMNI OMNI Concursos Públicos', 'FACET Concursos', 
-    'FUNDATEC Fundação Universidade-Empresa de Tecnologia e Ciências',
-    'Instituto Consulplan', 'Projetos e Assistência Social',
-    'CESGRANRIO Fundação Cesgranrio','Quadrix',
-    'SEPROD Serviço de Processamento de Dados','SHDIAS Consultoria e Assessoria',
-    'IDIB Instituto de Desenvolvimento Institucional Brasileiro',
-    'CONSESP Consultoria em Concursos e Pesquisas Sociais Ltda','EPL Empresa Paranaense de Licitações e Concursos',
-    'Itame Itame Consultoria e Concursos','FUNATEC FUNATEC | Fundação de Apoio Tecnológico - Piauí (PI)',
-    'IGECS Instituto de Gestão de Cidades','CEFET-BA Fundação CEFET - Bahia','PUBLICONSULT Publiconsult Assessoria e Consultoria Pública Ltda',
-    'Instituto IBDO Projetos Instituto IBDO Projetos','INDEPAC Instituto de Cultura, Desenvolvimento Educacional, Promoção Humana e Ação Comunitária',
-    'Instituto Access Instituto de Acesso à Educação, Capacitação Profissional e Desenvolvimento Humano',
-    'OMNI Concursos Públicos','FACET Concursos','Fundação Universidade-Empresa de Tecnologia e Ciências',
-    'Instituto Consulplan de Desenvolvimento, Projetos e Assistência Social','Fundação Cesgranrio',
-    'Instituto Quadrix de Responsabilidade Social','Serviço de Processamento de Dados',
-    'SHDIAS Consultoria e Assessoria',
-    'Instituto de Desenvolvimento Institucional Brasileiro',
-    'Consultoria em Concursos e Pesquisas Sociais Ltda','Empresa Paranaense de Licitações e Concursos',
-    'Itame Consultoria e Concursos',
-    'FUNATEC | Fundação de Apoio Tecnológico - Piauí (PI)',
-    'Instituto de Gestão de Cidades','Fundação CEFET - Bahia',
-    'Publiconsult Assessoria e Consultoria Pública Ltda',    'Instituto IBDO Projetos',
-    'Instituto de Cultura, Desenvolvimento Educacional, Promoção Humana e Ação Comunitária',
-    'Instituto de Acesso à Educação, Capacitação Profissional e Desenvolvimento Humano',
-    'MS Concursos',    'FUVEST Fundação Universitária para o Vestibular',
-    'CONCEPÇÃO - Consultoria Técnica Especializada LTDA',
-    'Fundação La Salle', 'Centro de Treinamento e Desenvolvimento',
-    'Fundação Professor Carlos Antonio Bittencourt',
-    'Instituto Avalia de Inovação em Avaliação e Seleção',
-    'Fundação de Apoio a Educação e Desenvolvimento Tecnológico',
-    'Coordenadoria Geral de Concursos e Processos Seletivos (COGEPS) da Universidade Estadual do Oeste do Paraná',
-    'Fundação de Estudos e Pesquisas Sócio Econômicos', 'Instituto Avança São Paulo',
-    'Instituto UniFil','Instituto de Educação e Desenvolvimento Social',
-    'ADVISE Consultoria', 'Instituto Mineiro de Administração Municipal',
-    'Instituto de Apoio à Universidade de Pernambuco - UPE',
-    'Fundação de Apoio à Pesquisa, ao Ensino e à Cultura',
-    'Instituto de Capacitação, Assessoria e Pesquisa', 'Universidade Patativa de Assaré',
-    'Fundação de Apoio à Universidade Estadual de Londrina',
-    'Instituto Americano de Desenvolvimento',
-    'KLC - Consultoria em Gestão Pública Ltda.',
-    'Instituto Legatus',
-    'Instituto Brasileiro de Incentivo ao Desenvolvimento Organizacional Eireli',
-    'Núcleo de Concursos e Promoção de Eventos - UESPI',
-    'Comissão Permanente de Concursos da Universidade Federal do Amazonas (COMPEC)',
-    'Fundação de Apoio ao Desenvolvimento UNICENTRO',
-    'Fundação Aroeira',
-    'Instituto de Estudos Superiores do Extremo Sul',
-    'Núcleo de Concursos da Universidade Federal do Paraná',
-    'EDUCA PB - Instituto Assessoria',
-    'Fundação de Apoio ao Desenvolvimento Científico e Tecnológico',
-    'Comissão Permanente de Concursos da Universidade Estadual da Paraíba (UEPB)',
-    'Instituto ADM&TEC',
-    'Instituto Municipal de Desenvolvimento de Recursos Humanos de Fortaleza - Ceará',
-    'Fundação de Apoio à Educação e ao Desenvolvimento Tecnológico do Rio Grande do Norte',
-    'Marinha do Brasil',
-    'Instituto Verbena - Universidade Federal de Goiás',
-    'Universidade Estadual do Ceará - Comissão Executiva do Vestibular',
-    'Fundação Sousândrade Concursos Públicos',
-    'Fundação Mariana Resende Costa',
-    'Creative Group', 'Legalle Concursos', 'SIGMA RH',
-    'Coordenadoria de Processos Seletivos da Universidade Estadual de Londrina',
-    'CONSCAM', 'FUNECE', 'Instituto Vicente Nelson','Fundação Universidade Regional de Blumenau',
-    'CETAP - Centro de Extensão, Treinamento e Aperfeiçoamento Profissional',
-    'GS Assessoria e Concursos',
-    'Instituto de Desenvolvimento e Capacitação',
-    'Master Consultoria Educacional',
-    'Assessoria e Gestão Integrada em Recursos Humanos',
-    'Força Aérea Brasileira (FAB)',
-    'Universidade de Rio Verde - Goiás',
-    'PROMUN - Projetos para Municípios',
-    'Universidade Federal do Maranhão',
-    'Associação dos Municípios do Alto Uruguai Catarinense',
-    'Instituto de Desenvolvimento Humano e Tecnológico',
-    'WE DO Serviços Inteligentes',
-    'Concursos Técnicos', 'Desenvolvimento Educacional e Social',
-    'Fênix Concursos - São Paulo',
-    'Instituto Assistencial de Desenvolvimento Humano, Educacional e Desportivo',
-    'Universidade do Estado da Bahia',
-    'Fundação de Amparo e Desenvolvimento da Pesquisa',
-    'Universidade Federal do Acre',
-    'Universidade Federal de Pernambuco',
-    'Banca Não Definida',
-    'CETRO Concursos',
-    'Universidade do Sul de Santa Catarina',
-    'Planexcon - Assessoria e Consultoria Pública',
-    'Associação Municipal do Extremo Oeste de Santa Catarina',
-    'Escola de Administração Fazendária',
-    'Dédalus Concursos & Treinamentos',
-    'Instituto Excelência',
-    'Centro de Integração Empresa-Escola',
-    'Núcleo de Concursos da Universidade Federal do Paraná', 
-    'UFMT','CEV - Coordenação de Concursos e Exames Vestibulares da UFMT',
-    'ACCESS','ACCESS Seleção',
-    'FUNRIO','Fundação de Apoio a Pesquisa, Ensino e Assistência',
-    'COMPERVE - UFRN','Núcleo Permanente de Concursos da Universidade Federal do Rio Grande do Norte',
-    'Direcao','Direção Concursos',
-    'Fenaz do Pará','Fenaz do Pará',
-    'Ibest','Instituto Brasileiro de Educação, Seleção e Tecnologia',
-    'ABCP','Associação Brasileira de Concursos Públicos',
-    'FCM','Fundação CEFETMINAS',
-    'AEVSF/FACAPE','Faculdade de Ciências Aplicadas e Sociais de Petrolina',
-    'UERR','Universidade Estadual de Roraima',
-    'Exército','Exército Brasileiro',
-    'COPEVE-UFAL','Núcleo Executivo de Processos Seletivos da UFAL',
-    'CEV-URCA','Comissão Executiva do Vestibular - Universidade Regional do Cariri',
-    'FUNIVERSA','Fundação Universa',
-    'IASP','Instituto IASP',
-    'SIPROS','Sistema Integrado de Processo Seletivo Simplificado',
-    'Método Soluções Educacionais','Método Soluções Educacionais',
-    'USP','Universidade de São Paulo',
-    'FAEPESUL','Fundação de Apoio à Educação, Pesquisa e Extensão da Unisul',
-    'PGR - Procuradoria Geral da República', 'UFU-MG - Universidade Federal de Uberlândia - MG', 
-    'CONESUL - Fundação CONESUL de Desenvolvimento', 
-    'CAIP-IMES - USCS', 'Fundação CETREDE', 'EJUD-PI - Escola Judiciária do Piauí', 
-    'IAN - Instituto de Avaliação Nacional', 
-    'GSA CONCURSOS - Consultoria e Pesquisas em Instituições Públicas S/C Ltda', 
-    'CMM - Concursos e Seletivos - Assessoria e Consultoria em Gestão Pública', 
-    'UFRGS - Universidade Federal do Rio Grande do Sul', 
-    'IPEFAE - Instituto de Pesquisas Econômicas', 
-    'IUDS - Instituto Universal de Desenvolvimento Social', 
-    'COVEST-COPSET - COVEST-COPSET - Comissão de Processos Seletivos e Treinamentos (UFPE)', 
-    'ACEP - Associação Cearense de Estudos e Pesquisas', 
-    'FEC - Fundação Euclides da Cunha - UFF', 
-    'CONSULTEC - Consultec - Consultoria em Projetos Educacionais e Concursos Ltda', 
-    'NCE-UFRJ', 'FADE - UFPE', 'PS Concursos - AIR Soluções em Pesquisa e Tecnologia', 
-    'UEPB - Universidade Estadual da Paraíba', 'MS Consultoria - MS Consultoria', 
-    'Prefeitura de Bertioga - SP - Prefeitura Municipal de Bertioga - São Paulo', 
-    'UNESP - Universidade Estadual Paulista Júlio de Mesquita Filho', 
-    'PGE-PA - Procuradoria Geral do Estado do Pará', 
-    'SPDM - Associação Paulista para o Desenvolvimento da Medicina', 
-    'GUALIMP - GUALIMP Assessoria e Consultoria Ltda', 
-    'MPE-BA - Ministério Público do Estado da Bahia', 
-    'FAPEMS - Fundação de Apoio à Pesquisa, ao Ensino e à Cultura de Mato Grosso do Sul', 
-    'CEFET-MG - Centro Federal de Educação Tecnológica de Minas Gerais', 
-    'SEAP - Seap Consultoria e Concursos Públicos', 'PONTUA - Pontua Concursos', 
-    'MPE-PR - Ministério Público do Estado do Paraná', 'MPT - Ministério Público do Trabalho', 
-    'CFC - Conselho Federal de Contabilidade', 'CEPERJ', 
-    'UESPI - Universidade Estadual do Piauí', 'EJEF - Escola Judicial Desembargador Edésio Fernandes', 
-    'CEPS-UFPA - Centro de Processos Seletivos da Universidade Federal do Pará', 
-    'INSTITUTO PRÓ-MUNICÍPIO', 'INSTITUTO CIDADES', 'MARANATHA', 'TJ-AP', 
-    'LJ Assessoria e Planejamento Administrativo Limita', 'Cepros - Comissão Executiva de Processo Seletivo',
-    'NEMESIS - NEMESIS', 'Prefeitura de Anchieta - ES', 'FCPC ', 'IDESUL', 'FUCAP', 'AJURI', 'GANZAROLI',
-    'Prefeitura de Rondonópolis', 'ACTIO ASSESSORIA', 'MetroCapital Soluções', 'IF Sul Rio-Grandense ', 
-    'UFRPE - Universidade Federal Rural de Pernambuco', 
-    'UFSC - Universidade Federal de Santa Catarina', 
-    'Planejar Consultoria ', 'UFV - Universidade Federal de Viçosa', 
-    'SIGMA ASSESSORIA'
-
-
-
-
-
-
+    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'avalias', 
+    'quadrix', 'legalle', 'fundatec', 'nossorumo', 'amigapublica', 'access',
+    'facet', 'cesgranrio', 'seprod', 'shdias', 'idib', 'consesp', 'epl', 'itame',
+    'funatec', 'igecs', 'cefet', 'publiconsult', 'ibdo', 'indepac', 'omni',
+    'msconcursos', 'fuvest', 'lasalle', 'carlosbittencourt', 'avalia',
+    'faed', 'cogeps', 'fepese', 'avancasp', 'unifil', 'advise', 'imam', 'upe',
+    'fapec', 'icap', 'patativa', 'uel', 'iad', 'klc', 'legatus', 'ibido',
+    'uespi', 'compec', 'unicentro', 'aroeira', 'ieses', 'nc.ufpr', 'educapb',
+    'uepb', 'adm&tec', 'imparh', 'funvapi', 'verbena', 'uece', 'sousandrade',
+    'fumarc', 'sigma', 'conscam', 'funece', 'vicentenelson', 'furb', 'cetap',
+    'gsassessoria', 'master', 'agirh', 'fab.mil', 'uni.rv', 'promun', 'ufma',
+    'wedo', 'fenix', 'uneb', 'fadesp', 'ufac', 'ufpe', 'cetro', 'unisul',
+    'planexcon', 'esaf', 'dedalus', 'excelencia', 'ciee', 'ufmt', 'funrio',
+    'comperve', 'direcao', 'fenaz', 'ibest', 'abcp', 'fcm', 'facape', 'uerr',
+    'exercito', 'copeve', 'urca', 'funiversa', 'iasp', 'sipros', 'metodo',
+    'usp', 'faepesul', 'conesul', 'caip', 'cetrede', 'ejud', 'ian', 'gsa',
+    'ipefae', 'iuds', 'covest', 'acep', 'consultec', 'nce', 'fade', 'unesp',
+    'spdm', 'gualimp', 'fapems', 'seap', 'pontua', 'cfc', 'ceperj', 'ejef',
+    'ceps', 'promunicipio', 'maranatha', 'cepros', 'nemesis', 'idesul', 'fucap',
+    'ajuri', 'ganzaroli', 'actio', 'metrocapital', 'ifsul', 'ufrpe', 'ufsc',
+    'planejar', 'metropole', 'ufam', 'ufgd', 'uerj', 'ufscar', 'inep', 'ufla',
+    'coseac', 'biorio', 'movens', 'faurgs', 'qconcursos', 'ares', 'idesg',
+    'tupy', 'fadenor', 'mds', 'unesc', 'fema', 'serctam', 'seduc', 'senai',
+    'bigadvice', 'iniciativa', 'alternative', 'perfas', 'ioplan', 'cursiva',
+    'unicamp', 'calegariox', 'schnorr', 'centec', 'hcrp', 'unoesc', 'directa',
+    'apice', 'integri', 'unimontes', 'uff', 'progepe', 'funjab', 'fsmip',
+    'fae', 'fip', 'zambini', 'acafe', 'fgr', 'exatus', 'coned', 'brb', 'acaplam',
+    'fjpf', 'unifase', 'referencia', 'assege', 'jvl', 'iasd', 'unique', 'econrio',
+    'isba', 'ufsba', 'ciesp', 'unifeso', 'esmarn', 'unichristus', 'fsa', 'furg',
+    'ceaf', 'ibec', 'jbo', 'auctor', 'darwin', 'profnit', 'espm', 'asconprev',
+    'ntcs', 'univali', 'fastef', 'fundepes', 'ideap', 'imagine', 'atena',
+    'amazul', 'fundect', 'banpara', 'alfa', 'iamspe', 'unibave', 'faepol',
+    'nbs', 'crescer', 'semasa', 'progesp', 'fiocruz', 'uva', 'uri', 'ethos',
+    'consel', 'jota', 'epbazi', 'ckm', 'rhs', 'scgas', 'proam', 'unespar',
+    'ufersa', 'fundape', 'egp', 'uem', 'prograd', 'inaz', 'ufca', 'agata',
+    'ciscopar', 'unilavras', 'igdrh', 'coelhoneto', 'progep', 'segplan',
+    'funcepe', 'unifei', 'indec', 'orhion', 'nubes', 'click', 'iesap', 'depsec',
+    'una', 'femperj', 'cislipa', 'agu', 'unifesp', 'sustente', 'uniuv', 'mgs',
+    'utfpr', 'srh', 'contemax', 'funec', 'copese', 'funtef', 'anima', 'noroeste',
+    'ufsj', 'unilab', 'funcefet', 'sugep', 'comvest', 'ufcg', 'uepa', 'coperve',
+    'udesc', 'ueg', 'fujb', 'isae', 'ifc', 'fapese', 'fadurpe', 'ufabc', 'ufpa',
+    'ufrrj', 'ufmg', 'cepuerj', 'unemat', 'unirio', 'fundec', 'consep', 'fidesa',
+    'unitins', 'officium', 'ufpel', 'cec', 'unifap', 'unama', 'seta', 'puc',
+    'mouramelo', 'magnus', 'jcm', 'ipad', 'igetec', 'fluxo', 'fdrh', 'faperp',
+    'fapeu', 'espp', 'fat', 'asperhs', 'pgt', 'seletiva', 'group', 'idep',
+    'uno', 'educax', 'fama', 'comagsul', 'fronte', 'jlz', 'avaliar', 'exata',
+    'flem', 'ibptec', 'secplan', 'iset', 'evo', 'wisdom', 'jk', 'univida',
+    'intec', 'policon', 'icece', 'fucapsul', 'avancar', 'bios', 'inovaty',
+    'fenix', 'facto', 'hl', 'gama', 'decorp', 'cl', 'maxima', 'arespcj',
+    'intelectus', 'abare', 'univasf', 'itco'
 ]
+
+# Compila a Regex uma única vez para performance máxima
+# Cria algo como: (ibade|objetiva|cespe|cebraspe|...)
+REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
@@ -272,7 +174,6 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
 
     return resultados
 
-# --- FUNÇÃO APRIMORADA COM BUSCA POR BANCAS ---
 def extrair_link_final(url_base, tipo):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -285,35 +186,30 @@ def extrair_link_final(url_base, tipo):
         candidato_melhor = None
 
         if tipo == 'edital':
-            # Lógica de Edital (Prioriza PDF)
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 if 'edital' in text or 'abertura' in text or href.endswith('.pdf'):
                     if 'facebook' not in href and 'twitter' not in href:
                         candidato_melhor = a['href']
-                        if href.endswith('.pdf'): break # PDF é ouro
+                        if href.endswith('.pdf'): break
                             
         elif tipo == 'inscricao':
-            # --- FASE 1: Busca na Lista de Bancas (Prioridade Máxima) ---
+            # --- FASE 1: Busca SUPER RÁPIDA com Regex na lista de bancas ---
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
-                # Verifica se alguma banca da lista está na URL ou no Texto do link
-                for banca in BANCAS_ALVO:
-                    if banca in href or banca in text:
-                        # Filtros de segurança para não pegar notícias sobre a banca
-                        if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
-                            return a['href'] # Achou a banca oficial? Retorna na hora!
+                # Se encontrar qualquer termo da nossa lista gigante na URL ou Texto
+                if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
+                    if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
+                        return a['href'] # Retorna imediatamente
 
-            # --- FASE 2: Busca Genérica (Se não achou banca conhecida) ---
+            # --- FASE 2: Busca Genérica (Backup) ---
+            termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
-                
-                # Palavras fortes de inscrição
-                termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário']
                 
                 if any(t in text for t in termos_fortes):
                     if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
