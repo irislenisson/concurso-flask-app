@@ -42,7 +42,6 @@ def buscar_concursos():
         return []
 
 def formatar_real(valor):
-    """Converte float para string no padrão brasileiro R$ 1.234,56"""
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -53,9 +52,18 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
 
     for c in concursos:
         texto = c.get_text(separator=' ', strip=True)
-        texto_lower = texto.lower() # Otimização para não chamar lower() várias vezes
+        texto_lower = texto.lower()
         
-        # Filtro Data
+        # --- NOVO: Extração do Link Original ---
+        link_original = "#"
+        try:
+            # Procura a tag <a> dentro do elemento do concurso
+            tag_link = c.find('a')
+            if tag_link and 'href' in tag_link.attrs:
+                link_original = tag_link['href']
+        except: pass
+        # ---------------------------------------
+
         datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
         data_formatada = "Indefinida"
         if datas:
@@ -65,18 +73,13 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
                 data_formatada = data_fim.strftime('%d/%m/%Y')
             except: pass 
 
-        # Filtro de Exclusão (Se tiver qualquer palavra proibida, remove)
         if excluir_palavras and any(ex.lower() in texto_lower for ex in excluir_palavras): 
             continue
 
-        # --- NOVA LÓGICA DE PALAVRA CHAVE (Lógica "OU") ---
-        # Se o usuário digitou palavras, verificamos se PELO MENOS UMA delas está no texto
         if lista_palavras_chave:
-            # any() retorna True se encontrar qualquer uma das palavras
             encontrou_alguma = any(chave.lower() in texto_lower for chave in lista_palavras_chave)
             if not encontrou_alguma:
-                continue # Se não achou nenhuma das palavras, pula este concurso
-        # --------------------------------------------------
+                continue
 
         salario = 0.0
         m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
@@ -102,6 +105,7 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
             'UF': uf_detectada,
             'Data Fim Inscrição': data_formatada,
             'Informações do Concurso': texto,
+            'Link': link_original, # Enviamos o link para o front
             'raw_salario': salario
         })
 
@@ -127,11 +131,8 @@ def api_buscar():
         print(f"Erro ao converter salario: {e}")
         salario_minimo = 0.0
 
-    # --- TRATAMENTO DE MULTIPLAS PALAVRAS CHAVE ---
     palavra_chave_raw = data.get('palavra_chave', '')
-    # Quebra a string por vírgula e remove espaços em branco extras
     lista_palavras_chave = [p.strip() for p in palavra_chave_raw.split(',') if p.strip()]
-    # ----------------------------------------------
 
     excluir_str = data.get('excluir_palavra', '')
     excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
@@ -149,7 +150,6 @@ def api_buscar():
     lista_final_ufs = list(conjunto_ufs_alvo)
     
     todos = buscar_concursos()
-    # Passamos agora a LISTA de palavras chave, não mais a string única
     resultados = filtrar_concursos(todos, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
     return jsonify(resultados)

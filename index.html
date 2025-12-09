@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-     crossorigin="anonymous"></script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
@@ -48,11 +45,36 @@
         .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
-        .badges { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .badges { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; align-items: center; }
         .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px;}
         .badge.money { background-color: #d1e7dd; color: #0f5132; }
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
+
+        /* NOVOS ESTILOS PARA OS BOTÕES DE AÇÃO */
+        .card-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-link {
+            text-decoration: none;
+            font-size: 0.85em;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-edital { background-color: #f1f3f5; color: #495057; border: 1px solid #dee2e6; }
+        .btn-edital:hover { background-color: #e9ecef; color: #212529; }
+        
+        .btn-inscricao { background-color: #007bff; color: white; border: 1px solid #007bff; }
+        .btn-inscricao:hover { background-color: #0056b3; }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -158,10 +180,9 @@
             const statusDiv = document.getElementById('status-msg');
             const container = document.getElementById('resultados-container');
             
-            // Feedback Visual de Carregamento
             const textoOriginal = "Buscar Oportunidades";
             btnBuscar.value = "⏳ Buscando...";
-            btnBuscar.disabled = true; // Evita cliques duplos
+            btnBuscar.disabled = true;
             
             container.innerHTML = '';
             statusDiv.className = 'loading';
@@ -193,10 +214,8 @@
 
                 const concursos = await response.json();
                 
-                // --- ATUALIZAÇÃO DO TEXTO DO BOTÃO COM A QUANTIDADE ---
                 btnBuscar.value = `Buscar Oportunidades (${concursos.length})`;
                 btnBuscar.disabled = false;
-                // -----------------------------------------------------
 
                 if (concursos.length === 0) {
                     statusDiv.className = 'empty';
@@ -209,12 +228,24 @@
                 concursos.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'concurso-card';
+                    
+                    // Defina um link padrão caso a extração falhe
+                    const linkDestino = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
+
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="badges">
                             <span class="badge money">💰 ${c['Salário']}</span>
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
+                        </div>
+                        <div class="card-actions">
+                            <a href="${linkDestino}" target="_blank" class="action-link btn-edital">
+                                📄 Ver Edital
+                            </a>
+                            <a href="${linkDestino}" target="_blank" class="action-link btn-inscricao">
+                                ✍️ Ir para Inscrição
+                            </a>
                         </div>
                     `;
                     container.appendChild(div);
@@ -224,8 +255,6 @@
                 console.error(error);
                 statusDiv.className = 'error';
                 statusDiv.innerHTML = `❌ Erro de conexão.`;
-                
-                // Em caso de erro, reseta o botão
                 btnBuscar.value = textoOriginal;
                 btnBuscar.disabled = false;
             }
