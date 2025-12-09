@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-     crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
@@ -56,22 +56,42 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO (Agora aplicados a tag <a>) */
+        /* ESTILO DOS BOTÕES DE AÇÃO */
+        /* Transforma o link em um botão visualmente */
         .action-btn {
-            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
+            font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 5px; border: 1px solid transparent;
+            align-items: center; gap: 8px; border: none;
             cursor: pointer; font-family: inherit; text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        /* Estado desabilitado simulado para link */
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         
-        .btn-edital { background-color: #f8f9fa; color: #495057; border: 1px solid #dee2e6; }
-        .btn-edital:hover { background-color: #e2e6ea; color: #212529; }
+        /* BOTÃO EDITAL (Agora Vermelho PDF) */
+        .btn-edital { 
+            background-color: #dc3545; /* Vermelho Adobe */
+            color: white; 
+        }
+        .btn-edital:hover { 
+            background-color: #bb2d3b; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(220, 53, 69, 0.3);
+        }
         
-        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
-        .btn-inscricao:hover { background-color: #0b5ed7; }
+        /* BOTÃO INSCRIÇÃO (Azul) */
+        .btn-inscricao { 
+            background-color: #0d6efd; 
+            color: white; 
+        }
+        .btn-inscricao:hover { 
+            background-color: #0b5ed7; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(13, 110, 253, 0.3);
+        }
+
+        /* Ajuste fino nos ícones dentro do botão */
+        .action-btn i { font-size: 1.1em; }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -144,7 +164,7 @@
         <div id="resultados-container"></div>
         
         <div class="legal-footer">
-            Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
+            agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
         </div>
     </div>
 
@@ -162,14 +182,14 @@
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        // FUNÇÃO DE CLIQUE REESCRITA
-        // Usa onclick direto no elemento, mas agora em uma tag <a> segura
+        // FUNÇÃO DE CLIQUE (Tag <a> segura)
         async function clicarAcao(el, urlBase, tipo) {
             const textoOriginal = el.innerHTML;
             
             // Trava o botão visualmente
             el.classList.add('disabled');
-            el.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
+            // Ícone de loading girando
+            el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
 
             try {
                 const response = await fetch('/api/link-profundo', {
@@ -180,11 +200,9 @@
                 
                 const data = await response.json();
                 
-                // Abre o link retornado
                 window.open(data.url, '_blank');
             } catch (err) {
                 console.error(err);
-                // Fallback de segurança
                 window.open(urlBase, '_blank');
             } finally {
                 // Destrava o botão
@@ -247,20 +265,19 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // AQUI ESTÁ A MÁGICA: Tag <a> com href="javascript:void(0)"
-                    // Isso anula nativamente qualquer tentativa de reload ou submit.
+                    // HTML ATUALIZADO COM ÍCONES E COR
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
-                            <span class="badge money">💰 ${c['Salário']}</span>
-                            <span class="badge uf">📍 ${c['UF']}</span>
-                            <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
+                            <span class="badge money"><i class="fas fa-dollar-sign"></i> ${c['Salário']}</span>
+                            <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
+                            <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                             
                             <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
-                                📄 Ver Edital
+                                <i class="fas fa-file-pdf"></i> Ver Edital
                             </a>
                             <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
-                                ✍️ Inscrição
+                                <i class="fas fa-pen"></i> Inscrição
                             </a>
                         </div>
                     `;
