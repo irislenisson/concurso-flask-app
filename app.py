@@ -26,9 +26,8 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA BLINDADA DE BANCAS ---
-# Usamos aspas triplas para criar um bloco de texto. 
-# O Python não vai dar erro de sintaxe aqui, mesmo se faltar vírgula.
+# --- LISTA DE BANCAS (FORMATO TEXTO BLINDADO) ---
+# Estratégia: Usar texto puro (triple quotes) evita erros de sintaxe (vírgulas faltantes)
 RAW_BANCAS = """
 ibade, objetiva, cespe, cebraspe, ibam, fgv, vunesp, ibfc, idecan, institutomais, 
 consulpam, aocp, selecon, fcc, consulplan, ibgp, rbo, igeduc, fundep, fafipa, 
@@ -76,13 +75,10 @@ avancar, bios, inovaty, fenix, facto, hl, gama, decorp, cl, maxima, arespcj,
 intelectus, abare, univasf, itco
 """
 
-# Tratamento Automático: Transforma o texto acima em uma lista limpa
-# 1. Troca quebras de linha por vírgula
-# 2. Separa por vírgula
-# 3. Remove espaços extras de cada item
+# Processamento Automático: Converte o texto acima em lista, removendo quebras de linha
 TERMOS_BANCAS = [t.strip() for t in RAW_BANCAS.replace('\n', ',').split(',') if t.strip()]
 
-# Compila a Regex para busca ultra rápida
+# Compila a Regex para busca rápida
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
@@ -197,12 +193,12 @@ def extrair_link_final(url_base, tipo):
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
-                # Otimização: Regex roda C-level, muito rápido
+                # Se encontrar qualquer termo da nossa lista na URL ou Texto
                 if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
                     if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
                         return a['href']
 
-            # FASE 2: Busca Genérica (Backup)
+            # FASE 2: Busca Genérica
             termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
             for a in todos_links:
                 href = a['href'].lower()
@@ -270,5 +266,9 @@ def api_buscar():
     return jsonify(resultados)
 
 if __name__ == '__main__':
+    try:
+        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    except:
+        pass
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
