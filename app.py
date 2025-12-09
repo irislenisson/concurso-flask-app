@@ -25,7 +25,8 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA OTIMIZADA E CORRIGIDA (Syntax Fixed) ---
+# --- LISTA OTIMIZADA E CORRIGIDA (Sem erros de sintaxe) ---
+# Esta lista contém apenas as palavras-chave essenciais para identificar a banca na URL ou Texto.
 TERMOS_BANCAS = [
     'ibade', 'objetiva', 'cespe', 'cebraspe', 'ibam', 'fgv', 'vunesp', 'ibfc',
     'idecan', 'institutomais', 'consulpam', 'aocp', 'selecon', 'fcc', 'consulplan',
@@ -88,7 +89,7 @@ TERMOS_BANCAS = [
     'cl', 'maxima', 'arespcj', 'intelectus', 'abare', 'univasf', 'itco'
 ]
 
-# Compila a Regex
+# Compila a Regex uma única vez para performance máxima
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
@@ -203,11 +204,12 @@ def extrair_link_final(url_base, tipo):
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
+                # Otimização: Regex roda C-level, muito rápido
                 if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
                     if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
                         return a['href']
 
-            # FASE 2: Busca Genérica
+            # FASE 2: Busca Genérica (Backup)
             termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
             for a in todos_links:
                 href = a['href'].lower()
