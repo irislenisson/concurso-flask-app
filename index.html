@@ -45,36 +45,40 @@
         .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
-        .badges { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; align-items: center; }
-        .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px;}
+        /* LINHA ÚNICA PARA BADGES E BOTÕES */
+        .meta-line {
+            display: flex;
+            flex-wrap: wrap; /* Quebra linha se a tela for muito pequena */
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        /* Estilo das Badges (Infos) */
+        .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px; display: inline-block; }
         .badge.money { background-color: #d1e7dd; color: #0f5132; }
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* NOVOS ESTILOS PARA OS BOTÕES DE AÇÃO */
-        .card-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .action-link {
+        /* Estilo dos Botões de Ação (Links) */
+        .action-btn {
             text-decoration: none;
             font-size: 0.85em;
             font-weight: 600;
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: 6px;
             transition: background 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            border: 1px solid transparent;
         }
         
-        .btn-edital { background-color: #f1f3f5; color: #495057; border: 1px solid #dee2e6; }
-        .btn-edital:hover { background-color: #e9ecef; color: #212529; }
+        .btn-edital { background-color: #f8f9fa; color: #495057; border-color: #dee2e6; }
+        .btn-edital:hover { background-color: #e2e6ea; color: #212529; }
         
-        .btn-inscricao { background-color: #007bff; color: white; border: 1px solid #007bff; }
-        .btn-inscricao:hover { background-color: #0056b3; }
+        .btn-inscricao { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+        .btn-inscricao:hover { background-color: #0b5ed7; }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -229,22 +233,21 @@
                     const div = document.createElement('div');
                     div.className = 'concurso-card';
                     
-                    // Defina um link padrão caso a extração falhe
                     const linkDestino = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
+                    // AQUI ESTÁ A MUDANÇA: Tudo dentro de 'meta-line'
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
-                        <div class="badges">
+                        <div class="meta-line">
                             <span class="badge money">💰 ${c['Salário']}</span>
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
-                        </div>
-                        <div class="card-actions">
-                            <a href="${linkDestino}" target="_blank" class="action-link btn-edital">
+                            
+                            <a href="${linkDestino}" target="_blank" class="action-btn btn-edital">
                                 📄 Ver Edital
                             </a>
-                            <a href="${linkDestino}" target="_blank" class="action-link btn-inscricao">
-                                ✍️ Ir para Inscrição
+                            <a href="${linkDestino}" target="_blank" class="action-btn btn-inscricao">
+                                ✍️ Inscrição
                             </a>
                         </div>
                     `;

@@ -42,6 +42,7 @@ def buscar_concursos():
         return []
 
 def formatar_real(valor):
+    # Formata para padrão BR (R$ 1.000,00)
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -54,15 +55,13 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
         texto = c.get_text(separator=' ', strip=True)
         texto_lower = texto.lower()
         
-        # --- NOVO: Extração do Link Original ---
+        # Extração do Link Original
         link_original = "#"
         try:
-            # Procura a tag <a> dentro do elemento do concurso
             tag_link = c.find('a')
             if tag_link and 'href' in tag_link.attrs:
                 link_original = tag_link['href']
         except: pass
-        # ---------------------------------------
 
         datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
         data_formatada = "Indefinida"
@@ -105,7 +104,7 @@ def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_al
             'UF': uf_detectada,
             'Data Fim Inscrição': data_formatada,
             'Informações do Concurso': texto,
-            'Link': link_original, # Enviamos o link para o front
+            'Link': link_original,
             'raw_salario': salario
         })
 
@@ -122,13 +121,14 @@ def index():
 def api_buscar():
     data = request.json or {}
     
+    # Tratamento do Salário
     try:
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw)
         s_clean = s_clean.replace(',', '.')
         salario_minimo = float(s_clean) if s_clean else 0.0
     except Exception as e:
-        print(f"Erro ao converter salario: {e}")
+        print(f"Erro salario: {e}")
         salario_minimo = 0.0
 
     palavra_chave_raw = data.get('palavra_chave', '')
