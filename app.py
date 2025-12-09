@@ -25,67 +25,70 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA OTIMIZADA (Principais siglas e identificadores de URL) ---
-# Focamos em termos únicos que aparecem na URL ou no texto do link.
-# Frases longas como "Prefeitura Municipal de..." foram removidas pois
-# raramente aparecem dentro do href (o link geralmente é o nome da banca).
+# --- LISTA OTIMIZADA E CORRIGIDA (Syntax Fixed) ---
 TERMOS_BANCAS = [
     'ibade', 'objetiva', 'cespe', 'cebraspe', 'ibam', 'fgv', 'vunesp', 'ibfc',
     'idecan', 'institutomais', 'consulpam', 'aocp', 'selecon', 'fcc', 'consulplan',
-    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'avalias', 
-    'quadrix', 'legalle', 'fundatec', 'nossorumo', 'amigapublica', 'access',
-    'facet', 'cesgranrio', 'seprod', 'shdias', 'idib', 'consesp', 'epl', 'itame',
-    'funatec', 'igecs', 'cefet', 'publiconsult', 'ibdo', 'indepac', 'omni',
-    'msconcursos', 'fuvest', 'lasalle', 'carlosbittencourt', 'avalia',
-    'faed', 'cogeps', 'fepese', 'avancasp', 'unifil', 'advise', 'imam', 'upe',
-    'fapec', 'icap', 'patativa', 'uel', 'iad', 'klc', 'legatus', 'ibido',
-    'uespi', 'compec', 'unicentro', 'aroeira', 'ieses', 'nc.ufpr', 'educapb',
-    'uepb', 'adm&tec', 'imparh', 'funvapi', 'verbena', 'uece', 'sousandrade',
-    'fumarc', 'sigma', 'conscam', 'funece', 'vicentenelson', 'furb', 'cetap',
-    'gsassessoria', 'master', 'agirh', 'fab.mil', 'uni.rv', 'promun', 'ufma',
-    'wedo', 'fenix', 'uneb', 'fadesp', 'ufac', 'ufpe', 'cetro', 'unisul',
-    'planexcon', 'esaf', 'dedalus', 'excelencia', 'ciee', 'ufmt', 'funrio',
+    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'pr-4',
+    'avalias', 'quadrix', 'legalle', 'fundatec', 'nossorumo', 'amigapublica', 'access',
+    '2dn', 'omni', 'facet', 'cesgranrio', 'seprod', 'shdias', 'idib', 'consesp',
+    'epl', 'itame', 'funatec', 'igecs', 'cefet', 'publiconsult', 'ibdo', 'indepac',
+    'msconcursos', 'fuvest', 'concepcao', 'lasalle', 'ctd', 'carlosbittencourt',
+    'avalia', 'faed', 'cogeps', 'fepese', 'avancasp', 'unifil', 'ieds', 'advise',
+    'imam', 'upe', 'fapec', 'icap', 'patativa', 'uel', 'iad', 'klc', 'legatus',
+    'ibido', 'uespi', 'compec', 'unicentro', 'aroeira', 'ieses', 'nc.ufpr',
+    'educapb', 'uepb', 'adm&tec', 'imparh', 'funvapi', 'verbena', 'uece',
+    'sousandrade', 'fumarc', 'creative', 'sigma', 'conscam', 'funece',
+    'vicentenelson', 'furb', 'cetap', 'gsassessoria', 'master', 'agirh',
+    'fab.mil', 'uni.rv', 'promun', 'ufma', 'amac', 'idht', 'wedo', 'fenix',
+    'iadhed', 'uneb', 'fadesp', 'ufac', 'ufpe', 'cetro', 'unisul', 'planexcon',
+    'ameosc', 'esaf', 'dedalus', 'excelencia', 'ciee', 'ufmt', 'cev', 'funrio',
     'comperve', 'direcao', 'fenaz', 'ibest', 'abcp', 'fcm', 'facape', 'uerr',
     'exercito', 'copeve', 'urca', 'funiversa', 'iasp', 'sipros', 'metodo',
-    'usp', 'faepesul', 'conesul', 'caip', 'cetrede', 'ejud', 'ian', 'gsa',
-    'ipefae', 'iuds', 'covest', 'acep', 'consultec', 'nce', 'fade', 'unesp',
-    'spdm', 'gualimp', 'fapems', 'seap', 'pontua', 'cfc', 'ceperj', 'ejef',
-    'ceps', 'promunicipio', 'maranatha', 'cepros', 'nemesis', 'idesul', 'fucap',
-    'ajuri', 'ganzaroli', 'actio', 'metrocapital', 'ifsul', 'ufrpe', 'ufsc',
-    'planejar', 'metropole', 'ufam', 'ufgd', 'uerj', 'ufscar', 'inep', 'ufla',
+    'usp', 'faepesul', 'conesul', 'caip', 'cetrede', 'ejud', 'ian', 'gsa', 'cmm',
+    'ufrgs', 'ipefae', 'iuds', 'covest', 'acep', 'fec', 'consultec', 'nce',
+    'fade', 'air', 'unesp', 'pge', 'spdm', 'gualimp', 'fapems', 'seap', 'pontua',
+    'mpt', 'cfc', 'ceperj', 'ejef', 'ceps', 'promunicipio', 'maranatha',
+    'tj-ap', 'lj', 'cepros', 'nemesis', 'fcpc', 'idesul', 'fucap', 'ajuri',
+    'ganzaroli', 'actio', 'metrocapital', 'ifsul', 'ufrpe', 'ufsc', 'planejar',
+    'ufv', 'metropole', 'ufam', 'ufgd', 'uerj', 'ufscar', 'inep', 'ufla',
     'coseac', 'biorio', 'movens', 'faurgs', 'qconcursos', 'ares', 'idesg',
-    'tupy', 'fadenor', 'mds', 'unesc', 'fema', 'serctam', 'seduc', 'senai',
-    'bigadvice', 'iniciativa', 'alternative', 'perfas', 'ioplan', 'cursiva',
-    'unicamp', 'calegariox', 'schnorr', 'centec', 'hcrp', 'unoesc', 'directa',
-    'apice', 'integri', 'unimontes', 'uff', 'progepe', 'funjab', 'fsmip',
-    'fae', 'fip', 'zambini', 'acafe', 'fgr', 'exatus', 'coned', 'brb', 'acaplam',
-    'fjpf', 'unifase', 'referencia', 'assege', 'jvl', 'iasd', 'unique', 'econrio',
-    'isba', 'ufsba', 'ciesp', 'unifeso', 'esmarn', 'unichristus', 'fsa', 'furg',
-    'ceaf', 'ibec', 'jbo', 'auctor', 'darwin', 'profnit', 'espm', 'asconprev',
-    'ntcs', 'univali', 'fastef', 'fundepes', 'ideap', 'imagine', 'atena',
-    'amazul', 'fundect', 'banpara', 'alfa', 'iamspe', 'unibave', 'faepol',
-    'nbs', 'crescer', 'semasa', 'progesp', 'fiocruz', 'uva', 'uri', 'ethos',
-    'consel', 'jota', 'epbazi', 'ckm', 'rhs', 'scgas', 'proam', 'unespar',
-    'ufersa', 'fundape', 'egp', 'uem', 'prograd', 'inaz', 'ufca', 'agata',
-    'ciscopar', 'unilavras', 'igdrh', 'coelhoneto', 'progep', 'segplan',
-    'funcepe', 'unifei', 'indec', 'orhion', 'nubes', 'click', 'iesap', 'depsec',
-    'una', 'femperj', 'cislipa', 'agu', 'unifesp', 'sustente', 'uniuv', 'mgs',
-    'utfpr', 'srh', 'contemax', 'funec', 'copese', 'funtef', 'anima', 'noroeste',
-    'ufsj', 'unilab', 'funcefet', 'sugep', 'comvest', 'ufcg', 'uepa', 'coperve',
-    'udesc', 'ueg', 'fujb', 'isae', 'ifc', 'fapese', 'fadurpe', 'ufabc', 'ufpa',
-    'ufrrj', 'ufmg', 'cepuerj', 'unemat', 'unirio', 'fundec', 'consep', 'fidesa',
-    'unitins', 'officium', 'ufpel', 'cec', 'unifap', 'unama', 'seta', 'puc',
-    'mouramelo', 'magnus', 'jcm', 'ipad', 'igetec', 'fluxo', 'fdrh', 'faperp',
-    'fapeu', 'espp', 'fat', 'asperhs', 'pgt', 'seletiva', 'group', 'idep',
-    'uno', 'educax', 'fama', 'comagsul', 'fronte', 'jlz', 'avaliar', 'exata',
-    'flem', 'ibptec', 'secplan', 'iset', 'evo', 'wisdom', 'jk', 'univida',
-    'intec', 'policon', 'icece', 'fucapsul', 'avancar', 'bios', 'inovaty',
-    'fenix', 'facto', 'hl', 'gama', 'decorp', 'cl', 'maxima', 'arespcj',
-    'intelectus', 'abare', 'univasf', 'itco'
+    'tupy', 'fadenor', 'mds', 'unesc', 'fema', 'serctam', 'seduc', 'dae',
+    'senai', 'bigadvice', 'iniciativa', 'opgp', 'alternative', 'perfas',
+    'ioplan', 'cursiva', 'csc', 'unicamp', 'calegariox', 'schnorr', 'centec',
+    'hcrp', 'unoesc', 'status', 'directa', 'apice', 'ccv', 'aprender', 'mga',
+    'assconpp', 'ufrb', 'ufrr', 'omini', 'iat', 'iff', 'inqc', 'ibeg', 'ineaa',
+    'conpass', 'ibc', 'framinas', 'iobv', 'ufsm', 'makiyama', 'puc', 'ufop',
+    'unifal', 'fmz', 'fesmip', 'ufba', 'paqtcpb', 'integri', 'unimontes',
+    'uff', 'progepe', 'funjab', 'fmp', 'fae', 'fip', 'zambini', 'acafe',
+    'reis', 'fgr', 'exatus', 'coned', 'brb', 'acaplam', 'fjpf', 'unifase',
+    'referencia', 'assege', 'jvl', 'iasd', 'unique', 'econrio', 'ifbaiano',
+    'ufr', 'isba', 'ufsba', 'ciesp', 'mpf', 'unifeso', 'esmarn', 'unichristus',
+    'fps', 'sead', 'ses', 'fsa', 'furg', 'ceaf', 'ibec', 'jbo', 'auctor',
+    'darwin', 'profnit', 'espm', 'asconprev', 'ntcs', 'fspss', 'avmoreira',
+    'univali', 'fastef', 'fundepes', 'ideap', 'imagine', 'atena', 'amazul',
+    'fundect', 'banpara', 'alfa', 'iamspe', 'unibave', 'faepol', 'nbs',
+    'seletiva', 'crescer', 'semasa', 'progesp', 'fiocruz', 'uva', 'uri',
+    'ethos', 'consel', 'jota', 'epbazi', 'ckm', 'rhs', 'scgas', 'proam',
+    'unespar', 'ufersa', 'fundape', 'egp', 'uem', 'prograd', 'inaz', 'ufca',
+    'agata', 'ciscopar', 'prime', 'unilavras', 'igdrh', 'coelhoneto', 'progep',
+    'segplan', 'funcepe', 'funvapi', 'unifei', 'indec', 'orhion', 'nubes',
+    'click', 'iesap', 'depsec', 'una', 'femperj', 'cislipa', 'agu', 'unifesp',
+    'sustente', 'uniuv', 'mgs', 'utfpr', 'srh', 'contemax', 'funec', 'copese',
+    'funtef', 'anima', 'noroeste', 'ufsj', 'unilab', 'funcefet', 'sugep',
+    'comvest', 'ufcg', 'uepa', 'coperve', 'udesc', 'ueg', 'fujb', 'isae',
+    'ifc', 'fapese', 'fadurpe', 'ufabc', 'ufpa', 'ufrrj', 'ufmg', 'cepuerj',
+    'unemat', 'unirio', 'fundec', 'consep', 'fidesa', 'unitins', 'officium',
+    'ufpel', 'cec', 'unifap', 'unama', 'seta', 'mouramelo', 'magnus', 'jcm',
+    'ipad', 'igetec', 'fluxo', 'fdrh', 'faperp', 'fapeu', 'espp', 'fat',
+    'asperhs', 'pgt', 'group', 'idep', 'uno', 'educax', 'fama', 'comagsul',
+    'fronte', 'jlz', 'avaliar', 'exata', 'flem', 'ibptec', 'secplan', 'iset',
+    'evo', 'wisdom', 'jk', 'univida', 'intec', 'policon', 'icece', 'fucapsul',
+    'avancar', 'bios', 'inovaty', 'fenix', 'facto', 'hl', 'gama', 'decorp',
+    'cl', 'maxima', 'arespcj', 'intelectus', 'abare', 'univasf', 'itco'
 ]
 
-# Compila a Regex uma única vez para performance máxima
-# Cria algo como: (ibade|objetiva|cespe|cebraspe|...)
+# Compila a Regex
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
@@ -195,17 +198,16 @@ def extrair_link_final(url_base, tipo):
                         if href.endswith('.pdf'): break
                             
         elif tipo == 'inscricao':
-            # --- FASE 1: Busca SUPER RÁPIDA com Regex na lista de bancas ---
+            # FASE 1: Busca via Regex (Lista de Bancas)
             for a in todos_links:
                 href = a['href'].lower()
                 text = a.get_text().lower()
                 
-                # Se encontrar qualquer termo da nossa lista gigante na URL ou Texto
                 if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
                     if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
-                        return a['href'] # Retorna imediatamente
+                        return a['href']
 
-            # --- FASE 2: Busca Genérica (Backup) ---
+            # FASE 2: Busca Genérica
             termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
             for a in todos_links:
                 href = a['href'].lower()
