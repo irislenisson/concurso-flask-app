@@ -29,7 +29,7 @@ REGIOES = {
 # --- LISTA DE BANCAS (ORGANIZADA DE A-Z) ---
 # Dica: Para adicionar uma nova, basta inserir na ordem alfabética e colocar uma vírgula.
 RAW_BANCAS = """
-2dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, agata, 
+2dn, 4dn, 7dn, 8dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, agata, 
 agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, amigapublica, 
 anima, aocp, apice, aprender, ares, arespcj, aroeira, asconprev, asperhs, 
 assege, assconpp, atena, auctor, avalia, avaliar, avalias, avancar, avancasp, 
