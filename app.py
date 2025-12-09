@@ -7,6 +7,7 @@ from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 
+# Configuração do App
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
@@ -25,70 +26,63 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA CORRIGIDA (Vírgulas arrumadas para 'access', '2dn', etc) ---
-TERMOS_BANCAS = [
-    'ibade', 'objetiva', 'cespe', 'cebraspe', 'ibam', 'fgv', 'vunesp', 'ibfc',
-    'idecan', 'institutomais', 'consulpam', 'aocp', 'selecon', 'fcc', 'consulplan',
-    'ibgp', 'rbo', 'igeduc', 'fundep', 'fafipa', 'ufrj', 'pr4', 'avalias', 
-    'quadrix', 'legalle', 'fundatec', 'nossorumo', 'amigapublica', 'access',
-    '2dn', 'omni', 'facet', 'cesgranrio', 'seprod', 'shdias', 'idib', 'consesp',
-    'epl', 'itame', 'funatec', 'igecs', 'cefet', 'publiconsult', 'ibdo', 'indepac',
-    'msconcursos', 'fuvest', 'concepcao', 'lasalle', 'ctd', 'carlosbittencourt',
-    'avalia', 'faed', 'cogeps', 'fepese', 'avancasp', 'unifil', 'ieds', 'advise',
-    'imam', 'upe', 'fapec', 'icap', 'patativa', 'uel', 'iad', 'klc', 'legatus',
-    'ibido', 'uespi', 'compec', 'unicentro', 'aroeira', 'ieses', 'nc.ufpr',
-    'educapb', 'uepb', 'adm&tec', 'imparh', 'funvapi', 'verbena', 'uece',
-    'sousandrade', 'fumarc', 'creative', 'sigma', 'conscam', 'funece',
-    'vicentenelson', 'furb', 'cetap', 'gsassessoria', 'master', 'agirh',
-    'fab.mil', 'uni.rv', 'promun', 'ufma', 'amac', 'idht', 'wedo', 'fenix',
-    'iadhed', 'uneb', 'fadesp', 'ufac', 'ufpe', 'cetro', 'unisul', 'planexcon',
-    'ameosc', 'esaf', 'dedalus', 'excelencia', 'ciee', 'ufmt', 'cev', 'funrio',
-    'comperve', 'direcao', 'fenaz', 'ibest', 'abcp', 'fcm', 'facape', 'uerr',
-    'exercito', 'copeve', 'urca', 'funiversa', 'iasp', 'sipros', 'metodo',
-    'usp', 'faepesul', 'conesul', 'caip', 'cetrede', 'ejud', 'ian', 'gsa', 'cmm',
-    'ufrgs', 'ipefae', 'iuds', 'covest', 'acep', 'fec', 'consultec', 'nce',
-    'fade', 'air', 'unesp', 'pge', 'spdm', 'gualimp', 'fapems', 'seap', 'pontua',
-    'mpt', 'cfc', 'ceperj', 'ejef', 'ceps', 'promunicipio', 'maranatha',
-    'tj-ap', 'lj', 'cepros', 'nemesis', 'fcpc', 'idesul', 'fucap', 'ajuri',
-    'ganzaroli', 'actio', 'metrocapital', 'ifsul', 'ufrpe', 'ufsc', 'planejar',
-    'ufv', 'metropole', 'ufam', 'ufgd', 'uerj', 'ufscar', 'inep', 'ufla',
-    'coseac', 'biorio', 'movens', 'faurgs', 'qconcursos', 'ares', 'idesg',
-    'tupy', 'fadenor', 'mds', 'unesc', 'fema', 'serctam', 'seduc', 'dae',
-    'senai', 'bigadvice', 'iniciativa', 'opgp', 'alternative', 'perfas',
-    'ioplan', 'cursiva', 'csc', 'unicamp', 'calegariox', 'schnorr', 'centec',
-    'hcrp', 'unoesc', 'status', 'directa', 'apice', 'ccv', 'aprender', 'mga',
-    'assconpp', 'ufrb', 'ufrr', 'omini', 'iat', 'iff', 'inqc', 'ibeg', 'ineaa',
-    'conpass', 'ibc', 'framinas', 'iobv', 'ufsm', 'makiyama', 'puc', 'ufop',
-    'unifal', 'fmz', 'fesmip', 'ufba', 'paqtcpb', 'integri', 'unimontes',
-    'uff', 'progepe', 'funjab', 'fmp', 'fae', 'fip', 'zambini', 'acafe',
-    'reis', 'fgr', 'exatus', 'coned', 'brb', 'acaplam', 'fjpf', 'unifase',
-    'referencia', 'assege', 'jvl', 'iasd', 'unique', 'econrio', 'ifbaiano',
-    'ufr', 'isba', 'ufsba', 'ciesp', 'mpf', 'unifeso', 'esmarn', 'unichristus',
-    'fps', 'sead', 'ses', 'fsa', 'furg', 'ceaf', 'ibec', 'jbo', 'auctor',
-    'darwin', 'profnit', 'espm', 'asconprev', 'ntcs', 'fspss', 'avmoreira',
-    'univali', 'fastef', 'fundepes', 'ideap', 'imagine', 'atena', 'amazul',
-    'fundect', 'banpara', 'alfa', 'iamspe', 'unibave', 'faepol', 'nbs',
-    'seletiva', 'crescer', 'semasa', 'progesp', 'fiocruz', 'uva', 'uri',
-    'ethos', 'consel', 'jota', 'epbazi', 'ckm', 'rhs', 'scgas', 'proam',
-    'unespar', 'ufersa', 'fundape', 'egp', 'uem', 'prograd', 'inaz', 'ufca',
-    'agata', 'ciscopar', 'prime', 'unilavras', 'igdrh', 'coelhoneto', 'progep',
-    'segplan', 'funcepe', 'funvapi', 'unifei', 'indec', 'orhion', 'nubes',
-    'click', 'iesap', 'depsec', 'una', 'femperj', 'cislipa', 'agu', 'unifesp',
-    'sustente', 'uniuv', 'mgs', 'utfpr', 'srh', 'contemax', 'funec', 'copese',
-    'funtef', 'anima', 'noroeste', 'ufsj', 'unilab', 'funcefet', 'sugep',
-    'comvest', 'ufcg', 'uepa', 'coperve', 'udesc', 'ueg', 'fujb', 'isae',
-    'ifc', 'fapese', 'fadurpe', 'ufabc', 'ufpa', 'ufrrj', 'ufmg', 'cepuerj',
-    'unemat', 'unirio', 'fundec', 'consep', 'fidesa', 'unitins', 'officium',
-    'ufpel', 'cec', 'unifap', 'unama', 'seta', 'mouramelo', 'magnus', 'jcm',
-    'ipad', 'igetec', 'fluxo', 'fdrh', 'faperp', 'fapeu', 'espp', 'fat',
-    'asperhs', 'pgt', 'group', 'idep', 'uno', 'educax', 'fama', 'comagsul',
-    'fronte', 'jlz', 'avaliar', 'exata', 'flem', 'ibptec', 'secplan', 'iset',
-    'evo', 'wisdom', 'jk', 'univida', 'intec', 'policon', 'icece', 'fucapsul',
-    'avancar', 'bios', 'inovaty', 'fenix', 'facto', 'hl', 'gama', 'decorp',
-    'cl', 'maxima', 'arespcj', 'intelectus', 'abare', 'univasf', 'itco'
-]
+# --- LISTA BLINDADA DE BANCAS ---
+# Usamos aspas triplas para criar um bloco de texto. 
+# O Python não vai dar erro de sintaxe aqui, mesmo se faltar vírgula.
+RAW_BANCAS = """
+ibade, objetiva, cespe, cebraspe, ibam, fgv, vunesp, ibfc, idecan, institutomais, 
+consulpam, aocp, selecon, fcc, consulplan, ibgp, rbo, igeduc, fundep, fafipa, 
+ufrj, pr4, pr-4, avalias, quadrix, legalle, fundatec, nossorumo, amigapublica, 
+access, 2dn, omni, facet, cesgranrio, seprod, shdias, idib, consesp, epl, itame, 
+funatec, igecs, cefet, publiconsult, ibdo, indepac, msconcursos, fuvest, 
+concepcao, lasalle, ctd, carlosbittencourt, avalia, faed, cogeps, fepese, 
+avancasp, unifil, ieds, advise, imam, upe, fapec, icap, patativa, uel, iad, 
+klc, legatus, ibido, uespi, compec, unicentro, aroeira, ieses, ufpr, educapb, 
+uepb, adm&tec, imparh, funvapi, verbena, uece, sousandrade, fumarc, creative, 
+sigma, conscam, funece, vicentenelson, furb, cetap, gsassessoria, master, agirh, 
+fab.mil, uni.rv, promun, ufma, amac, idht, wedo, fenix, iadhed, uneb, fadesp, 
+ufac, ufpe, cetro, unisul, planexcon, ameosc, esaf, dedalus, excelencia, ciee, 
+ufmt, cev, funrio, comperve, direcao, fenaz, ibest, abcp, fcm, facape, uerr, 
+exercito, copeve, urca, funiversa, iasp, sipros, metodo, usp, faepesul, conesul, 
+caip, cetrede, ejud, ian, gsa, cmm, ufrgs, ipefae, iuds, covest, acep, fec, 
+consultec, nce, fade, air, unesp, pge, spdm, gualimp, fapems, seap, pontua, 
+mpt, cfc, ceperj, ejef, ceps, promunicipio, maranatha, tj-ap, lj, cepros, 
+nemesis, fcpc, idesul, fucap, ajuri, ganzaroli, actio, metrocapital, ifsul, 
+ufrpe, ufsc, planejar, ufv, metropole, ufam, ufgd, uerj, ufscar, inep, ufla, 
+coseac, biorio, movens, faurgs, qconcursos, ares, idesg, tupy, fadenor, mds, 
+unesc, fema, serctam, seduc, dae, senai, bigadvice, iniciativa, opgp, alternative, 
+perfas, ioplan, cursiva, csc, unicamp, calegariox, schnorr, centec, hcrp, unoesc, 
+status, directa, apice, ccv, aprender, mga, assconpp, ufrb, ufrr, omini, iat, 
+iff, inqc, ibeg, ineaa, conpass, ibc, framinas, iobv, ufsm, makiyama, puc, 
+ufop, unifal, fmz, fesmip, ufba, paqtcpb, integri, unimontes, uff, progepe, 
+funjab, fmp, fae, fip, zambini, acafe, reis, fgr, exatus, coned, brb, acaplam, 
+fjpf, unifase, referencia, assege, jvl, iasd, unique, econrio, ifbaiano, ufr, 
+isba, ufsba, ciesp, mpf, unifeso, esmarn, unichristus, fps, sead, ses, fsa, 
+furg, ceaf, ibec, jbo, auctor, darwin, profnit, espm, asconprev, ntcs, fspss, 
+avmoreira, univali, fastef, fundepes, ideap, imagine, atena, amazul, fundect, 
+banpara, alfa, iamspe, unibave, faepol, nbs, seletiva, crescer, semasa, progesp, 
+fiocruz, uva, uri, ethos, consel, jota, epbazi, ckm, rhs, scgas, proam, unespar, 
+ufersa, fundape, egp, uem, prograd, inaz, ufca, agata, ciscopar, prime, unilavras, 
+igdrh, coelhoneto, progep, segplan, funcepe, funvapi, unifei, indec, orhion, 
+nubes, click, iesap, depsec, una, femperj, cislipa, agu, unifesp, sustente, 
+uniuv, mgs, utfpr, srh, contemax, funec, copese, funtef, anima, noroeste, ufsj, 
+unilab, funcefet, sugep, comvest, ufcg, uepa, coperve, udesc, ueg, fujb, isae, 
+ifc, fapese, fadurpe, ufabc, ufpa, ufrrj, ufmg, cepuerj, unemat, unirio, fundec, 
+consep, fidesa, unitins, officium, ufpel, cec, unifap, unama, seta, mouramelo, 
+magnus, jcm, ipad, igetec, fluxo, fdrh, faperp, fapeu, espp, fat, asperhs, pgt, 
+group, idep, uno, educax, fama, comagsul, fronte, jlz, avaliar, exata, flem, 
+ibptec, secplan, iset, evo, wisdom, jk, univida, intec, policon, icece, fucapsul, 
+avancar, bios, inovaty, fenix, facto, hl, gama, decorp, cl, maxima, arespcj, 
+intelectus, abare, univasf, itco
+"""
 
-# Compila a Regex uma única vez para performance máxima
+# Tratamento Automático: Transforma o texto acima em uma lista limpa
+# 1. Troca quebras de linha por vírgula
+# 2. Separa por vírgula
+# 3. Remove espaços extras de cada item
+TERMOS_BANCAS = [t.strip() for t in RAW_BANCAS.replace('\n', ',').split(',') if t.strip()]
+
+# Compila a Regex para busca ultra rápida
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
