@@ -32,8 +32,13 @@
         .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
         .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
 
-        input[type="submit"] { background-color: #2c3e50; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 16px; font-size: 16px; margin-top: 10px; border-radius: 8px; transition: transform 0.2s; width: 100%; }
-        input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
+        /* Botão Principal de Busca */
+        #btn-buscar { 
+            background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
+            font-weight: bold; padding: 16px; font-size: 16px; margin-top: 10px; 
+            border-radius: 8px; transition: transform 0.2s; width: 100%; 
+        }
+        #btn-buscar:hover { background-color: #1a252f; transform: translateY(-2px); }
         
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
@@ -54,18 +59,12 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
+        /* Estilo dos Botões de Ação */
         .action-btn {
-            font-size: 0.85em;
-            font-weight: 600;
-            padding: 7px 14px;
-            border-radius: 6px;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            font-family: inherit;
+            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
+            border-radius: 6px; transition: all 0.2s; display: inline-flex;
+            align-items: center; gap: 5px; border: 1px solid transparent;
+            cursor: pointer; font-family: inherit; text-decoration: none;
         }
         
         .action-btn:disabled { opacity: 0.7; cursor: wait; }
@@ -93,7 +92,7 @@
                 </div>
                 <div>
                     <label>🔍 Palavra-chave</label>
-                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Analista (separe por vírgula)">
+                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Analista">
                 </div>
             </div>
 
@@ -160,16 +159,29 @@
             elemento.value = "R$ " + valor;
         }
 
+        // Ativa/Desativa botões de filtro
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        // --- FUNÇÃO CORRIGIDA: Recebe 'event' e para o reload ---
-        async function abrirLinkInteligente(event, botao, urlBase, tipo) {
-            event.preventDefault();  // BLOQUEIA O RELOAD DA PÁGINA
-            event.stopPropagation(); // Garante que o form não perceba o clique
+        // --- DELEGAÇÃO DE EVENTOS PARA OS BOTÕES DO CARD ---
+        // Monitora cliques em todo o container de resultados
+        document.getElementById('resultados-container').addEventListener('click', async function(e) {
+            
+            // Verifica se o elemento clicado (ou o pai dele) é um botão de ação (.action-btn)
+            const botao = e.target.closest('.action-btn');
+            
+            // Se não for botão de ação, ignora
+            if (!botao) return;
 
+            // PREVINE O COMPORTAMENTO PADRÃO (RELOAD)
+            e.preventDefault();
+            e.stopPropagation();
+
+            const urlBase = botao.getAttribute('data-url');
+            const tipo = botao.getAttribute('data-tipo');
             const textoOriginal = botao.innerHTML;
+
             botao.innerHTML = tipo === 'edital' ? '⏳ Buscando PDF...' : '⏳ Buscando Site...';
             botao.disabled = true;
 
@@ -181,18 +193,20 @@
                 });
                 
                 const data = await response.json();
-                window.open(data.url, '_blank');
+                window.open(data.url, '_blank'); // Abre em nova aba
             } catch (err) {
                 console.error(err);
+                // Fallback: abre o link original se a API falhar
                 window.open(urlBase, '_blank');
             } finally {
                 botao.innerHTML = textoOriginal;
                 botao.disabled = false;
             }
-        }
+        });
 
+        // Lógica de Busca (Submit do Formulário)
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+            e.preventDefault(); // Impede o reload ao buscar
             
             const btnBuscar = document.getElementById('btn-buscar');
             const statusDiv = document.getElementById('status-msg');
@@ -245,7 +259,7 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // --- HTML DO BOTÃO CORRIGIDO: Passa 'event' no onclick ---
+                    // GERA O HTML DO CARD COM BOTÕES DATA-ATTRIBUTES (Sem onclick inline)
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
@@ -253,10 +267,10 @@
                             <span class="badge uf">📍 ${c['UF']}</span>
                             <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
                             
-                            <button type="button" class="action-btn btn-edital" onclick="abrirLinkInteligente(event, this, '${linkBase}', 'edital')">
+                            <button type="button" class="action-btn btn-edital" data-url="${linkBase}" data-tipo="edital">
                                 📄 Ver Edital
                             </button>
-                            <button type="button" class="action-btn btn-inscricao" onclick="abrirLinkInteligente(event, this, '${linkBase}', 'inscricao')">
+                            <button type="button" class="action-btn btn-inscricao" data-url="${linkBase}" data-tipo="inscricao">
                                 ✍️ Inscrição
                             </button>
                         </div>
