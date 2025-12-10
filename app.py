@@ -1,323 +1,290 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-      crossorigin="anonymous"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Concursos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+import re
+import os
+import time
+import locale
+from datetime import datetime
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import requests
+from bs4 import BeautifulSoup
+
+# Configuração do App
+basedir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, template_folder=basedir, static_folder=basedir)
+CORS(app)
+
+# --- SISTEMA DE CACHE (MEMÓRIA) ---
+# Armazena os dados brutos para evitar requisições repetidas ao site fonte
+CACHE_CONCURSOS = {
+    "dados": None,
+    "timestamp": 0
+}
+CACHE_EXPIRATION = 900  # 15 minutos em segundos
+
+UFS_SIGLAS = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+    'SP', 'SE', 'TO'
+]
+
+REGIOES = {
+    'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
+    'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
+    'Centro-Oeste': ['MT', 'MS', 'GO', 'DF'],
+    'Sudeste': ['SP', 'RJ', 'ES', 'MG'],
+    'Sul': ['PR', 'RS', 'SC'],
+}
+
+# --- LISTA DE BANCAS (BLINDADA) ---
+RAW_BANCAS = """
+ibade, objetiva, cespe, cebraspe, ibam, fgv, vunesp, ibfc, idecan, institutomais, 
+consulpam, aocp, selecon, fcc, consulplan, ibgp, rbo, igeduc, fundep, fafipa, 
+ufrj, pr4, pr-4, avalias, quadrix, legalle, fundatec, nossorumo, amigapublica, 
+access, 2dn, omni, facet, cesgranrio, seprod, shdias, idib, consesp, epl, itame, 
+funatec, igecs, cefet, publiconsult, ibdo, indepac, msconcursos, fuvest, 
+concepcao, lasalle, ctd, carlosbittencourt, avalia, faed, cogeps, fepese, 
+avancasp, unifil, ieds, advise, imam, upe, fapec, icap, patativa, uel, iad, 
+klc, legatus, ibido, uespi, compec, unicentro, aroeira, ieses, ufpr, educapb, 
+uepb, adm&tec, imparh, funvapi, verbena, uece, sousandrade, fumarc, creative, 
+sigma, conscam, funece, vicentenelson, furb, cetap, gsassessoria, master, agirh, 
+fab.mil, uni.rv, promun, ufma, amac, idht, wedo, fenix, iadhed, uneb, fadesp, 
+ufac, ufpe, cetro, unisul, planexcon, ameosc, esaf, dedalus, excelencia, ciee, 
+ufmt, cev, funrio, comperve, direcao, fenaz, ibest, abcp, fcm, facape, uerr, 
+exercito, copeve, urca, funiversa, iasp, sipros, metodo, usp, faepesul, conesul, 
+caip, cetrede, ejud, ian, gsa, cmm, ufrgs, ipefae, iuds, covest, acep, fec, 
+consultec, nce, fade, air, unesp, pge, spdm, gualimp, fapems, seap, pontua, 
+mpt, cfc, ceperj, ejef, ceps, promunicipio, maranatha, tj-ap, lj, cepros, 
+nemesis, fcpc, idesul, fucap, ajuri, ganzaroli, actio, metrocapital, ifsul, 
+ufrpe, ufsc, planejar, ufv, metropole, ufam, ufgd, uerj, ufscar, inep, ufla, 
+coseac, biorio, movens, faurgs, qconcursos, ares, idesg, tupy, fadenor, mds, 
+unesc, fema, serctam, seduc, dae, senai, bigadvice, iniciativa, opgp, alternative, 
+perfas, ioplan, cursiva, csc, unicamp, calegariox, schnorr, centec, hcrp, unoesc, 
+status, directa, apice, ccv, aprender, mga, assconpp, ufrb, ufrr, omini, iat, 
+iff, inqc, ibeg, ineaa, conpass, ibc, framinas, iobv, ufsm, makiyama, puc, 
+ufop, unifal, fmz, fesmip, ufba, paqtcpb, integri, unimontes, uff, progepe, 
+funjab, fmp, fae, fip, zambini, acafe, reis, fgr, exatus, coned, brb, acaplam, 
+fjpf, unifase, referencia, assege, jvl, iasd, unique, econrio, ifbaiano, ufr, 
+isba, ufsba, ciesp, mpf, unifeso, esmarn, unichristus, fps, sead, ses, fsa, 
+furg, ceaf, ibec, jbo, auctor, darwin, profnit, espm, asconprev, ntcs, fspss, 
+avmoreira, univali, fastef, fundepes, ideap, imagine, atena, amazul, fundect, 
+banpara, alfa, iamspe, unibave, faepol, nbs, seletiva, crescer, semasa, progesp, 
+fiocruz, uva, uri, ethos, consel, jota, epbazi, ckm, rhs, scgas, proam, unespar, 
+ufersa, fundape, egp, uem, prograd, inaz, ufca, agata, ciscopar, prime, unilavras, 
+igdrh, coelhoneto, progep, segplan, funcepe, funvapi, unifei, indec, orhion, 
+nubes, click, iesap, depsec, una, femperj, cislipa, agu, unifesp, sustente, 
+uniuv, mgs, utfpr, srh, contemax, funec, copese, funtef, anima, noroeste, ufsj, 
+unilab, funcefet, sugep, comvest, ufcg, uepa, coperve, udesc, ueg, fujb, isae, 
+ifc, fapese, fadurpe, ufabc, ufpa, ufrrj, ufmg, cepuerj, unemat, unirio, fundec, 
+consep, fidesa, unitins, officium, ufpel, cec, unifap, unama, seta, mouramelo, 
+magnus, jcm, ipad, igetec, fluxo, fdrh, faperp, fapeu, espp, fat, asperhs, pgt, 
+group, idep, uno, educax, fama, comagsul, fronte, jlz, avaliar, exata, flem, 
+ibptec, secplan, iset, evo, wisdom, jk, univida, intec, policon, icece, fucapsul, 
+avancar, bios, inovaty, fenix, facto, hl, gama, decorp, cl, maxima, arespcj, 
+intelectus, abare, univasf, itco
+"""
+
+TERMOS_BANCAS = [t.strip() for t in RAW_BANCAS.replace('\n', ',').split(',') if t.strip()]
+REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
+
+URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
+
+def buscar_concursos():
+    global CACHE_CONCURSOS
+    agora = time.time()
     
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-weight: 800; }
+    # Verifica se o cache existe e ainda é válido (menos de 15 min)
+    if CACHE_CONCURSOS["dados"] and (agora - CACHE_CONCURSOS["timestamp"] < CACHE_EXPIRATION):
+        print(f"--> Usando CACHE ({len(CACHE_CONCURSOS['dados'])} itens). Expira em {int(CACHE_EXPIRATION - (agora - CACHE_CONCURSOS['timestamp']))}s")
+        return CACHE_CONCURSOS["dados"]
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    try:
+        print("--> Baixando dados novos do site...")
+        resp = requests.get(URL_BASE, timeout=30, headers=headers)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        itens = soup.find_all('div', class_='ca')
         
-        form { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: grid; gap: 20px; }
+        # Atualiza o Cache
+        CACHE_CONCURSOS["dados"] = itens
+        CACHE_CONCURSOS["timestamp"] = agora
+        return itens
+    except Exception as e:
+        print(f"--> ERRO no download: {e}")
+        # Se der erro no download, tenta usar o cache antigo se existir
+        return CACHE_CONCURSOS["dados"] if CACHE_CONCURSOS["dados"] else []
+
+def formatar_real(valor):
+    formatado = f"{valor:,.2f}"
+    return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
+
+def filtrar_concursos(concursos, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
+    hoje = datetime.now().date()
+    resultados = []
+    modo_restritivo = len(lista_ufs_alvo) > 0
+
+    for c in concursos:
+        texto = c.get_text(separator=' ', strip=True)
+        texto_lower = texto.lower()
         
-        label { font-weight: 700; color: #34495e; margin-bottom: 8px; display: block; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;}
-        input { padding: 12px; border: 1px solid #e9ecef; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 15px; background: #f8f9fa; transition: all 0.2s;}
-        input:focus { border-color: #007bff; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+        link_original = "#"
+        try:
+            tag_link = c.find('a')
+            if tag_link and 'href' in tag_link.attrs:
+                link_original = tag_link['href']
+        except: pass
+
+        datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
+        data_formatada = "Indefinida"
+        if datas:
+            try:
+                data_fim = datetime.strptime(datas[-1], '%d/%m/%Y').date()
+                if data_fim < hoje: continue 
+                data_formatada = data_fim.strftime('%d/%m/%Y')
+            except: pass 
+
+        if excluir_palavras and any(ex.lower() in texto_lower for ex in excluir_palavras): 
+            continue
+
+        if lista_palavras_chave:
+            encontrou_alguma = any(chave.lower() in texto_lower for chave in lista_palavras_chave)
+            if not encontrou_alguma:
+                continue
+
+        salario = 0.0
+        m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
+        if m:
+            try:
+                salario = float(m.group(1).replace('.', '').replace(',', '.'))
+            except: salario = 0.0
         
-        .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        if salario_min > 0 and salario < salario_min: continue
+
+        uf_detectada = 'Nacional/Outro'
+        for sigla in UFS_SIGLAS:
+            if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
+                uf_detectada = sigla
+                break
         
-        .filter-btn {
-            background-color: #fff; border: 1px solid #dee2e6; border-radius: 20px;
-            padding: 8px 16px; cursor: pointer; font-size: 0.9em; font-weight: 600; color: #6c757d;
-            transition: all 0.2s; user-select: none;
-        }
-        .filter-btn:hover { background-color: #e9ecef; transform: translateY(-1px); }
-        .filter-btn.active { background-color: #007bff; color: white; border-color: #007bff; box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
+        if modo_restritivo:
+            if uf_detectada not in lista_ufs_alvo:
+                continue
 
-        .region-btn { padding: 10px 20px; font-size: 0.95em; border-radius: 8px; }
-        .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
-        .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
+        resultados.append({
+            'Salário': formatar_real(salario) if salario > 0 else "Ver Edital/Variável",
+            'UF': uf_detectada,
+            'Data Fim Inscrição': data_formatada,
+            'Informações do Concurso': texto,
+            'Link': link_original,
+            'raw_salario': salario
+        })
 
-        .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
-        .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
+    resultados.sort(key=lambda x: x['raw_salario'], reverse=True)
+    for r in resultados: del r['raw_salario']
 
-        input[type="submit"] { background-color: #2c3e50; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 16px; font-size: 16px; margin-top: 10px; border-radius: 8px; transition: transform 0.2s; width: 100%; }
-        input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
+    return resultados
+
+def extrair_link_final(url_base, tipo):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    try:
+        resp = requests.get(url_base, timeout=10, headers=headers)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        todos_links = soup.find_all('a', href=True)
         
-        #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
-        .loading { color: #0056b3; background: #e7f1ff; }
-        .empty { color: #856404; background: #fff3cd; }
-        .error { color: #721c24; background: #f8d7da; }
+        candidato_melhor = None
 
-        #resultados-container { margin-top: 40px; }
-
-        .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
-        
-        .meta-line {
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 15px;
-        }
-
-        .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px; display: inline-block; }
-        .badge.money { background-color: #d1e7dd; color: #0f5132; }
-        .badge.uf { background-color: #cfe2ff; color: #084298; }
-        .badge.date { background-color: #fff3cd; color: #664d03; }
-
-        /* ESTILO 3D PARA OS BOTÕES */
-        .action-btn {
-            font-size: 0.9em; font-weight: 600; padding: 8px 16px;
-            border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 8px; border: none;
-            cursor: pointer; font-family: inherit; text-decoration: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        
-        .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
-        .btn-edital:hover { background-color: #e53935; }
-        
-        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
-        .btn-inscricao:hover { background-color: #0b5ed7; }
-
-        .legal-footer {
-            margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
-            border-top: 1px solid #e9ecef; padding-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 Buscador de Concursos</h1>
-
-        <form id="searchForm">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
-                    <label>💰 Salário Inicial</label>
-                    <input type="tel" id="salario_minimo" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
-                </div>
-                <div>
-                    <label>🔍 Palavra-chave</label>
-                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Analista">
-                </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div>
-                <label>🌎 Regiões (Clique para ativar)</label>
-                <div class="btn-grid">
-                    <div class="filter-btn region-btn" data-value="Nacional">Nacional</div>
-                    <div class="filter-btn region-btn" data-value="Norte">Norte</div>
-                    <div class="filter-btn region-btn" data-value="Nordeste">Nordeste</div>
-                    <div class="filter-btn region-btn" data-value="Centro-Oeste">Centro-Oeste</div>
-                    <div class="filter-btn region-btn" data-value="Sudeste">Sudeste</div>
-                    <div class="filter-btn region-btn" data-value="Sul">Sul</div>
-                </div>
-            </div>
-
-            <div>
-                <label>📍 Estados Específicos</label>
-                <div class="btn-grid">
-                    <div class="filter-btn uf-btn" data-value="AC">AC</div> <div class="filter-btn uf-btn" data-value="AL">AL</div>
-                    <div class="filter-btn uf-btn" data-value="AP">AP</div> <div class="filter-btn uf-btn" data-value="AM">AM</div>
-                    <div class="filter-btn uf-btn" data-value="BA">BA</div> <div class="filter-btn uf-btn" data-value="CE">CE</div>
-                    <div class="filter-btn uf-btn" data-value="DF">DF</div> <div class="filter-btn uf-btn" data-value="ES">ES</div>
-                    <div class="filter-btn uf-btn" data-value="GO">GO</div> <div class="filter-btn uf-btn" data-value="MA">MA</div>
-                    <div class="filter-btn uf-btn" data-value="MT">MT</div> <div class="filter-btn uf-btn" data-value="MS">MS</div>
-                    <div class="filter-btn uf-btn" data-value="MG">MG</div> <div class="filter-btn uf-btn" data-value="PA">PA</div>
-                    <div class="filter-btn uf-btn" data-value="PB">PB</div> <div class="filter-btn uf-btn" data-value="PR">PR</div>
-                    <div class="filter-btn uf-btn" data-value="PE">PE</div> <div class="filter-btn uf-btn" data-value="PI">PI</div>
-                    <div class="filter-btn uf-btn" data-value="RJ">RJ</div> <div class="filter-btn uf-btn" data-value="RN">RN</div>
-                    <div class="filter-btn uf-btn" data-value="RS">RS</div> <div class="filter-btn uf-btn" data-value="RO">RO</div>
-                    <div class="filter-btn uf-btn" data-value="RR">RR</div> <div class="filter-btn uf-btn" data-value="SC">SC</div>
-                    <div class="filter-btn uf-btn" data-value="SP">SP</div> <div class="filter-btn uf-btn" data-value="SE">SE</div>
-                    <div class="filter-btn uf-btn" data-value="TO">TO</div>
-                </div>
-                <p class="help-text">Dica: O filtro soma Regiões + Estados selecionados.</p>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div>
-                <label>🚫 Excluir palavras</label>
-                <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
-            </div>
-
-            <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
-        </form>
-
-        <div id="status-msg"></div>
-        <div id="resultados-container"></div>
-        
-        <div class="legal-footer">
-            Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
-        </div>
-    </div>
-
-    <script>
-        function formatarMoeda(elemento) {
-            let valor = elemento.value.replace(/\D/g, "");
-            if (valor === "") { elemento.value = ""; return; }
-            valor = (valor / 100).toFixed(2) + "";
-            valor = valor.replace(".", ",");
-            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-            elemento.value = "R$ " + valor;
-        }
-
-        // Eventos de clique nos botões de filtro
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => { btn.classList.toggle('active'); });
-        });
-
-        // Função de clique para abrir links
-        async function clicarAcao(el, urlBase, tipo) {
-            const textoOriginal = el.innerHTML;
-            el.classList.add('disabled');
-            el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
-
-            try {
-                const response = await fetch('/api/link-profundo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlBase, tipo: tipo })
-                });
-                
-                const data = await response.json();
-                window.open(data.url, '_blank');
-            } catch (err) {
-                console.error(err);
-                window.open(urlBase, '_blank');
-            } finally {
-                el.innerHTML = textoOriginal;
-                el.classList.remove('disabled');
-            }
-        }
-
-        // --- LÓGICA DE URLS COMPARTILHÁVEIS ---
-        
-        // 1. Função para ler a URL e preencher o formulário ao carregar
-        window.addEventListener('load', () => {
-            const params = new URLSearchParams(window.location.search);
-            
-            if (params.has('q') || params.has('uf') || params.has('regiao') || params.has('salario')) {
-                // Preenche campos de texto
-                document.getElementById('palavra_chave').value = params.get('q') || '';
-                document.getElementById('excluir_palavra').value = params.get('excluir') || '';
-                document.getElementById('salario_minimo').value = params.get('salario') || '';
-
-                // Ativa botões de UF
-                const ufs = params.get('uf') ? params.get('uf').split(',') : [];
-                ufs.forEach(uf => {
-                    const btn = document.querySelector(`.uf-btn[data-value="${uf}"]`);
-                    if (btn) btn.classList.add('active');
-                });
-
-                // Ativa botões de Região
-                const regioes = params.get('regiao') ? params.get('regiao').split(',') : [];
-                regioes.forEach(reg => {
-                    const btn = document.querySelector(`.region-btn[data-value="${reg}"]`);
-                    if (btn) btn.classList.add('active');
-                });
-
-                // Dispara a busca automaticamente
-                document.getElementById('searchForm').dispatchEvent(new Event('submit'));
-            }
-        });
-
-        // 2. Evento de Busca (Atualizado para salvar na URL)
-        document.getElementById('searchForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const btnBuscar = document.getElementById('btn-buscar');
-            const statusDiv = document.getElementById('status-msg');
-            const container = document.getElementById('resultados-container');
-            
-            const textoOriginal = "Buscar Oportunidades";
-            btnBuscar.value = "⏳ Buscando...";
-            btnBuscar.disabled = true;
-            
-            container.innerHTML = '';
-            statusDiv.className = 'loading';
-            statusDiv.innerText = 'Processando sua busca...';
-            statusDiv.style.display = 'block';
-
-            const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
-            const activeRegions = Array.from(document.querySelectorAll('.region-btn.active')).map(btn => btn.getAttribute('data-value'));
-            const salario = document.getElementById('salario_minimo').value;
-            const palavraChave = document.getElementById('palavra_chave').value;
-            const excluir = document.getElementById('excluir_palavra').value;
-
-            // --- ATUALIZA A URL DO NAVEGADOR ---
-            const params = new URLSearchParams();
-            if (palavraChave) params.set('q', palavraChave);
-            if (salario) params.set('salario', salario);
-            if (excluir) params.set('excluir', excluir);
-            if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
-            if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
-            
-            // Troca a URL sem recarregar (pushState)
-            const novaUrl = window.location.pathname + '?' + params.toString();
-            window.history.pushState({}, '', novaUrl);
-            // ------------------------------------
-
-            const payload = {
-                salario_minimo: salario,
-                palavra_chave: palavraChave,
-                excluir_palavra: excluir,
-                regioes: activeRegions,
-                ufs: activeUfs
-            };
-
-            try {
-                const response = await fetch('/api/buscar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error(`Erro: ${response.status}`);
-                const concursos = await response.json();
-                
-                btnBuscar.value = `Buscar Oportunidades (${concursos.length})`;
-                btnBuscar.disabled = false;
-
-                if (concursos.length === 0) {
-                    statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado para os filtros selecionados.';
-                    return;
-                }
-
-                statusDiv.style.display = 'none';
-
-                concursos.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'concurso-card';
-                    
-                    const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
-
-                    div.innerHTML = `
-                        <h3>${c['Informações do Concurso']}</h3>
-                        <div class="meta-line">
-                            <span class="badge money"><i class="fas fa-dollar-sign"></i> ${c['Salário']}</span>
-                            <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
-                            <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
+        if tipo == 'edital':
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                if 'edital' in text or 'abertura' in text or href.endswith('.pdf'):
+                    if 'facebook' not in href and 'twitter' not in href:
+                        candidato_melhor = a['href']
+                        if href.endswith('.pdf'): break
                             
-                            <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
-                                <i class="fas fa-file-pdf"></i> Ver Edital
-                            </a>
-                            <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
-                                <i class="fas fa-pen"></i> Inscrição
-                            </a>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                });
+        elif tipo == 'inscricao':
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                
+                if REGEX_BANCAS.search(href) or REGEX_BANCAS.search(text):
+                    if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
+                        return a['href']
 
-            } catch (error) {
-                console.error(error);
-                statusDiv.className = 'error';
-                statusDiv.innerHTML = `❌ Erro de conexão.`;
-                btnBuscar.value = textoOriginal;
-                btnBuscar.disabled = false;
-            }
-        });
-    </script>
-</body>
-</html>
+            termos_fortes = ['inscriç', 'inscreva', 'ficha', 'candidato', 'eletrônico', 'formulário', 'site']
+            for a in todos_links:
+                href = a['href'].lower()
+                text = a.get_text().lower()
+                
+                if any(t in text for t in termos_fortes):
+                    if 'pciconcursos' not in href and 'facebook' not in href and '.pdf' not in href:
+                        candidato_melhor = a['href']
+                        break
+
+        return candidato_melhor if candidato_melhor else url_base
+
+    except Exception as e:
+        print(f"Erro deep link: {e}")
+        return url_base
+
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
+
+@app.route('/api/link-profundo', methods=['POST'])
+def api_link_profundo():
+    data = request.json or {}
+    url_concurso = data.get('url', '')
+    tipo = data.get('tipo', 'edital')
+    
+    if not url_concurso or url_concurso == '#':
+        return jsonify({'url': '#'})
+
+    url_final = extrair_link_final(url_concurso, tipo)
+    return jsonify({'url': url_final})
+
+@app.route('/api/buscar', methods=['POST'])
+def api_buscar():
+    data = request.json or {}
+    
+    try:
+        s_raw = str(data.get('salario_minimo', ''))
+        s_clean = re.sub(r'[^\d,]', '', s_raw)
+        s_clean = s_clean.replace(',', '.')
+        salario_minimo = float(s_clean) if s_clean else 0.0
+    except: salario_minimo = 0.0
+
+    palavra_chave_raw = data.get('palavra_chave', '')
+    lista_palavras_chave = [p.strip() for p in palavra_chave_raw.split(',') if p.strip()]
+
+    excluir_str = data.get('excluir_palavra', '')
+    excluir_palavras = [p.strip() for p in excluir_str.split(',') if p.strip()]
+
+    ufs_selecionadas = data.get('ufs', []) 
+    regioes_selecionadas = data.get('regioes', []) 
+
+    conjunto_ufs_alvo = set(ufs_selecionadas)
+    for reg in regioes_selecionadas:
+        if reg == 'Nacional':
+            conjunto_ufs_alvo.add('Nacional/Outro')
+        elif reg in REGIOES:
+            conjunto_ufs_alvo.update(REGIOES[reg])
+    
+    lista_final_ufs = list(conjunto_ufs_alvo)
+    
+    todos = buscar_concursos()
+    resultados = filtrar_concursos(todos, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
+    
+    return jsonify(resultados)
+
+if __name__ == '__main__':
+    try:
+        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    except:
+        pass
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

@@ -58,7 +58,7 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO (Agora aplicados a tag <a>) */
+        /* ESTILO DOS BOTÕES DE AÇÃO */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 7px 14px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
@@ -66,17 +66,16 @@
             cursor: pointer; font-family: inherit; text-decoration: none;
         }
         
-        /* Estado desabilitado simulado para link */
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         
         /* BOTÃO EDITAL - VERMELHO SUAVE COM ÍCONE */
         .btn-edital { 
-            background-color: #ef5350; /* Vermelho suave (Material Design Red 400) */
+            background-color: #ef5350; 
             color: white; 
             border: 1px solid #ef5350; 
         }
         .btn-edital:hover { 
-            background-color: #e53935; /* Um tom um pouco mais escuro ao passar o mouse */
+            background-color: #e53935; 
             color: white; 
         }
         
@@ -179,14 +178,9 @@
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        // FUNÇÃO DE CLIQUE REESCRITA
-        // Usa onclick direto no elemento, mas agora em uma tag <a> segura
         async function clicarAcao(el, urlBase, tipo) {
             const textoOriginal = el.innerHTML;
-            
-            // Trava o botão visualmente
             el.classList.add('disabled');
-            // Mantém ícone de loading apropriado
             el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
 
             try {
@@ -197,20 +191,61 @@
                 });
                 
                 const data = await response.json();
-                
-                // Abre o link retornado
                 window.open(data.url, '_blank');
             } catch (err) {
                 console.error(err);
-                // Fallback de segurança
                 window.open(urlBase, '_blank');
             } finally {
-                // Destrava o botão
                 el.innerHTML = textoOriginal;
                 el.classList.remove('disabled');
             }
         }
 
+        // --- SISTEMA DE URL COMPARTILHÁVEL ---
+        
+        // 1. LER URL AO CARREGAR
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            let deveBuscar = false;
+
+            if (params.has('q')) {
+                document.getElementById('palavra_chave').value = params.get('q');
+                deveBuscar = true;
+            }
+            if (params.has('salario')) {
+                document.getElementById('salario_minimo').value = params.get('salario');
+                deveBuscar = true;
+            }
+            if (params.has('excluir')) {
+                document.getElementById('excluir_palavra').value = params.get('excluir');
+                deveBuscar = true;
+            }
+            
+            // Ativa botões da URL
+            if (params.has('uf')) {
+                const ufs = params.get('uf').split(',');
+                ufs.forEach(uf => {
+                    const btn = document.querySelector(`.uf-btn[data-value="${uf}"]`);
+                    if (btn) btn.classList.add('active');
+                });
+                deveBuscar = true;
+            }
+            if (params.has('regiao')) {
+                const regioes = params.get('regiao').split(',');
+                regioes.forEach(reg => {
+                    const btn = document.querySelector(`.region-btn[data-value="${reg}"]`);
+                    if (btn) btn.classList.add('active');
+                });
+                deveBuscar = true;
+            }
+
+            // Se tiver filtros na URL, busca automaticamente
+            if (deveBuscar) {
+                document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // 2. BUSCA + ATUALIZAR URL
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -229,11 +264,27 @@
 
             const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
             const activeRegions = Array.from(document.querySelectorAll('.region-btn.active')).map(btn => btn.getAttribute('data-value'));
+            const salario = document.getElementById('salario_minimo').value;
+            const palavraChave = document.getElementById('palavra_chave').value;
+            const excluir = document.getElementById('excluir_palavra').value;
+
+            // --- ATUALIZA A URL NO NAVEGADOR ---
+            const params = new URLSearchParams();
+            if (palavraChave) params.set('q', palavraChave);
+            if (salario) params.set('salario', salario);
+            if (excluir) params.set('excluir', excluir);
+            if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
+            if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
+            
+            // Troca a URL sem recarregar a página (pushState)
+            const novaUrl = window.location.pathname + '?' + params.toString();
+            window.history.pushState({}, '', novaUrl);
+            // ------------------------------------
 
             const payload = {
-                salario_minimo: document.getElementById('salario_minimo').value,
-                palavra_chave: document.getElementById('palavra_chave').value,
-                excluir_palavra: document.getElementById('excluir_palavra').value,
+                salario_minimo: salario,
+                palavra_chave: palavraChave,
+                excluir_palavra: excluir,
                 regioes: activeRegions,
                 ufs: activeUfs
             };
@@ -265,21 +316,18 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // AQUI ESTÁ A ATUALIZAÇÃO VISUAL:
-                    // 1. Botão Edital agora usa ícone de PDF e cor vermelha (via classe CSS)
-                    // 2. Botão Inscrição continua com o emoji da mãozinha, sem alterações.
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
-                            <span class="badge money">💰 ${c['Salário']}</span>
-                            <span class="badge uf">📍 ${c['UF']}</span>
-                            <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
+                            <span class="badge money"><i class="fas fa-dollar-sign"></i> ${c['Salário']}</span>
+                            <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
+                            <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                             
                             <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
                                 <i class="fas fa-file-pdf"></i> Ver Edital
                             </a>
                             <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
-                                ✍️ Inscrição
+                                <i class="fas fa-pen"></i> Inscrição
                             </a>
                         </div>
                     `;
