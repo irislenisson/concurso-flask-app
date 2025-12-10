@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Concursos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
@@ -50,7 +50,7 @@
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
         .meta-line {
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 15px;
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 15px;
         }
 
         .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px; display: inline-block; }
@@ -58,37 +58,61 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO (Agora aplicados a tag <a>) */
+        /* --- ESTILO 3D MODERNO PARA OS BOTÕES DE AÇÃO --- */
         .action-btn {
-            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
-            border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 5px; border: 1px solid transparent;
-            cursor: pointer; font-family: inherit; text-decoration: none;
+            font-size: 0.9em; 
+            font-weight: 700; 
+            padding: 10px 20px;
+            border-radius: 8px; 
+            display: inline-flex;
+            align-items: center; 
+            gap: 8px; 
+            border: none;
+            cursor: pointer; 
+            font-family: inherit; 
+            text-decoration: none;
+            position: relative;
+            transition: all 0.1s ease-in-out; /* Transição rápida para sensação de clique */
+            top: 0;
         }
         
-        /* Estado desabilitado simulado para link */
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         
-        /* BOTÃO EDITAL - VERMELHO SUAVE COM ÍCONE */
+        /* BOTÃO EDITAL - Vermelho Suave 3D */
         .btn-edital { 
-            background-color: #ef5350; /* Vermelho suave (Material Design Red 400) */
+            background-color: #ef5350; 
             color: white; 
-            border: 1px solid #ef5350; 
+            /* Sombra sólida embaixo para criar o 3D */
+            box-shadow: 0px 4px 0px #c62828; 
         }
         .btn-edital:hover { 
-            background-color: #e53935; /* Um tom um pouco mais escuro ao passar o mouse */
-            color: white; 
+            background-color: #ff6b6b; /* Clareia um pouco ao passar o mouse */
+            top: -2px; /* Sobe um pouco */
+            box-shadow: 0px 6px 0px #c62828; /* Sombra aumenta */
+        }
+        .btn-edital:active {
+            top: 4px; /* Desce ao clicar */
+            box-shadow: 0px 0px 0px #c62828; /* Sombra some (efeito de apertar) */
         }
         
-        /* BOTÃO INSCRIÇÃO - AZUL (MANTIDO ORIGINAL) */
+        /* BOTÃO INSCRIÇÃO - Azul Vibrante 3D */
         .btn-inscricao { 
             background-color: #0d6efd; 
             color: white; 
-            border: 1px solid #0d6efd; 
+            /* Sombra sólida embaixo para criar o 3D */
+            box-shadow: 0px 4px 0px #0a58ca; 
         }
         .btn-inscricao:hover { 
-            background-color: #0b5ed7; 
+            background-color: #3b82f6; 
+            top: -2px;
+            box-shadow: 0px 6px 0px #0a58ca;
         }
+        .btn-inscricao:active {
+            top: 4px;
+            box-shadow: 0px 0px 0px #0a58ca;
+        }
+
+        .action-btn i { font-size: 1.1em; }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -179,14 +203,13 @@
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
 
-        // FUNÇÃO DE CLIQUE REESCRITA
-        // Usa onclick direto no elemento, mas agora em uma tag <a> segura
+        // FUNÇÃO DE CLIQUE (Tag <a> segura com ícone de loading)
         async function clicarAcao(el, urlBase, tipo) {
             const textoOriginal = el.innerHTML;
             
             // Trava o botão visualmente
             el.classList.add('disabled');
-            // Mantém ícone de loading apropriado
+            // Ícone de loading girando
             el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
 
             try {
@@ -198,14 +221,12 @@
                 
                 const data = await response.json();
                 
-                // Abre o link retornado
                 window.open(data.url, '_blank');
             } catch (err) {
                 console.error(err);
-                // Fallback de segurança
                 window.open(urlBase, '_blank');
             } finally {
-                // Destrava o botão
+                // Destrava o botão e devolve o texto original com ícone
                 el.innerHTML = textoOriginal;
                 el.classList.remove('disabled');
             }
@@ -265,21 +286,21 @@
                     
                     const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                    // AQUI ESTÁ A ATUALIZAÇÃO VISUAL:
-                    // 1. Botão Edital agora usa ícone de PDF e cor vermelha (via classe CSS)
-                    // 2. Botão Inscrição continua com o emoji da mãozinha, sem alterações.
+                    // HTML ATUALIZADO:
+                    // Ícone PDF (fa-file-pdf) no Edital Vermelho Suave
+                    // Ícone Caneta (fa-pen) no Inscrição Azul
                     div.innerHTML = `
                         <h3>${c['Informações do Concurso']}</h3>
                         <div class="meta-line">
-                            <span class="badge money">💰 ${c['Salário']}</span>
-                            <span class="badge uf">📍 ${c['UF']}</span>
-                            <span class="badge date">📅 ${c['Data Fim Inscrição']}</span>
+                            <span class="badge money"><i class="fas fa-dollar-sign"></i> ${c['Salário']}</span>
+                            <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
+                            <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                             
                             <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
                                 <i class="fas fa-file-pdf"></i> Ver Edital
                             </a>
                             <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
-                                ✍️ Inscrição
+                                <i class="fas fa-pen"></i> Inscrição
                             </a>
                         </div>
                     `;
