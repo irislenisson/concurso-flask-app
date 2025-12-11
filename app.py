@@ -2,7 +2,9 @@ import os
 import locale
 import json
 import time
-from flask import Flask, request, jsonify, render_template, Response, send_from_directory
+import re
+from urllib.parse import quote
+from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
@@ -14,7 +16,7 @@ try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
 except ImportError:
-    # Fallback para evitar crash se arquivos não estiverem prontos
+    # Fallback de segurança
     UFS_SIGLAS = []
     REGIOES = {}
     REGEX_BANCAS = None
@@ -54,9 +56,11 @@ def obter_dados():
                 item['tokens'] = set(item['tokens'])
         return dados
 
+    # 1. Cache Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         return CACHE_MEMORIA["dados"]
 
+    # 2. Cache Disco
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -67,6 +71,7 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
+    # 3. Web Scraper
     novos_dados = raspar_dados_online()
     if novos_dados:
         try:
@@ -77,6 +82,7 @@ def obter_dados():
         CACHE_MEMORIA["timestamp"] = agora
         return CACHE_MEMORIA["dados"]
     
+    # 4. Fallback
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -93,41 +99,29 @@ def obter_dados():
 # --- ROTAS ---
 @app.after_request
 def add_header(response):
+    # Cache de arquivos estáticos por 1 ano
     if request.path.startswith('/static'):
         response.cache_control.max_age = 31536000
         response.cache_control.public = True
     return response
 
-# ... (imports e configurações anteriores permanecem iguais) ...
-
 @app.route('/')
 def index():
-    # Captura o termo de busca da URL
+    # SEO Dinâmico na Home
     query = request.args.get('q')
-    
     meta = {}
     if query:
-        termo_limpo = query.strip()
-        # REBRANDING AQUI:
-        meta['title'] = f"Concurso: {termo_limpo} | Concurso Ideal"
-        meta['description'] = f"Veja vagas, salários e editais para {termo_limpo} no Concurso Ideal."
+        termo = query.strip()
+        meta['title'] = f"Concurso: {termo} | CONCURSO IDEAL"
+        meta['description'] = f"Veja vagas, salários e editais para {termo} no Concurso Ideal."
     else:
-        # TÍTULO PADRÃO DA MARCA:
-        meta['title'] = None 
+        meta['title'] = None
         meta['description'] = None
 
-    return render_template(
-        'index.html', 
-        meta_title=meta['title'], 
-        meta_description=meta['description']
-    )
+    return render_template('index.html', meta_title=meta['title'], meta_description=meta['description'])
 
-    # Passa as variáveis para o template
-    return render_template(
-        'index.html', 
-        meta_title=meta['title'], 
-        meta_description=meta['description']
-    )
+@app.route('/sobre')
+def sobre(): return render_template('sobre.html')
 
 @app.route('/termos')
 def termos(): return render_template('termos.html')
@@ -138,20 +132,53 @@ def privacidade(): return render_template('privacidade.html')
 @app.route('/robots.txt')
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
-# ROTA ADS.TXT (NOVA) - Obrigatória para AdSense
 @app.route('/ads.txt')
 def ads_txt():
     return send_from_directory(basedir, 'ads.txt')
 
+# SITEMAP DINÂMICO (SEO PROGRAMÁTICO)
 @app.route('/sitemap.xml')
 def sitemap():
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
-    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-      <url><loc>https://concurso-app-2.onrender.com/</loc><changefreq>daily</changefreq></url>
-      <url><loc>https://concurso-app-2.onrender.com/termos</loc><changefreq>monthly</changefreq></url>
-      <url><loc>https://concurso-app-2.onrender.com/privacidade</loc><changefreq>monthly</changefreq></url>
-    </urlset>"""
-    return Response(xml, mimetype="application/xml")
+    xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    
+    # 1. Páginas Estáticas
+    estaticas = [
+        ('index', 'daily', '1.0'),
+        ('sobre', 'monthly', '0.8'),
+        ('termos', 'yearly', '0.5'),
+        ('privacidade', 'yearly', '0.5')
+    ]
+    
+    for endpoint, freq, prio in estaticas:
+        try:
+            url = url_for(endpoint, _external=True)
+            xml_content.append(f'<url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>')
+        except: pass
+
+    # 2. Páginas Dinâmicas (Baseadas no Cache atual)
+    dados = obter_dados()
+    urls_adicionadas = set()
+
+    for item in dados:
+        # Pega o nome do órgão (ex: "Prefeitura de X - Cargos") -> "Prefeitura de X"
+        termo_limpo = item['texto'].split('-')[0].strip()
+        
+        # Evita duplicatas e termos muito curtos
+        if len(termo_limpo) > 4 and termo_limpo not in urls_adicionadas:
+            urls_adicionadas.add(termo_limpo)
+            # Gera URL de busca: site.com/?q=Termo
+            link_dinamico = url_for('index', _external=True) + f"?q={quote(termo_limpo)}"
+            
+            xml_content.append(f'''
+            <url>
+                <loc>{link_dinamico}</loc>
+                <changefreq>daily</changefreq>
+                <priority>0.7</priority>
+            </url>''')
+
+    xml_content.append('</urlset>')
+    return Response('\n'.join(xml_content), mimetype="application/xml")
 
 @app.route('/ping')
 @limiter.exempt
@@ -174,7 +201,6 @@ def api_buscar():
     data = request.json or {}
     
     try: 
-        import re
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw)
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
