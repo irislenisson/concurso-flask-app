@@ -2,9 +2,10 @@ import os
 import locale
 import json
 import time
-import smtplib # <--- NOVO
-from email.mime.text import MIMEText # <--- NOVO
-from email.mime.multipart import MIMEMultipart # <--- NOVO
+import smtplib
+import threading  # <--- NOVO: Para não travar o site
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
 from flask_cors import CORS
 from flask_compress import Compress
@@ -39,55 +40,52 @@ limiter = Limiter(
 CORS(app)
 
 DB_FILE = os.path.join(basedir, 'concursos.json')
-# Atenção: Este arquivo apaga quando o Render reinicia. O e-mail é o backup real.
-LEADS_FILE = os.path.join(basedir, 'leads.txt') 
+LEADS_FILE = os.path.join(basedir, 'leads.txt')
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
-# --- FUNÇÃO DE ENVIO DE E-MAIL (NOVA) ---
+# --- FUNÇÃO DE ENVIO DE E-MAIL (COM LOGS DETALHADOS) ---
 def enviar_email_alerta(novo_lead):
-    # Configurações do Servidor SMTP (Pegando das Variáveis de Ambiente do Render)
-    # Se não estiver configurado, ele avisa no log e não quebra o site
-    smtp_server = os.environ.get('SMTP_SERVER') # ex: smtp.gmail.com
-    smtp_port = os.environ.get('SMTP_PORT')     # ex: 587
-    smtp_user = os.environ.get('SMTP_USER')     # seu email (ex: gmail)
-    smtp_pass = os.environ.get('SMTP_PASS')     # sua senha de aplicativo
+    print(f"--> [EMAIL] Iniciando tentativa de envio para {novo_lead}...")
+    
+    smtp_server = os.environ.get('SMTP_SERVER')
+    smtp_port = os.environ.get('SMTP_PORT')
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_pass = os.environ.get('SMTP_PASS')
     destinatario = "concursoideal@icloud.com"
 
+    # Verificação de variáveis
     if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
-        print("⚠️ AVISO: Configurações de SMTP não encontradas. E-mail não enviado.")
-        return False
+        print("--> [EMAIL ERRO] Variáveis de ambiente SMTP não configuradas no Render!")
+        return
 
     try:
         msg = MIMEMultipart()
         msg['From'] = f"Concurso Ideal <{smtp_user}>"
         msg['To'] = destinatario
-        msg['Subject'] = f"🔔 Novo Lead Cadastrado: {novo_lead}"
+        msg['Subject'] = f"🔔 Novo Lead: {novo_lead}"
 
         corpo = f"""
-        <html>
-          <body>
-            <h2>🚀 Novo Interessado Cadastrado!</h2>
-            <p>Um usuário acabou de deixar o e-mail no site.</p>
-            <p><strong>E-mail:</strong> {novo_lead}</p>
-            <p><strong>Data:</strong> {time.strftime('%d/%m/%Y %H:%M')}</p>
-            <hr>
-            <small>Sistema automático Concurso Ideal</small>
-          </body>
-        </html>
+        <h2>🚀 Novo Interessado Cadastrado!</h2>
+        <p><strong>E-mail:</strong> {novo_lead}</p>
+        <p><strong>Data:</strong> {time.strftime('%d/%m/%Y %H:%M')}</p>
         """
         msg.attach(MIMEText(corpo, 'html'))
 
+        print(f"--> [EMAIL] Conectando ao servidor {smtp_server}:{smtp_port}...")
         server = smtplib.SMTP(smtp_server, int(smtp_port))
         server.starttls()
+        
+        print("--> [EMAIL] Fazendo Login...")
         server.login(smtp_user, smtp_pass)
+        
+        print("--> [EMAIL] Enviando mensagem...")
         server.sendmail(smtp_user, destinatario, msg.as_string())
+        
         server.quit()
-        print(f"--> E-MAIL DE ALERTA ENVIADO PARA {destinatario}")
-        return True
+        print(f"--> [EMAIL SUCESSO] E-mail de alerta enviado para {destinatario}!")
     except Exception as e:
-        print(f"❌ ERRO AO ENVIAR E-MAIL: {e}")
-        return False
+        print(f"--> [EMAIL FALHA] Erro: {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados():
@@ -230,7 +228,7 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- ROTA NEWSLETTER (ATUALIZADA) ---
+# --- ROTA NEWSLETTER (ATUALIZADA COM THREADING) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -240,16 +238,18 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
-    # 1. Tenta salvar no arquivo (Backup temporário)
+    # 1. Salva no arquivo local (Backup rápido)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 2. Tenta enviar o e-mail de notificação (O REAL)
-    # Roda em segundo plano (na verdade síncrono aqui por simplicidade, mas rápido)
-    enviar_email_alerta(email)
+    # 2. Envia e-mail em SEGUNDO PLANO (Não trava o usuário)
+    # Cria uma "linha paralela" de execução só para mandar o e-mail
+    thread = threading.Thread(target=enviar_email_alerta, args=(email,))
+    thread.start()
 
+    # Retorna sucesso IMEDIATAMENTE para o frontend
     return jsonify({'message': 'Sucesso! Você receberá novidades.'})
 
 if __name__ == '__main__':
