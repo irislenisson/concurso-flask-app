@@ -1,8 +1,9 @@
 import os
 import locale
-import time
 import json
-from flask import Flask, request, jsonify, render_template, Response
+import time
+import re  # <--- ADICIONADO: Necessário para limpar o salário
+from flask import Flask, jsonify, render_template, Response
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
@@ -16,14 +17,12 @@ from services.scraper import raspar_dados_online, filtrar_concursos, extrair_lin
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# 1. PERFORMANCE: Ativa Compressão Gzip (Reduz tamanho dos dados em até 70%)
+# Performance e Segurança
 Compress(app)
-
-# 2. SEGURANÇA: Rate Limiting (Evita ataques de força bruta ou scraping excessivo)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["2000 per day", "100 per minute"], # Limites gerais
+    default_limits=["2000 per day", "100 per minute"],
     storage_uri="memory://"
 )
 
@@ -73,8 +72,6 @@ def obter_dados():
     return []
 
 # --- ROTAS ---
-
-# 3. PERFORMANCE: Cache de arquivos estáticos (CSS/JS) no navegador do usuário por 1 ano
 @app.after_request
 def add_header(response):
     if request.path.startswith('/static'):
@@ -96,7 +93,6 @@ def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
 @app.route('/sitemap.xml')
 def sitemap():
-    # XML simples para ajudar o Google a indexar
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>https://concurso-app-2.onrender.com/</loc><changefreq>daily</changefreq></url>
@@ -105,7 +101,6 @@ def sitemap():
     </urlset>"""
     return Response(xml, mimetype="application/xml")
 
-# Rota de Ping para o UptimeRobot (monitoramento)
 @app.route('/ping')
 def ping():
     return jsonify({
@@ -114,21 +109,28 @@ def ping():
         "itens_cache": len(CACHE_MEMORIA.get("dados", []))
     }), 200
 
-# API: Busca link profundo (Edital/Inscrição) com limite mais restrito (15/min)
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("15 per minute") 
 def api_link_profundo():
+    from flask import request
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
 
-# API: Busca principal com limite razoável (30/min)
 @app.route('/api/buscar', methods=['POST'])
 @limiter.limit("30 per minute")
 def api_buscar():
+    from flask import request
     data = request.json or {}
     
-    try: s_min = float(str(data.get('salario_minimo', '')).replace('.', '').replace(',', '.'))
-    except: s_min = 0.0
+    # --- CORREÇÃO DO FILTRO DE SALÁRIO ---
+    try: 
+        s_raw = str(data.get('salario_minimo', ''))
+        # Remove tudo que não é dígito ou vírgula (Tira R$, pontos, espaços)
+        s_clean = re.sub(r'[^\d,]', '', s_raw)
+        # Troca vírgula por ponto para o Python entender
+        s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
+    except: 
+        s_min = 0.0
 
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]

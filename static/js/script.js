@@ -2,8 +2,9 @@
 
 let todosConcursos = [];
 let paginaAtual = 0;
-const itensPorPagina = 20;
+const itensPorPagina = 30;
 
+// --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -13,11 +14,12 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
+// --- INTERATIVIDADE DOS BOTÕES DE FILTRO ---
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// BOTÃO VOLTAR AO TOPO
+// --- BOTÃO VOLTAR AO TOPO ---
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "block";
@@ -25,7 +27,25 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// --- FUNÇÕES DE COMPARTILHAMENTO ---
+// --- SISTEMA DE COOKIES LGPD (NOVO) ---
+document.addEventListener("DOMContentLoaded", function() {
+    // Verifica se já aceitou (salvo no navegador)
+    if (!localStorage.getItem("cookieConsent")) {
+        // Se não tem o registro, mostra o banner
+        const banner = document.getElementById("cookie-banner");
+        if (banner) banner.style.display = "block";
+    }
+});
+
+function aceitarCookies() {
+    // Salva a decisão no navegador do usuário
+    localStorage.setItem("cookieConsent", "true");
+    
+    // Esconde o banner visualmente
+    document.getElementById("cookie-banner").style.display = "none";
+}
+
+// --- FUNÇÕES DE COMPARTILHAMENTO GERAL ---
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
         const toast = document.getElementById("toast");
@@ -41,7 +61,7 @@ function compartilharWhatsApp() {
     window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
 }
 
-// COMPARTILHAMENTO DE CONCURSO ÚNICO (DENTRO DO CARD)
+// --- COMPARTILHAMENTO DE CONCURSO ÚNICO (DENTRO DO CARD) ---
 function copiarLinkUnico(texto) {
     const urlBase = window.location.origin + window.location.pathname;
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
@@ -60,6 +80,7 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
+// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
 async function clicarAcao(el, urlBase, tipo) {
     const textoOriginal = el.innerHTML;
     el.classList.add('disabled');
@@ -82,6 +103,7 @@ async function clicarAcao(el, urlBase, tipo) {
     }
 }
 
+// --- RENDERIZAÇÃO DOS CARDS ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -94,7 +116,7 @@ function renderizarLote() {
         div.className = 'concurso-card';
         const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
         
-        // Prepara texto para link único
+        // Prepara texto para link único (escapa aspas simples)
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
         div.innerHTML = `
@@ -135,6 +157,7 @@ function carregarMais() {
     renderizarLote();
 }
 
+// --- CARREGAMENTO INICIAL (URL PARAMS) ---
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     let deveBuscar = false;
@@ -161,6 +184,7 @@ window.addEventListener('load', () => {
     if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
 });
 
+// --- LÓGICA DE BUSCA PRINCIPAL ---
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -173,7 +197,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     paginaAtual = 0;
     btnLoadMore.style.display = 'none';
 
-    // SKELETON LOADING
+    // SKELETON LOADING (Animação de carregamento)
     container.innerHTML = '';
     statusDiv.style.display = 'none';
     let skeletonsHTML = '';
@@ -237,7 +261,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
             statusDiv.className = 'empty';
             statusDiv.innerHTML = `
                 ❌ Não foi possível encontrar concursos com esses filtros.<br>
-                Tente ajustar os filtros ou aguarde por novas oportunidades.
+                Se o problema persistir, pode ser instabilidade no site de origem (PCI Concursos).
             `;
             return;
         }
