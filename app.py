@@ -18,7 +18,7 @@ CORS(app)
 DB_FILE = os.path.join(basedir, 'concursos.json')
 CACHE_TIMEOUT = 900  # 15 minutos
 
-# Cache em Memória (RAM) para acesso instantâneo
+# Cache em Memória
 CACHE_MEMORIA = {
     "timestamp": 0,
     "dados": []
@@ -95,8 +95,6 @@ def formatar_real(valor):
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- 1. FUNÇÃO DE RASPAGEM E PROCESSAMENTO (ETL) ---
-# Baixa o HTML, processa tudo e retorna uma lista de dicionários limpos
 def raspar_dados_online():
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -114,7 +112,6 @@ def raspar_dados_online():
         for c in itens_brutos:
             texto = c.get_text(separator=' ', strip=True)
             
-            # Extrai Link
             link_original = "#"
             try:
                 tag_link = c.find('a')
@@ -122,7 +119,6 @@ def raspar_dados_online():
                     link_original = tag_link['href']
             except: pass
 
-            # Extrai Data
             datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
             data_fim_obj = None
             data_str = "Indefinida"
@@ -130,11 +126,10 @@ def raspar_dados_online():
             if datas:
                 try:
                     data_fim_obj = datetime.strptime(datas[-1], '%d/%m/%Y').date()
-                    if data_fim_obj < hoje: continue # Ignora vencidos
+                    if data_fim_obj < hoje: continue
                     data_str = data_fim_obj.strftime('%d/%m/%Y')
                 except: pass
 
-            # Extrai Salário
             salario_num = 0.0
             m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
             if m:
@@ -142,17 +137,15 @@ def raspar_dados_online():
                     salario_num = float(m.group(1).replace('.', '').replace(',', '.'))
                 except: salario_num = 0.0
 
-            # Extrai UF
             uf_detectada = 'Nacional/Outro'
             for sigla in UFS_SIGLAS:
                 if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
                     uf_detectada = sigla
                     break
 
-            # Adiciona item limpo à lista
             lista_processada.append({
                 'texto': texto,
-                'texto_lower': texto.lower(), # Otimização para busca
+                'texto_lower': texto.lower(),
                 'link': link_original,
                 'data_fim': data_str,
                 'salario_num': salario_num,
@@ -160,33 +153,26 @@ def raspar_dados_online():
                 'uf': uf_detectada
             })
         
-        # Ordena por maior salário
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
-        print(f"--> Raspagem concluída. {len(lista_processada)} itens processados.")
         return lista_processada
 
     except Exception as e:
         print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
         return []
 
-# --- 2. GERENCIADOR DE DADOS (CACHE + JSON) ---
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
-    # A. Verifica Memória RAM (Mais rápido)
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         print("--> Fonte: Memória RAM")
         return CACHE_MEMORIA["dados"]
 
-    # B. Verifica Arquivo JSON (Persistência)
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
                 conteudo = json.load(f)
                 ts_arquivo = conteudo.get('timestamp', 0)
-                
-                # Se o arquivo for recente (< 15 min), carrega ele para RAM
                 if agora - ts_arquivo < CACHE_TIMEOUT:
                     print("--> Fonte: Arquivo JSON (Disco)")
                     CACHE_MEMORIA["dados"] = conteudo.get('dados', [])
@@ -195,15 +181,12 @@ def obter_dados():
         except Exception as e:
             print(f"--> Erro ao ler JSON: {e}")
 
-    # C. Se tudo falhar ou expirar: Raspa Online e Salva
     print("--> Fonte: Web Scraping (Atualizando...)")
     novos_dados = raspar_dados_online()
     
-    # Salva na RAM
     CACHE_MEMORIA["dados"] = novos_dados
     CACHE_MEMORIA["timestamp"] = agora
     
-    # Salva no Disco (JSON)
     try:
         with open(DB_FILE, 'w', encoding='utf-8') as f:
             json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
@@ -212,31 +195,29 @@ def obter_dados():
 
     return novos_dados
 
-# --- 3. FILTRAGEM (Agora trabalha com dicionários limpos) ---
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for item in todos_dados:
-        # Filtro de Exclusão
         if excluir_palavras and any(ex.lower() in item['texto_lower'] for ex in excluir_palavras):
             continue
 
-        # Filtro Palavra Chave (OU)
         if lista_palavras_chave:
             encontrou = any(chave.lower() in item['texto_lower'] for chave in lista_palavras_chave)
             if not encontrou: continue
 
-        # Filtro Salário
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
-        # Filtro UF
+        # --- CORREÇÃO DA LÓGICA DO FILTRO NACIONAL ---
+        # Se estiver em modo restritivo (algum filtro selecionado), 
+        # aceita apenas se a UF estiver explicitamente na lista de alvos.
         if modo_restritivo:
-            if item['uf'] not in lista_ufs_alvo and item['uf'] != 'Nacional/Outro':
+            if item['uf'] not in lista_ufs_alvo:
                 continue
+        # ---------------------------------------------
 
-        # Formata para o Front (Mapeia chaves do dict interno para chaves do front)
         resultados.append({
             'Salário': item['salario_formatado'],
             'UF': item['uf'],
@@ -323,10 +304,7 @@ def api_buscar():
         if reg == 'Nacional': conjunto_ufs_alvo.add('Nacional/Outro')
         elif reg in REGIOES: conjunto_ufs_alvo.update(REGIOES[reg])
     
-    # 1. Obtém dados (Memória > JSON > Web)
     todos_dados = obter_dados()
-    
-    # 2. Filtra na lista de dicionários
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, list(conjunto_ufs_alvo), excluir_palavras)
     
     return jsonify(resultados)
