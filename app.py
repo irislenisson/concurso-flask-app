@@ -16,7 +16,11 @@ CORS(app)
 
 # Configurações de Persistência
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 900  # 15 minutos
+
+# --- AJUSTE DE CACHE: 60 MINUTOS ---
+# Como o servidor é mantido ativo pelo ping a cada 5 min, 
+# podemos segurar os dados na memória por 1 hora com segurança.
+CACHE_TIMEOUT = 3600  # 60 minutos (3600 segundos)
 
 # Cache em Memória
 CACHE_MEMORIA = {
@@ -38,7 +42,6 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# Lista de Bancas (Ordenada Alfabeticamente)
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -155,32 +158,33 @@ def raspar_dados_online():
         print(f"Erro raspagem: {e}")
         return []
 
-# FUNÇÃO CENTRAL DE DADOS (CACHE + JSON + SCRAPER)
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
-    # 1. Tenta Memória RAM
+    # Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
+        print(f"--> Usando CACHE (Expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
-    # 2. Tenta Arquivo JSON
+    # Verifica Cache em Disco (JSON)
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
                 conteudo = json.load(f)
                 if agora - conteudo.get('timestamp', 0) < CACHE_TIMEOUT:
+                    print("--> Usando JSON do Disco")
                     CACHE_MEMORIA["dados"] = conteudo.get('dados', [])
                     CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
                     return CACHE_MEMORIA["dados"]
         except: pass
 
-    # 3. Faz Raspagem Online
+    # Se nada funcionar, baixa da web
+    print("--> Baixando dados novos...")
     novos_dados = raspar_dados_online()
     CACHE_MEMORIA["dados"] = novos_dados
     CACHE_MEMORIA["timestamp"] = agora
     
-    # Salva no JSON
     try:
         with open(DB_FILE, 'w', encoding='utf-8') as f:
             json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
@@ -295,8 +299,7 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    # --- CORREÇÃO DO NAME ERROR ---
-    # Agora chamamos 'obter_dados' em vez de 'buscar_concursos'
+    # Busca correta usando a função de persistência
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
