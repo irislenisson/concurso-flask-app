@@ -1,6 +1,6 @@
 import re
 
-# --- CONFIGURAÇÕES GERAIS ---
+# --- CONFIGURAÇÃO GERAL (Faltava esta linha!) ---
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
 # --- LISTAS DE REFERÊNCIA GEOGRÁFICA ---
@@ -18,8 +18,6 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# ... (início igual) ...
-
 # --- REGEX E PADRÕES DE EXTRAÇÃO ---
 REGEX_SALARIOS = [
     r'R\$\s*([\d\.]+)(?:,\d{1,2})?',           # R$ 1.000,00 ou R$ 1.000
@@ -29,18 +27,14 @@ REGEX_SALARIOS = [
     r'([\d\.]+,\d{2})\s*(?:reais|bruto|l[ií]quido)?'
 ]
 
-# ... (resto do arquivo igual) ...
-
 REGEX_DATAS = [
     r'\b(\d{2}/\d{2}/\d{4})\b',     # completo
     r'\b(\d{2}/\d{2}/\d{2})\b',     # dois dígitos
     r'\b(\d{2}/\d{2})\b'            # sem ano
 ]
 
-# Compila o Regex de UF uma única vez para performance
 REGEX_UF = re.compile(r'\b(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', re.IGNORECASE)
 
-# --- LISTA DE BANCAS ---
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -87,6 +81,5 @@ unisul, unitins, univali, univasf, univida, uniuv, uno, unoesc, upe, urca, usp,
 utfpr, verbena, vicentenelson, vunesp, wedo, wisdom, zambini
 """
 
-# Processamento da lista de bancas (Compilação Regex)
 TERMOS_BANCAS = [t.strip() for t in RAW_BANCAS.replace('\n', ',').split(',') if t.strip()]
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
