@@ -4,19 +4,19 @@ import time
 import json
 import locale
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 
-# Configuração do App (Template na raiz)
+# Configuração do App
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
 
 # Configurações de Persistência
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 3600  # 60 minutos (com Keep-Alive)
+CACHE_TIMEOUT = 3600  # 60 minutos
 
 # Cache em Memória
 CACHE_MEMORIA = {
@@ -38,7 +38,6 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# Lista de Bancas (Ordenada Alfabeticamente)
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -265,6 +264,42 @@ def termos():
 @app.route('/privacidade')
 def privacidade():
     return render_template('privacidade.html')
+
+# --- ROTAS DE SEO TÉCNICO ---
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\nSitemap: https://concurso-app-2.onrender.com/sitemap.xml"
+    return Response(content, mimetype="text/plain")
+
+@app.route('/sitemap.xml')
+def sitemap():
+    # Sitemap simples para as páginas principais
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://concurso-app-2.onrender.com/</loc>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+      </url>
+      <url>
+        <loc>https://concurso-app-2.onrender.com/termos</loc>
+        <changefreq>monthly</changefreq>
+      </url>
+      <url>
+        <loc>https://concurso-app-2.onrender.com/privacidade</loc>
+        <changefreq>monthly</changefreq>
+      </url>
+    </urlset>"""
+    return Response(xml, mimetype="application/xml")
+
+# --- TRATAMENTO DE ERROS VISUAL ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('index.html'), 404  # Redireciona 404 para a home (soft 404) ou crie page_404.html
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return "<h1>Erro no Servidor</h1><p>Tente novamente em instantes.</p>", 500
 
 @app.route('/api/link-profundo', methods=['POST'])
 def api_link_profundo():

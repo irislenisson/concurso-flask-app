@@ -1,14 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-      crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-SEU-ID-AQUI');
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <title>Buscador de Concursos | Vagas Abertas 2025</title>
+    <meta name="description" content="Encontre editais, salários e inscrições para concursos públicos em todo o Brasil. Ferramenta gratuita e rápida.">
+    <meta property="og:title" content="Buscador de Concursos">
+    <meta property="og:description" content="Encontre a vaga ideal para você no serviço público.">
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
+    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
 
-    <title>Buscador de Concursos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -39,18 +52,26 @@
         .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
         .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
 
-        /* Grupo de Botões Principais */
-        .main-actions { display: grid; grid-template-columns: 3fr 1fr; gap: 10px; margin-top: 10px; }
+        /* ÁREA DE BOTÕES PRINCIPAIS */
+        .main-actions { display: flex; gap: 10px; margin-top: 10px; }
         
-        input[type="submit"] { background-color: #2c3e50; color: #fff; border: none; cursor: pointer; font-weight: bold; padding: 16px; font-size: 16px; border-radius: 8px; transition: transform 0.2s; width: 100%; }
+        input[type="submit"] { 
+            background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
+            font-weight: bold; padding: 16px; font-size: 16px; border-radius: 8px; 
+            transition: transform 0.2s; flex-grow: 1; margin-top: 0;
+        }
         input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
 
-        #btn-share { 
-            background-color: #6c757d; color: white; border: none; border-radius: 8px; 
-            cursor: pointer; font-size: 1.2em; transition: all 0.2s; 
+        .share-btn { 
+            width: 54px; border-radius: 8px; border: none; cursor: pointer; color: white; 
+            font-size: 1.2em; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
         }
-        #btn-share:hover { background-color: #5a6268; transform: translateY(-2px); }
+        #btn-copy { background-color: #6c757d; }
+        #btn-copy:hover { background-color: #5a6268; transform: translateY(-2px); }
         
+        #btn-whatsapp { background-color: #25D366; } /* Verde WhatsApp */
+        #btn-whatsapp:hover { background-color: #128C7E; transform: translateY(-2px); }
+
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
         .empty { color: #856404; background: #fff3cd; }
@@ -61,16 +82,14 @@
         .concurso-card { background: #fff; margin-bottom: 20px; padding: 25px; border-left: 5px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .concurso-card h3 { margin: 0 0 12px 0; font-size: 1.15em; color: #2c3e50; line-height: 1.5; }
         
-        .meta-line {
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 15px;
-        }
+        .meta-line { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 15px; }
 
         .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 700; letter-spacing: 0.3px; display: inline-block; }
         .badge.money { background-color: #d1e7dd; color: #0f5132; }
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO 3D DOS BOTÕES */
+        /* BOTÕES 3D DE AÇÃO */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
@@ -78,88 +97,50 @@
             cursor: pointer; font-family: inherit; text-decoration: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
-        /* BOTÃO EDITAL - Vermelho Suave */
-        .btn-edital { 
-            background-color: #ef5350; 
-            color: white; 
-            border: 1px solid #ef5350; 
-        }
+        .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
         .btn-edital:hover { background-color: #e53935; }
         
-        /* BOTÃO INSCRIÇÃO - Azul (Original) */
-        .btn-inscricao { 
-            background-color: #0d6efd; 
-            color: white; 
-            border: 1px solid #0d6efd; 
-        }
+        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
-        /* PAGINAÇÃO */
-        #btn-load-more {
-            display: none;
-            width: 100%; max-width: 300px; margin: 30px auto 0; padding: 12px;
-            background-color: #6c757d; color: white; border: none; border-radius: 30px;
-            font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;
-            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #btn-load-more:hover { background-color: #5a6268; transform: translateY(-2px); }
-
-        /* TOAST NOTIFICATION (Aviso de Link Copiado) */
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 1;
-            left: 50%;
-            bottom: 30px;
-            font-size: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
-
-        /* SKELETON LOADING */
+        /* SKELETON */
         .skeleton {
-            background: #e9ecef;
-            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 4px;
-            margin-bottom: 8px;
+            background: #e9ecef; background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px;
         }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .skeleton-card { background: #fff; padding: 25px; border-left: 5px solid #dee2e6; border-radius: 10px; margin-bottom: 20px; }
         .skeleton-title { height: 24px; width: 80%; margin-bottom: 15px; }
         .skeleton-badge { height: 30px; width: 80px; display: inline-block; margin-right: 10px; border-radius: 6px; }
 
-        /* BOTÃO VOLTAR AO TOPO */
+        #btn-load-more {
+            display: none; width: 100%; max-width: 300px; margin: 30px auto 0; padding: 12px;
+            background-color: #6c757d; color: white; border: none; border-radius: 30px;
+            font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        #btn-load-more:hover { background-color: #5a6268; transform: translateY(-2px); }
+
         #btn-back-to-top {
-            position: fixed; bottom: 20px; right: 20px;
-            display: none; background-color: #2c3e50; color: white;
-            border: none; border-radius: 50%; width: 50px; height: 50px;
-            font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 1000;
+            position: fixed; bottom: 20px; right: 20px; display: none; 
+            background-color: #2c3e50; color: white; border: none; 
+            border-radius: 50%; width: 50px; height: 50px; font-size: 1.2rem; 
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s; z-index: 1000;
         }
         #btn-back-to-top:hover { background-color: #1a252f; transform: scale(1.1); }
 
-        .legal-footer {
-            margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
-            border-top: 1px solid #e9ecef; padding-top: 20px;
+        #toast {
+            visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1; left: 50%; bottom: 30px;
         }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        .legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1; border-top: 1px solid #e9ecef; padding-top: 20px; }
         .legal-footer a { color: #6c757d; text-decoration: none; margin: 0 5px; }
-        .legal-footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -222,8 +203,11 @@
 
             <div class="main-actions">
                 <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
-                <button type="button" id="btn-share" onclick="compartilharBusca()" title="Copiar link da busca atual">
+                <button type="button" class="share-btn" id="btn-copy" onclick="copiarLink()" title="Copiar Link">
                     <i class="fas fa-link"></i>
+                </button>
+                <button type="button" class="share-btn" id="btn-whatsapp" onclick="compartilharWhatsApp()" title="Enviar no WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
                 </button>
             </div>
         </form>
@@ -232,17 +216,12 @@
         <div id="resultados-container"></div>
         
         <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
-        
         <button id="btn-back-to-top" onclick="scrollToTop()" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
-
         <div id="toast">Link copiado com sucesso!</div>
 
         <div class="legal-footer">
             <p>Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis.</p>
-            <p>
-                <a href="/termos">Termos de Uso</a> | 
-                <a href="/privacidade">Política de Privacidade</a>
-            </p>
+            <p><a href="/termos">Termos de Uso</a> | <a href="/privacidade">Política de Privacidade</a></p>
         </div>
     </div>
 
@@ -267,26 +246,24 @@
         // BOTÃO VOLTAR AO TOPO
         window.onscroll = function() {
             const btn = document.getElementById("btn-back-to-top");
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                btn.style.display = "block";
-            } else {
-                btn.style.display = "none";
-            }
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "block";
+            else btn.style.display = "none";
         };
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        // FUNÇÃO DE COMPARTILHAMENTO
-        function compartilharBusca() {
-            const urlAtual = window.location.href;
-            navigator.clipboard.writeText(urlAtual).then(() => {
+        // COMPARTILHAMENTO
+        function copiarLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
                 const toast = document.getElementById("toast");
                 toast.className = "show";
                 setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
-            }).catch(err => {
-                console.error('Erro ao copiar', err);
             });
+        }
+
+        function compartilharWhatsApp() {
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent("Olha esses concursos que encontrei:");
+            window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
         }
 
         async function clicarAcao(el, urlBase, tipo) {
@@ -300,7 +277,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: urlBase, tipo: tipo })
                 });
-                
                 const data = await response.json();
                 window.open(data.url, '_blank');
             } catch (err) {
@@ -393,7 +369,7 @@
             paginaAtual = 0;
             btnLoadMore.style.display = 'none';
 
-            // ATIVA O SKELETON LOADING
+            // SKELETON LOADING
             container.innerHTML = '';
             statusDiv.style.display = 'none';
             let skeletonsHTML = '';
@@ -450,8 +426,7 @@
                 btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
                 btnBuscar.disabled = false;
 
-                // Limpa o skeleton antes de mostrar os resultados
-                container.innerHTML = '';
+                container.innerHTML = ''; // Limpa skeleton
 
                 if (todosConcursos.length === 0) {
                     statusDiv.style.display = 'block';
