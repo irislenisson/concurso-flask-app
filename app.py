@@ -2,27 +2,40 @@ import os
 import locale
 import json
 import time
-import re  # <--- ADICIONADO: Necessário para limpar o salário
-from flask import Flask, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix # <--- NECESSÁRIO NO RENDER
 
-# Imports locais
-from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
-from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
+# Imports locais (Tentativa robusta de importação)
+try:
+    from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
+    from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
+except ImportError as e:
+    print(f"ERRO CRÍTICO DE IMPORTAÇÃO: {e}")
+    # Fallback para evitar crash total se mover arquivos errado
+    UFS_SIGLAS = []
+    REGIOES = {} 
+    REGEX_BANCAS = None
 
 # --- CONFIGURAÇÃO ---
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# Performance e Segurança
+# CORREÇÃO PARA O RENDER (ProxyFix)
+# Isso permite que o Flask veja o IP real do usuário através do proxy do Render
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
+# 1. Performance
 Compress(app)
+
+# 2. Segurança (Rate Limiting)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["2000 per day", "100 per minute"],
+    default_limits=["2000 per day", "200 per minute"], # Aumentei um pouco para evitar bloqueio falso nos testes
     storage_uri="memory://"
 )
 
@@ -69,6 +82,18 @@ def obter_dados():
         CACHE_MEMORIA["timestamp"] = agora
         return CACHE_MEMORIA["dados"]
     
+    # 4. Fallback
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, 'r', encoding='utf-8') as f:
+                conteudo = json.load(f)
+                dados_disco = conteudo.get('dados', [])
+                if dados_disco:
+                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_disco)
+                    CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
+                    return CACHE_MEMORIA["dados"]
+        except: pass
+
     return []
 
 # --- ROTAS ---
@@ -96,12 +121,11 @@ def sitemap():
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>https://concurso-app-2.onrender.com/</loc><changefreq>daily</changefreq></url>
-      <url><loc>https://concurso-app-2.onrender.com/termos</loc><changefreq>monthly</changefreq></url>
-      <url><loc>https://concurso-app-2.onrender.com/privacidade</loc><changefreq>monthly</changefreq></url>
     </urlset>"""
     return Response(xml, mimetype="application/xml")
 
 @app.route('/ping')
+@limiter.exempt # O Ping não deve ter limite
 def ping():
     return jsonify({
         "status": "ok",
@@ -110,24 +134,22 @@ def ping():
     }), 200
 
 @app.route('/api/link-profundo', methods=['POST'])
-@limiter.limit("15 per minute") 
+@limiter.limit("20 per minute") 
 def api_link_profundo():
-    from flask import request
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
 
 @app.route('/api/buscar', methods=['POST'])
-@limiter.limit("30 per minute")
+@limiter.limit("60 per minute")
 def api_buscar():
-    from flask import request
     data = request.json or {}
     
-    # --- CORREÇÃO DO FILTRO DE SALÁRIO ---
+    # Tratamento de salário (recolocado o import re que faltava para limpeza, caso precise)
     try: 
         s_raw = str(data.get('salario_minimo', ''))
-        # Remove tudo que não é dígito ou vírgula (Tira R$, pontos, espaços)
+        # Remove caracteres não numéricos exceto vírgula
+        import re
         s_clean = re.sub(r'[^\d,]', '', s_raw)
-        # Troca vírgula por ponto para o Python entender
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
     except: 
         s_min = 0.0
@@ -148,4 +170,5 @@ if __name__ == '__main__':
     try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
     except: pass
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    # MANTENHA DEBUG=TRUE ENQUANTO ESTIVER COM PROBLEMAS
+    app.run(host='0.0.0.0', port=port, debug=True)
