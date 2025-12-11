@@ -2,7 +2,7 @@
 
 let todosConcursos = [];
 let paginaAtual = 0;
-const itensPorPagina = 30;
+const itensPorPagina = 20;
 
 // --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
