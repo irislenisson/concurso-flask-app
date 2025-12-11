@@ -2,21 +2,19 @@ import os
 import locale
 import json
 import time
-import re
-from urllib.parse import quote
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+from urllib.parse import quote
 
 # Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
 except ImportError:
-    # Fallback de segurança
     UFS_SIGLAS = []
     REGIOES = {}
     REGEX_BANCAS = None
@@ -25,13 +23,9 @@ except ImportError:
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# Correção de Proxy para o Render (IP Real)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
-
-# 1. Performance
 Compress(app)
 
-# 2. Segurança (Rate Limiting)
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -42,6 +36,7 @@ limiter = Limiter(
 CORS(app)
 
 DB_FILE = os.path.join(basedir, 'concursos.json')
+LEADS_FILE = os.path.join(basedir, 'leads.txt') # Arquivo para salvar e-mails
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
@@ -56,11 +51,9 @@ def obter_dados():
                 item['tokens'] = set(item['tokens'])
         return dados
 
-    # 1. Cache Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         return CACHE_MEMORIA["dados"]
 
-    # 2. Cache Disco
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -71,7 +64,6 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
-    # 3. Web Scraper
     novos_dados = raspar_dados_online()
     if novos_dados:
         try:
@@ -82,7 +74,6 @@ def obter_dados():
         CACHE_MEMORIA["timestamp"] = agora
         return CACHE_MEMORIA["dados"]
     
-    # 4. Fallback
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -99,7 +90,6 @@ def obter_dados():
 # --- ROTAS ---
 @app.after_request
 def add_header(response):
-    # Cache de arquivos estáticos por 1 ano
     if request.path.startswith('/static'):
         response.cache_control.max_age = 31536000
         response.cache_control.public = True
@@ -107,7 +97,6 @@ def add_header(response):
 
 @app.route('/')
 def index():
-    # SEO Dinâmico na Home
     query = request.args.get('q')
     meta = {}
     if query:
@@ -117,7 +106,6 @@ def index():
     else:
         meta['title'] = None
         meta['description'] = None
-
     return render_template('index.html', meta_title=meta['title'], meta_description=meta['description'])
 
 @app.route('/sobre')
@@ -133,50 +121,26 @@ def privacidade(): return render_template('privacidade.html')
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
 @app.route('/ads.txt')
-def ads_txt():
-    return send_from_directory(basedir, 'ads.txt')
+def ads_txt(): return send_from_directory(basedir, 'ads.txt')
 
-# SITEMAP DINÂMICO (SEO PROGRAMÁTICO)
 @app.route('/sitemap.xml')
 def sitemap():
     xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-    
-    # 1. Páginas Estáticas
-    estaticas = [
-        ('index', 'daily', '1.0'),
-        ('sobre', 'monthly', '0.8'),
-        ('termos', 'yearly', '0.5'),
-        ('privacidade', 'yearly', '0.5')
-    ]
-    
+    estaticas = [('index', 'daily', '1.0'), ('sobre', 'monthly', '0.8'), ('termos', 'yearly', '0.5'), ('privacidade', 'yearly', '0.5')]
     for endpoint, freq, prio in estaticas:
         try:
             url = url_for(endpoint, _external=True)
             xml_content.append(f'<url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>')
         except: pass
-
-    # 2. Páginas Dinâmicas (Baseadas no Cache atual)
     dados = obter_dados()
     urls_adicionadas = set()
-
     for item in dados:
-        # Pega o nome do órgão (ex: "Prefeitura de X - Cargos") -> "Prefeitura de X"
         termo_limpo = item['texto'].split('-')[0].strip()
-        
-        # Evita duplicatas e termos muito curtos
         if len(termo_limpo) > 4 and termo_limpo not in urls_adicionadas:
             urls_adicionadas.add(termo_limpo)
-            # Gera URL de busca: site.com/?q=Termo
             link_dinamico = url_for('index', _external=True) + f"?q={quote(termo_limpo)}"
-            
-            xml_content.append(f'''
-            <url>
-                <loc>{link_dinamico}</loc>
-                <changefreq>daily</changefreq>
-                <priority>0.7</priority>
-            </url>''')
-
+            xml_content.append(f'<url><loc>{link_dinamico}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>')
     xml_content.append('</urlset>')
     return Response('\n'.join(xml_content), mimetype="application/xml")
 
@@ -189,6 +153,7 @@ def ping():
         "itens_cache": len(CACHE_MEMORIA.get("dados", []))
     }), 200
 
+# --- API BUSCA ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
 def api_link_profundo():
@@ -199,18 +164,16 @@ def api_link_profundo():
 @limiter.limit("60 per minute")
 def api_buscar():
     data = request.json or {}
-    
     try: 
+        import re
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw)
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
-    except: 
-        s_min = 0.0
+    except: s_min = 0.0
 
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]
     ufs = set(data.get('ufs', []))
-    
     for reg in data.get('regioes', []):
         if reg == 'Nacional': ufs.add('Nacional/Outro')
         elif reg in REGIOES: ufs.update(REGIOES[reg])
@@ -218,6 +181,26 @@ def api_buscar():
     todos = obter_dados()
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
+
+# --- API NEWSLETTER (NOVA) ---
+@app.route('/api/newsletter', methods=['POST'])
+@limiter.limit("5 per minute")
+def api_newsletter():
+    data = request.json or {}
+    email = data.get('email', '').strip()
+    
+    if not email or '@' not in email:
+        return jsonify({'error': 'E-mail inválido'}), 400
+    
+    # Salva no arquivo (Temporário até ter Banco de Dados)
+    try:
+        with open(LEADS_FILE, 'a', encoding='utf-8') as f:
+            f.write(f"{datetime.now()} - {email}\n")
+        print(f"--> NOVO LEAD CAPTURADO: {email}") # Log do Render
+    except Exception as e:
+        print(f"Erro ao salvar lead: {e}")
+
+    return jsonify({'message': 'Sucesso! Você receberá novidades.'})
 
 if __name__ == '__main__':
     try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')

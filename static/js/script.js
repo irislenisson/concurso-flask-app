@@ -1,10 +1,9 @@
-/* static/js/script.js - Versão Final Completa com Toggle Switch */
+/* static/js/script.js - Versão Final com Captura de Leads */
 
 let todosConcursos = [];
 let paginaAtual = 0;
 const itensPorPagina = 20;
 
-// --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -14,36 +13,65 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
-// --- INTERATIVIDADE DOS BOTÕES DE FILTRO ---
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// --- DARK MODE LOGIC (COM SWITCH) ---
+// --- NEWSLETTER ---
+async function cadastrarLead() {
+    const emailInput = document.getElementById('email-lead');
+    const email = emailInput.value;
+    const btn = document.querySelector('.news-form button');
+
+    if (!email || !email.includes('@')) {
+        alert("Por favor, digite um e-mail válido.");
+        return;
+    }
+
+    const textoOriginal = btn.innerText;
+    btn.innerText = "Enviando...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/newsletter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        
+        if (response.ok) {
+            btn.innerText = "Cadastrado! ✅";
+            emailInput.value = "";
+            setTimeout(() => { btn.innerText = "Cadastrar"; btn.disabled = false; }, 3000);
+        } else {
+            throw new Error();
+        }
+    } catch (e) {
+        btn.innerText = "Erro ❌";
+        setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
+    }
+}
+
+// --- DARK MODE LOGIC ---
 const themeCheckbox = document.getElementById('checkbox');
 const htmlElement = document.documentElement;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Recupera tema salvo
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
-        if (savedTheme === 'dark') {
-            themeCheckbox.checked = true;
-        }
+        if (savedTheme === 'dark' && themeCheckbox) themeCheckbox.checked = true;
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         htmlElement.setAttribute('data-theme', 'dark');
-        themeCheckbox.checked = true;
+        if (themeCheckbox) themeCheckbox.checked = true;
     }
     
-    // Verifica Cookies LGPD
     if (!localStorage.getItem("cookieConsent")) {
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
     }
 });
 
-// Event listener para o switch
 if (themeCheckbox) {
     themeCheckbox.addEventListener('change', function() {
         if (this.checked) {
@@ -56,13 +84,11 @@ if (themeCheckbox) {
     });
 }
 
-
 function aceitarCookies() {
     localStorage.setItem("cookieConsent", "true");
     document.getElementById("cookie-banner").style.display = "none";
 }
 
-// --- BOTÃO VOLTAR AO TOPO ---
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (btn) {
@@ -72,14 +98,12 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// --- FUNÇÃO DE REPORTAR ERRO ---
 function reportarErro(texto) {
     const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
-    const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
+    const corpo = encodeURIComponent(`Olá, encontrei um problema:\n\n"${texto}"\n\nPoderia verificar?`);
     window.open(`mailto:?subject=${assunto}&body=${corpo}`);
 }
 
-// --- COMPARTILHAMENTO ---
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
         const toast = document.getElementById("toast");
@@ -113,7 +137,6 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
-// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
 async function clicarAcao(el, urlBase, tipo) {
     const textoOriginal = el.innerHTML;
     el.classList.add('disabled');
@@ -136,7 +159,6 @@ async function clicarAcao(el, urlBase, tipo) {
     }
 }
 
-// --- RENDERIZAÇÃO DOS CARDS (COM ANÚNCIOS IN-FEED) ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -206,7 +228,6 @@ function carregarMais() {
     renderizarLote();
 }
 
-// --- CARREGAMENTO INICIAL ---
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     let deveBuscar = false;
@@ -233,7 +254,6 @@ window.addEventListener('load', () => {
     if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
 });
 
-// --- SUBMIT DO FORMULÁRIO ---
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btnBuscar = document.getElementById('btn-buscar');
@@ -305,8 +325,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         if (todosConcursos.length === 0) {
             statusDiv.style.display = 'block';
             statusDiv.className = 'empty';
-            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>
-            Tente ajustar os filtros ou palavras-chave e buscar novamente.`;
+            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>Tente ajustar os filtros ou palavras-chave e buscar novamente.`;
             return;
         }
 
