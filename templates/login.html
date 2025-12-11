@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Login Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto; text-align: center;">
+    <h1>🔒 Acesso Restrito</h1>
+    <p>Área exclusiva para administradores.</p>
+    
+    <form action="/admin/login" method="POST" style="margin-top: 20px;">
+        <label style="text-align: left;">Senha de Acesso</label>
+        <input type="password" name="password" placeholder="Digite a senha..." required>
+        <input type="submit" value="Entrar" style="margin-top: 15px;">
+    </form>
+    
+    {% if erro %}
+        <p style="color: #dc3545; margin-top: 10px;">{{ erro }}</p>
+    {% endif %}
+</div>
+{% endblock %}

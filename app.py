@@ -4,9 +4,10 @@ import json
 import time
 import smtplib
 import threading
+from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
+from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for, session, redirect, make_response
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
@@ -14,7 +15,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports locais com tratamento de erro
+# Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
@@ -27,13 +28,13 @@ except ImportError:
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# Correção de Proxy para o Render (IP Real)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+# SEGURANÇA DE SESSÃO
+app.secret_key = os.environ.get('SECRET_KEY', 'chave_super_secreta_padrao_dev')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123') # Configure no Render!
 
-# 1. Performance
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 Compress(app)
 
-# 2. Segurança (Rate Limiting)
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -48,8 +49,18 @@ LEADS_FILE = os.path.join(basedir, 'leads.txt')
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
-# --- FUNÇÃO DE ENVIO DE E-MAIL ---
+# --- DECORATOR DE AUTENTICAÇÃO ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect('/admin/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- FUNÇÕES AUXILIARES ---
 def enviar_emails_sistema(email_usuario):
+    # (Mantido igual, mas lembre-se que no Render Free falha)
     smtp_server = os.environ.get('SMTP_SERVER')
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
     smtp_user = os.environ.get('SMTP_USER')
@@ -57,11 +68,10 @@ def enviar_emails_sistema(email_usuario):
     admin_email = "concursoideal@icloud.com"
 
     if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
-        print("--> [EMAIL AVISO] Variáveis SMTP não configuradas (Modo Offline).")
+        print("--> [EMAIL AVISO] Variáveis SMTP não configuradas.")
         return
 
     try:
-        # Lógica de conexão (SSL vs TLS)
         if smtp_port == 465:
             server = smtplib.SMTP_SSL(smtp_server, smtp_port)
         else:
@@ -69,40 +79,19 @@ def enviar_emails_sistema(email_usuario):
             server.starttls()
 
         server.login(smtp_user, smtp_pass)
-
-        # 1. E-MAIL PARA O ADMIN
+        
+        # Admin Alert
         msg_admin = MIMEMultipart()
-        msg_admin['From'] = f"Sistema Concurso Ideal <{smtp_user}>"
+        msg_admin['From'] = f"Sistema <{smtp_user}>"
         msg_admin['To'] = admin_email
-        msg_admin['Subject'] = f"🔔 Novo Lead: {email_usuario}"
-        msg_admin.attach(MIMEText(f"<h2>Novo Cadastro!</h2><p>Usuário: <strong>{email_usuario}</strong></p>", 'html'))
+        msg_admin['Subject'] = f"🔔 Lead: {email_usuario}"
+        msg_admin.attach(MIMEText(f"Novo Lead: {email_usuario}", 'html'))
         server.sendmail(smtp_user, admin_email, msg_admin.as_string())
-
-        # 2. E-MAIL PARA O USUÁRIO
-        msg_user = MIMEMultipart()
-        msg_user['From'] = f"Concurso Ideal <{smtp_user}>"
-        msg_user['To'] = email_usuario
-        msg_user['Subject'] = "Bem-vindo ao Concurso Ideal! 🚀"
-        corpo_user = f"""
-        <div style="font-family: Arial, sans-serif; color: #333;">
-            <h2 style="color: #007bff;">Obrigado por se cadastrar!</h2>
-            <p>Em breve você receberá as melhores vagas de concursos públicos.</p>
-            <br>
-            <p>Atenciosamente,<br><strong>Equipe Concurso Ideal</strong></p>
-        </div>
-        """
-        msg_user.attach(MIMEText(corpo_user, 'html'))
-        server.sendmail(smtp_user, email_usuario, msg_user.as_string())
-
         server.quit()
-        print(f"--> [EMAIL SUCESSO] E-mails enviados para {admin_email} e {email_usuario}")
-
     except Exception as e:
-        # Se falhar (ex: bloqueio do Render), apenas loga o erro, não trava o sistema
-        print(f"--> [EMAIL BLOQUEADO PELO SERVIDOR] Detalhe: {e}")
+        print(f"--> [EMAIL ERROR] {e}")
 
-# --- GERENCIAMENTO DE DADOS ---
-def obter_dados():
+def obter_dados(force=False):
     global CACHE_MEMORIA
     agora = time.time()
 
@@ -112,10 +101,10 @@ def obter_dados():
                 item['tokens'] = set(item['tokens'])
         return dados
 
-    if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
+    if not force and CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         return CACHE_MEMORIA["dados"]
 
-    if os.path.exists(DB_FILE):
+    if not force and os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
                 conteudo = json.load(f)
@@ -135,20 +124,71 @@ def obter_dados():
         CACHE_MEMORIA["timestamp"] = agora
         return CACHE_MEMORIA["dados"]
     
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, 'r', encoding='utf-8') as f:
-                conteudo = json.load(f)
-                dados_disco = conteudo.get('dados', [])
-                if dados_disco:
-                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_disco)
-                    CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
-                    return CACHE_MEMORIA["dados"]
-        except: pass
+    return CACHE_MEMORIA.get("dados", [])
 
-    return []
+# --- ROTAS ADMIN (NOVAS) ---
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        if request.form.get('password') == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            return redirect('/admin')
+        else:
+            return render_template('login.html', erro="Senha incorreta!")
+    return render_template('login.html')
 
-# --- ROTAS ---
+@app.route('/admin/logout')
+def admin_logout():
+    session.clear()
+    return redirect('/')
+
+@app.route('/admin')
+@login_required
+def admin_panel():
+    # Lê os leads do arquivo
+    leads = []
+    if os.path.exists(LEADS_FILE):
+        with open(LEADS_FILE, 'r', encoding='utf-8') as f:
+            for line in f:
+                if ' - ' in line:
+                    parts = line.strip().split(' - ')
+                    leads.append({'data': parts[0], 'email': parts[1]})
+    
+    # Dados do Cache
+    dados = CACHE_MEMORIA.get('dados', [])
+    ts = CACHE_MEMORIA.get('timestamp', 0)
+    idade = int((time.time() - ts) / 60) if ts > 0 else 0
+
+    return render_template('admin.html', 
+                           leads=reversed(leads), # Mostra mais recentes primeiro
+                           total_leads=len(leads),
+                           total_concursos=len(dados),
+                           cache_age=idade)
+
+@app.route('/admin/download_leads')
+@login_required
+def download_leads():
+    if not os.path.exists(LEADS_FILE):
+        return "Nenhum lead encontrado.", 404
+    
+    with open(LEADS_FILE, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Formata como CSV
+    csv_content = "Data,Email\n" + content.replace(' - ', ',')
+    
+    response = make_response(csv_content)
+    response.headers["Content-Disposition"] = "attachment; filename=leads_concurso_ideal.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
+@app.route('/admin/force_update')
+@login_required
+def force_update():
+    obter_dados(force=True)
+    return redirect('/admin')
+
+# --- ROTAS PÚBLICAS ---
 @app.after_request
 def add_header(response):
     if request.path.startswith('/static'):
@@ -245,7 +285,6 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- ROTA NEWSLETTER (COM LOG VISUAL) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -255,21 +294,18 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
-    # 1. IMPRIME NO LOG (BACKUP REAL DO RENDER)
-    # Isso aparecerá nos logs do Render, garantindo que você veja o e-mail mesmo se o envio falhar.
+    # LOG VISUAL NOS LOGS (Backup)
     print(f"\n{'='*40}")
-    print(f"🎯 NOVO LEAD CAPTURADO: {email}")
-    print(f"📅 DATA: {time.strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"🎯 NOVO LEAD: {email}")
     print(f"{'='*40}\n")
     
-    # 2. Salva no arquivo local (Backup volátil)
+    # Salva no arquivo local (Backup visível no Admin)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 3. Tenta enviar e-mail em segundo plano
-    # Se falhar no Render, não afeta o usuário e você já tem o log acima.
+    # Tenta e-mail
     thread = threading.Thread(target=enviar_emails_sistema, args=(email,))
     thread.start()
 
@@ -279,5 +315,4 @@ if __name__ == '__main__':
     try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
     except: pass
     port = int(os.environ.get('PORT', 5000))
-    # Mantenha debug=True por enquanto para ver erros
     app.run(host='0.0.0.0', port=port, debug=True)

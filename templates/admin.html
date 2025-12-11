@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Admin - Concurso Ideal{% endblock %}
+
+{% block content %}
+<div class="concurso-card" style="border-left: 5px solid #2c3e50;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>🎛️ Painel de Controle</h1>
+        <a href="/admin/logout" class="action-btn" style="background:#dc3545; color:white;">Sair</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <div style="background: var(--bg-body); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <h3>{{ total_leads }}</h3>
+            <p style="margin:0; opacity:0.7;">Leads Capturados</p>
+        </div>
+        <div style="background: var(--bg-body); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <h3>{{ total_concursos }}</h3>
+            <p style="margin:0; opacity:0.7;">Concursos no Cache</p>
+        </div>
+        <div style="background: var(--bg-body); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <h3>{{ cache_age }} min</h3>
+            <p style="margin:0; opacity:0.7;">Idade do Cache</p>
+        </div>
+    </div>
+
+    <h3>⚡ Ações Rápidas</h3>
+    <div class="btn-grid" style="margin-bottom: 30px;">
+        <a href="/admin/download_leads" class="action-btn" style="background: #28a745; color: white;">
+            <i class="fas fa-file-csv"></i> Baixar E-mails (CSV)
+        </a>
+        <a href="/admin/force_update" class="action-btn" style="background: #ffc107; color: #333;">
+            <i class="fas fa-sync-alt"></i> Forçar Atualização
+        </a>
+    </div>
+
+    <h3>📋 Últimos Leads (Arquivo Local)</h3>
+    <p style="font-size: 0.8em; color: #dc3545;">⚠️ Aviso: Esta lista é temporária e zera se o Render reiniciar. Baixe sempre!</p>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em;">
+            <thead>
+                <tr style="background: var(--border-color); text-align: left;">
+                    <th style="padding: 10px;">Data/Hora</th>
+                    <th style="padding: 10px;">E-mail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in leads %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px;">{{ lead.data }}</td>
+                    <td style="padding: 10px;"><strong>{{ lead.email }}</strong></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" style="padding: 20px; text-align: center; opacity: 0.6;">Nenhum lead capturado nesta sessão.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
