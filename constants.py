@@ -36,7 +36,7 @@ REGEX_DATAS = [
 # Compila o Regex de UF uma única vez para performance
 REGEX_UF = re.compile(r'\b(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', re.IGNORECASE)
 
-# --- LISTA DE BANCAS (ORGANIZADA ALFABETICAMENTE) ---
+# --- LISTA DE BANCAS ---
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
