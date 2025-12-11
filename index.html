@@ -58,11 +58,11 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO */
+        /* ESTILO 3D DOS BOTÕES */
         .action-btn {
-            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
+            font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 5px; border: 1px solid transparent;
+            align-items: center; gap: 5px; border: none;
             cursor: pointer; font-family: inherit; text-decoration: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
@@ -226,10 +226,6 @@
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                // HTML ATUALIZADO:
-                // Ícone de PDF no Vermelho
-                // Emoji ✍️ no Azul
-                // Ícone de Dinheiro corrigido (fa-money-bill-wave)
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
                     <div class="meta-line">
