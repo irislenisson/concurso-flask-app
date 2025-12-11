@@ -16,7 +16,7 @@ CORS(app)
 
 # --- SISTEMA DE PERSISTÊNCIA E CACHE ---
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 3600  # 60 minutos (Server mantido vivo por ping externo)
+CACHE_TIMEOUT = 3600  # 60 minutos (com Keep-Alive)
 
 CACHE_MEMORIA = {
     "timestamp": 0,
@@ -38,7 +38,7 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- REGEX E PADRÕES DE EXTRAÇÃO ---
+# --- REGEX E PADRÕES DE EXTRAÇÃO (APRIMORADOS) ---
 REGEX_SALARIOS = [
     r'R\$\s*([\d\.]+,\d{2})',
     r'at[eé]\s*R\$\s*([\d\.]+,\d{2})',
@@ -118,6 +118,7 @@ def extrair_salario(texto):
         m = re.search(padrao, texto, re.IGNORECASE)
         if m:
             try:
+                # Remove pontos de milhar e troca vírgula decimal por ponto
                 return float(m.group(1).replace('.', '').replace(',', '.'))
             except: pass
     return 0.0
@@ -150,10 +151,10 @@ def extrair_uf(texto):
         return "Nacional/Outro"
     return "Nacional/Outro"
 
-# --- RASPAGEM, PROCESSAMENTO E OTIMIZAÇÃO DE TOKENS ---
+# --- RASPAGEM, PROCESSAMENTO E CACHE COM FALLBACK ---
 
 def raspar_dados_online():
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     print("--> Iniciando raspagem online (Lógica Otimizada)...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
@@ -166,7 +167,6 @@ def raspar_dados_online():
 
         for c in itens_brutos:
             texto = c.get_text(separator=' ', strip=True)
-            
             link_original = "#"
             try:
                 tag_link = c.find('a')
@@ -183,15 +183,14 @@ def raspar_dados_online():
                 if data_fim_obj < hoje: continue
                 data_str = data_fim_obj.strftime('%d/%m/%Y')
 
-            # OTIMIZAÇÃO (4): Pré-computar set de palavras-chave
-            # Limpa o texto (remove pontuação básica) e cria um set de palavras únicas
+            # Otimização: set de tokens para busca rápida
             texto_limpo = re.sub(r'[^\w\s]', ' ', texto.lower())
-            tokens_set = list(set(texto_limpo.split())) # Salva como lista para o JSON
+            tokens_set = list(set(texto_limpo.split()))
 
             lista_processada.append({
                 'texto': texto,
                 'texto_lower': texto.lower(),
-                'tokens': tokens_set, # Usado para filtro rápido
+                'tokens': tokens_set,
                 'link': link_original,
                 'data_fim': data_str,
                 'salario_num': salario_num,
@@ -200,6 +199,7 @@ def raspar_dados_online():
             })
         
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
+        print(f"--> Raspagem concluída: {len(lista_processada)} concursos ativos.")
         return lista_processada
 
     except Exception as e:
@@ -210,7 +210,7 @@ def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
-    # Função interna para converter listas de tokens em SETs (Performance)
+    # Função auxiliar para hidratar tokens (list -> set)
     def hidratar_cache(dados):
         for item in dados:
             if isinstance(item.get('tokens'), list):
@@ -219,6 +219,7 @@ def obter_dados():
 
     # 1. Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
+        print(f"--> Usando CACHE em memória (expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
     # 2. Verifica Cache em Disco (JSON)
@@ -226,56 +227,77 @@ def obter_dados():
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
                 conteudo = json.load(f)
-                if agora - conteudo.get('timestamp', 0) < CACHE_TIMEOUT:
-                    print("--> Usando JSON do Disco")
-                    dados_json = conteudo.get('dados', [])
-                    # Converte tokens de lista para set ao carregar na memória
-                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_json)
-                    CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
+                ts_arquivo = conteudo.get('timestamp', 0)
+                dados_disco = conteudo.get('dados', [])
+                
+                # Se estiver dentro do timeout, usa direto
+                if agora - ts_arquivo < CACHE_TIMEOUT and dados_disco:
+                    print("--> Usando JSON do Disco (ainda dentro do TTL)")
+                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_disco)
+                    CACHE_MEMORIA["timestamp"] = ts_arquivo
                     return CACHE_MEMORIA["dados"]
-        except: pass
+        except Exception as e:
+            print(f"Erro lendo JSON local: {e}")
 
-    # 3. Baixa da Web (Fallback)
-    print("--> Baixando dados novos...")
+    # 3. Baixa da Web
+    print("--> Baixando dados novos do site...")
     novos_dados = raspar_dados_online()
     
-    # Salva no JSON (com tokens como lista)
-    try:
-        with open(DB_FILE, 'w', encoding='utf-8') as f:
-            json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
-    except: pass
+    if novos_dados:
+        # Salva no JSON (com tokens como lista)
+        try:
+            with open(DB_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
+            print(f"--> JSON salvo com {len(novos_dados)} registros.")
+        except Exception as e:
+            print(f"Erro ao salvar JSON local: {e}")
 
-    # Converte tokens para set na memória
-    CACHE_MEMORIA["dados"] = hidratar_cache(novos_dados)
-    CACHE_MEMORIA["timestamp"] = agora
+        # Salva na RAM (com tokens como set)
+        CACHE_MEMORIA["dados"] = hidratar_cache(novos_dados)
+        CACHE_MEMORIA["timestamp"] = agora
+        return CACHE_MEMORIA["dados"]
 
-    return CACHE_MEMORIA["dados"]
+    # 4. Fallback: Se raspagem falhou, usa cache antigo do disco
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, 'r', encoding='utf-8') as f:
+                conteudo = json.load(f)
+                dados_disco = conteudo.get('dados', [])
+                if dados_disco:
+                    print("--> Falha na raspagem, usando dados antigos do disco como fallback.")
+                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_disco)
+                    CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
+                    return CACHE_MEMORIA["dados"]
+        except Exception as e:
+            print(f"Erro no fallback do JSON local: {e}")
+
+    print("--> Nenhum dado disponível (raspagem falhou e JSON vazio).")
+    return []
 
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
     modo_restritivo = len(lista_ufs_alvo) > 0
 
-    # OTIMIZAÇÃO: Pré-computar set de exclusão
+    # Pré-computa set de exclusão para performance
     set_exclusao = set(p.lower() for p in excluir_palavras) if excluir_palavras else None
 
     for item in todos_dados:
-        # Filtro de Exclusão OTIMIZADO (Set Operation - O(1))
-        # Verifica se há intersecção entre as palavras do concurso e as palavras proibidas
+        # Filtro Exclusão Otimizado (Set)
         if set_exclusao and 'tokens' in item:
-            # Se não forem disjuntos (ou seja, têm palavras em comum), exclui
-            if not set_exclusao.isdisjoint(item['tokens']):
-                continue
-        # Fallback para string search se tokens não existirem ou para frases compostas
+            if not set_exclusao.isdisjoint(item['tokens']): continue
         elif excluir_palavras and any(ex.lower() in item['texto_lower'] for ex in excluir_palavras):
             continue
 
+        # Filtro Palavra-Chave (String Search - mais seguro para frases)
         if lista_palavras_chave:
             encontrou = any(chave.lower() in item['texto_lower'] for chave in lista_palavras_chave)
             if not encontrou: continue
 
+        # Filtro Salário
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
+        # Filtro UF Estrito
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -288,6 +310,8 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
             'Link': item['link']
         })
 
+    print(f"--> Filtro aplicado: salario_min={salario_min}, palavras={lista_palavras_chave}, ufs={lista_ufs_alvo}, excluir={excluir_palavras}.")
+    print(f"--> Concursos retornados após filtro: {len(resultados)}")
     return resultados
 
 def extrair_link_final(url_base, tipo):
@@ -329,7 +353,7 @@ def extrair_link_final(url_base, tipo):
     except:
         return url_base
 
-# --- ROTAS DA APLICAÇÃO ---
+# --- ROTAS ---
 
 @app.route('/', methods=['GET'])
 def index():
@@ -357,6 +381,14 @@ def sitemap():
       <url><loc>https://concurso-app-2.onrender.com/privacidade</loc><changefreq>monthly</changefreq></url>
     </urlset>"""
     return Response(xml, mimetype="application/xml")
+
+@app.route('/ping')
+def ping():
+    return jsonify({
+        "status": "ok",
+        "cache_timestamp": CACHE_MEMORIA.get("timestamp", 0),
+        "itens_cache": len(CACHE_MEMORIA.get("dados", []))
+    }), 200
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -394,14 +426,23 @@ def api_buscar():
     ufs_selecionadas = data.get('ufs', []) 
     regioes_selecionadas = data.get('regioes', []) 
 
+    # LOG DE DEBUG DA BUSCA
     conjunto_ufs_alvo = set(ufs_selecionadas)
     for reg in regioes_selecionadas:
         if reg == 'Nacional': conjunto_ufs_alvo.add('Nacional/Outro')
         elif reg in REGIOES: conjunto_ufs_alvo.update(REGIOES[reg])
     
     lista_final_ufs = list(conjunto_ufs_alvo)
+
+    print("=== Nova busca recebida ===")
+    print(f"Salário mínimo bruto: {data.get('salario_minimo')}")
+    print(f"Salário mínimo numérico: {salario_minimo}")
+    print(f"Palavras-chave: {lista_palavras_chave}")
+    print(f"Excluir: {excluir_palavras}")
+    print(f"UFs selecionadas: {ufs_selecionadas}")
+    print(f"Regiões selecionadas: {regioes_selecionadas}")
+    print(f"UFs finais consideradas: {lista_final_ufs}")
     
-    # Chama a função correta
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
