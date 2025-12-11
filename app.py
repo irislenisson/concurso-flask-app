@@ -1,26 +1,41 @@
 import os
 import locale
-from flask import Flask, jsonify, render_template, Response
+import time
+import json
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
+from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
-# Imports locais (funcionam porque estão na mesma pasta raiz)
+# Imports locais
 from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
 from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
 
 # --- CONFIGURAÇÃO ---
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
+
+# 1. PERFORMANCE: Ativa Compressão Gzip (Reduz tamanho dos dados em até 70%)
+Compress(app)
+
+# 2. SEGURANÇA: Rate Limiting (Evita ataques de força bruta ou scraping excessivo)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["2000 per day", "100 per minute"], # Limites gerais
+    storage_uri="memory://"
+)
+
 CORS(app)
 
 DB_FILE = os.path.join(basedir, 'concursos.json')
 CACHE_TIMEOUT = 3600 
-
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados():
     global CACHE_MEMORIA
-    import time, json
     agora = time.time()
 
     def hidratar_cache(dados):
@@ -58,6 +73,15 @@ def obter_dados():
     return []
 
 # --- ROTAS ---
+
+# 3. PERFORMANCE: Cache de arquivos estáticos (CSS/JS) no navegador do usuário por 1 ano
+@app.after_request
+def add_header(response):
+    if request.path.startswith('/static'):
+        response.cache_control.max_age = 31536000
+        response.cache_control.public = True
+    return response
+
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -70,27 +94,46 @@ def privacidade(): return render_template('privacidade.html')
 @app.route('/robots.txt')
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
+@app.route('/sitemap.xml')
+def sitemap():
+    # XML simples para ajudar o Google a indexar
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url><loc>https://concurso-app-2.onrender.com/</loc><changefreq>daily</changefreq></url>
+      <url><loc>https://concurso-app-2.onrender.com/termos</loc><changefreq>monthly</changefreq></url>
+      <url><loc>https://concurso-app-2.onrender.com/privacidade</loc><changefreq>monthly</changefreq></url>
+    </urlset>"""
+    return Response(xml, mimetype="application/xml")
+
+# Rota de Ping para o UptimeRobot (monitoramento)
+@app.route('/ping')
+def ping():
+    return jsonify({
+        "status": "ok",
+        "cache_timestamp": CACHE_MEMORIA.get("timestamp", 0),
+        "itens_cache": len(CACHE_MEMORIA.get("dados", []))
+    }), 200
+
+# API: Busca link profundo (Edital/Inscrição) com limite mais restrito (15/min)
 @app.route('/api/link-profundo', methods=['POST'])
+@limiter.limit("15 per minute") 
 def api_link_profundo():
-    from flask import request
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
 
+# API: Busca principal com limite razoável (30/min)
 @app.route('/api/buscar', methods=['POST'])
+@limiter.limit("30 per minute")
 def api_buscar():
-    from flask import request
     data = request.json or {}
     
-    # Tratamento de salário
     try: s_min = float(str(data.get('salario_minimo', '')).replace('.', '').replace(',', '.'))
     except: s_min = 0.0
 
-    # Tratamento de listas
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]
     ufs = set(data.get('ufs', []))
     
-    # Lógica de Regiões
     for reg in data.get('regioes', []):
         if reg == 'Nacional': ufs.add('Nacional/Outro')
         elif reg in REGIOES: ufs.update(REGIOES[reg])
@@ -100,5 +143,7 @@ def api_buscar():
     return jsonify(res)
 
 if __name__ == '__main__':
+    try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    except: pass
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
