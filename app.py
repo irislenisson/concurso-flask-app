@@ -16,9 +16,9 @@ CORS(app)
 
 # Configurações de Persistência
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 900  # 15 minutos
+CACHE_TIMEOUT = 900  # 15 minutos (TTL)
 
-# Cache em Memória
+# Cache em Memória (RAM)
 CACHE_MEMORIA = {
     "timestamp": 0,
     "dados": []
@@ -38,6 +38,8 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
+# --- LISTA DE BANCAS COMPLETA (BLINDADA) ---
+# Mantendo a lista extensa para garantir a precisão da busca de links
 RAW_BANCAS = """
 ibade, objetiva, cespe, cebraspe, ibam, fgv, vunesp, ibfc, idecan, institutomais, 
 consulpam, aocp, selecon, fcc, consulplan, ibgp, rbo, igeduc, fundep, fafipa, 
@@ -85,6 +87,7 @@ avancar, bios, inovaty, fenix, facto, hl, gama, decorp, cl, maxima, arespcj,
 intelectus, abare, univasf, itco
 """
 
+# Processamento da lista de bancas
 TERMOS_BANCAS = [t.strip() for t in RAW_BANCAS.replace('\n', ',').split(',') if t.strip()]
 REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECASE)
 
@@ -96,7 +99,10 @@ def formatar_real(valor):
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
 def raspar_dados_online():
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    print("--> Iniciando raspagem online...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
@@ -150,11 +156,11 @@ def raspar_dados_online():
         
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
         return lista_processada
+
     except Exception as e:
-        print(f"Erro raspagem: {e}")
+        print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
         return []
 
-# FUNÇÃO CORRETA PARA OBTER DADOS
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
@@ -185,6 +191,7 @@ def obter_dados():
 
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
+    # Verifica se algum filtro geográfico foi ativado
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for item in todos_dados:
@@ -198,6 +205,7 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
+        # Lógica Estrita: Se houver filtros, a UF tem que estar na lista
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -290,7 +298,7 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    # CORREÇÃO: Chama a função correta 'obter_dados()'
+    # Busca correta usando a função de persistência
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     

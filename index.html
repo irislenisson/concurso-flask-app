@@ -58,11 +58,11 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO 3D DOS BOTÕES */
+        /* ESTILO DOS BOTÕES DE AÇÃO */
         .action-btn {
-            font-size: 0.85em; font-weight: 600; padding: 8px 16px;
+            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 8px; border: none;
+            align-items: center; gap: 5px; border: 1px solid transparent;
             cursor: pointer; font-family: inherit; text-decoration: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
@@ -70,12 +70,20 @@
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
-        /* EDITAL: Vermelho Suave */
-        .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
+        /* BOTÃO EDITAL - Vermelho Suave */
+        .btn-edital { 
+            background-color: #ef5350; 
+            color: white; 
+            border: 1px solid #ef5350; 
+        }
         .btn-edital:hover { background-color: #e53935; }
         
-        /* INSCRIÇÃO: Azul Vibrante */
-        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
+        /* BOTÃO INSCRIÇÃO - Azul (Original) */
+        .btn-inscricao { 
+            background-color: #0d6efd; 
+            color: white; 
+            border: 1px solid #0d6efd; 
+        }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
         /* PAGINAÇÃO */
@@ -218,7 +226,10 @@
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                // CORREÇÃO: Botão Inscrição agora usa o emoji ✍️ conforme solicitado
+                // HTML ATUALIZADO:
+                // Ícone de PDF no Vermelho
+                // Emoji ✍️ no Azul
+                // Ícone de Dinheiro corrigido (fa-money-bill-wave)
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
                     <div class="meta-line">
