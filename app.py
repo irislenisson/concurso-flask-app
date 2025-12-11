@@ -40,7 +40,7 @@ REGIOES = {
 
 # --- LISTA DE BANCAS (ORGANIZADA ALFABETICAMENTE) ---
 RAW_BANCAS = """
-2dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
+1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
 amigapublica, anima, aocp, apice, aprender, ares, arespcj, aroeira, asconprev, 
 asperhs, assege, assconpp, atena, auctor, avalia, avaliar, avalias, avancar, 
