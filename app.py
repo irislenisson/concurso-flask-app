@@ -4,9 +4,9 @@ import json
 import time
 import smtplib
 import threading
+from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-# Adicionado 'redirect' aqui
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for, session, redirect, make_response
 from flask_cors import CORS
 from flask_compress import Compress
@@ -15,7 +15,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports locais
+# Imports locais com tratamento de erro para evitar crash inicial
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
@@ -32,7 +32,7 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_padrao_dev_segura')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-# Proxy Fix para Render
+# Proxy Fix para Render (IP Real)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 Compress(app)
 
@@ -51,7 +51,6 @@ CACHE_TIMEOUT = 3600
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
 # --- DECORATOR ADMIN ---
-from functools import wraps
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -73,6 +72,7 @@ def enviar_emails_sistema(email_usuario):
         return
 
     try:
+        # Lógica inteligente para Portas (465 SSL vs 587 TLS)
         if smtp_port == 465:
             server = smtplib.SMTP_SSL(smtp_server, smtp_port)
         else:
@@ -81,7 +81,7 @@ def enviar_emails_sistema(email_usuario):
 
         server.login(smtp_user, smtp_pass)
 
-        # Admin
+        # 1. Admin Alert
         msg_admin = MIMEMultipart()
         msg_admin['From'] = f"Sistema <{smtp_user}>"
         msg_admin['To'] = admin_email
@@ -89,7 +89,7 @@ def enviar_emails_sistema(email_usuario):
         msg_admin.attach(MIMEText(f"Novo Lead: {email_usuario}", 'html'))
         server.sendmail(smtp_user, admin_email, msg_admin.as_string())
 
-        # Usuário
+        # 2. Usuário (Boas-vindas)
         msg_user = MIMEMultipart()
         msg_user['From'] = f"Concurso Ideal <{smtp_user}>"
         msg_user['To'] = email_usuario
@@ -97,9 +97,12 @@ def enviar_emails_sistema(email_usuario):
         corpo_user = f"""
         <div style="font-family: Arial, sans-serif; color: #333;">
             <h2 style="color: #007bff;">Obrigado por se cadastrar!</h2>
-            <p>Em breve você receberá as melhores vagas de concursos públicos.</p>
+            <p>Olá,</p>
+            <p>Recebemos seu interesse em receber as melhores vagas de concursos públicos.</p>
+            <p>Em breve, você receberá atualizações selecionadas diretamente no seu e-mail.</p>
             <br>
             <p>Atenciosamente,<br><strong>Equipe Concurso Ideal</strong></p>
+            <p><small><a href="https://concurso-app-2.onrender.com">Acesse o site</a></small></p>
         </div>
         """
         msg_user.attach(MIMEText(corpo_user, 'html'))
@@ -110,7 +113,7 @@ def enviar_emails_sistema(email_usuario):
     except Exception as e:
         print(f"--> [EMAIL ERROR] {e}")
 
-# --- DADOS ---
+# --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
     global CACHE_MEMORIA
     agora = time.time()
@@ -154,10 +157,9 @@ def add_header(response):
         response.cache_control.public = True
     return response
 
-# ROTA DE REDIRECIONAMENTO INTELIGENTE (RESOLVE O PROBLEMA DO WHATSAPP)
+# ROTA INTELIGENTE DE REDIRECIONAMENTO (Deep Link Server-Side)
 @app.route('/ir')
 def redirecionar_externo():
-    # Pega a URL original e o tipo (edital ou inscricao)
     target_url = request.args.get('url')
     tipo = request.args.get('tipo', 'edital')
     
@@ -165,12 +167,9 @@ def redirecionar_externo():
         return redirect('/')
     
     try:
-        # O servidor tenta achar o link profundo (PDF ou Inscrição)
         final_url = extrair_link_final(target_url, tipo)
-        # Redireciona o usuário para o link final
         return redirect(final_url)
     except:
-        # Se der erro, manda para a notícia original (fallback seguro)
         return redirect(target_url)
 
 @app.route('/')
@@ -198,6 +197,7 @@ def termos(): return render_template('termos.html')
 @app.route('/privacidade')
 def privacidade(): return render_template('privacidade.html')
 
+# --- ROTAS ADMIN ---
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -278,10 +278,10 @@ def sitemap():
 def ping():
     return jsonify({ "status": "ok", "cache_timestamp": CACHE_MEMORIA.get("timestamp", 0) }), 200
 
+# --- APIS ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
 def api_link_profundo():
-    # Mantive para compatibilidade, mas o front agora usará a rota /ir
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
 
@@ -307,21 +307,37 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
+# --- TRATAMENTO DE ERROS (NOVO) ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# --- NEWSLETTER ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
     data = request.json or {}
     email = data.get('email', '').strip()
+    
     if not email or '@' not in email: return jsonify({'error': 'E-mail inválido'}), 400
     
+    # 1. Log Visual (Backup no Render Console)
     print(f"\n{'='*40}\n🎯 NOVO LEAD: {email}\n{'='*40}\n")
+    
+    # 2. Arquivo Local (Backup no Admin)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
+    # 3. Envio de E-mail (Segundo Plano)
     thread = threading.Thread(target=enviar_emails_sistema, args=(email,))
     thread.start()
+
     return jsonify({'message': 'Sucesso!'})
 
 if __name__ == '__main__':

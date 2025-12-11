@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Página Não Encontrada - Concurso Ideal{% endblock %}
+
+{% block content %}
+<div class="concurso-card" style="text-align: center; padding: 50px 20px;">
+    <div style="font-size: 4rem; margin-bottom: 10px;">🤔</div>
+    <h1 style="color: var(--text-primary); margin-bottom: 10px;">Ops! Página não encontrada.</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        O link que você tentou acessar não existe ou foi removido.
+    </p>
+    
+    <a href="/" class="action-btn" style="background: var(--primary-color); color: white; text-decoration: none; padding: 12px 25px; font-size: 1.1em;">
+        <i class="fas fa-home"></i> Voltar para o Início
+    </a>
+</div>
+{% endblock %}
