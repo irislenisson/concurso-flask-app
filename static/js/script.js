@@ -1,10 +1,9 @@
-/* static/js/script.js - Versão Otimizada para Mobile/WhatsApp */
+/* static/js/script.js - Versão com Links Reais e Robustos */
 
 let todosConcursos = [];
 let paginaAtual = 0;
 const itensPorPagina = 20;
 
-// --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -14,7 +13,6 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
-// --- INTERATIVIDADE DOS BOTÕES DE FILTRO ---
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
@@ -107,6 +105,34 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
+// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
+async function clicarAcao(event, el, urlBase, tipo) {
+    // Impede o navegador de abrir o link original imediatamente
+    if(event) event.preventDefault();
+
+    const textoOriginal = el.innerHTML;
+    el.classList.add('disabled');
+    el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
+
+    try {
+        const response = await fetch('/api/link-profundo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlBase, tipo: tipo })
+        });
+        const data = await response.json();
+        // Abre o link retornado (PDF ou Página de Inscrição)
+        window.open(data.url, '_blank');
+    } catch (err) {
+        console.error("Erro na busca profunda:", err);
+        // Fallback: Se der erro, abre o link original que estava no botão
+        window.open(urlBase, '_blank');
+    } finally {
+        el.innerHTML = textoOriginal;
+        el.classList.remove('disabled');
+    }
+}
+
 // --- NEWSLETTER ---
 async function cadastrarLead() {
     const emailInput = document.getElementById('email-lead');
@@ -142,7 +168,7 @@ async function cadastrarLead() {
     }
 }
 
-// --- RENDERIZAÇÃO DOS CARDS (LINK DIRETO SEM BLOQUEIO) ---
+// --- RENDERIZAÇÃO DOS CARDS ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -153,6 +179,7 @@ function renderizarLote() {
     lote.forEach((c, index) => {
         const indiceAbsoluto = inicio + index;
         
+        // Injeção de Anúncio
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
@@ -168,14 +195,12 @@ function renderizarLote() {
         const div = document.createElement('div');
         div.className = 'concurso-card';
         
-        // Garante que sempre haja um link válido
+        // Tratamento robusto de links e textos
         let linkBase = c['Link'];
-        if (!linkBase || linkBase === '#' || linkBase === '') {
-            linkBase = 'https://www.pciconcursos.com.br/concursos/';
-        }
+        if (!linkBase || linkBase === '#') linkBase = 'https://www.pciconcursos.com.br/concursos/';
         
-        // Escape de caracteres para evitar quebra do HTML
-        const safeLink = linkBase.replace(/'/g, "%27").replace(/"/g, "%22");
+        // Protege contra aspas simples que quebram o HTML
+        const safeLink = linkBase.replace(/'/g, "%27"); 
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
         div.innerHTML = `
@@ -192,10 +217,10 @@ function renderizarLote() {
                     <i class="fab fa-whatsapp"></i>
                 </button>
 
-                <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital">
+                <a href="${safeLink}" target="_blank" class="action-btn btn-edital" onclick="clicarAcao(event, this, '${safeLink}', 'edital')">
                     <i class="fas fa-file-pdf"></i> Ver Edital
                 </a>
-                <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">
+                <a href="${safeLink}" target="_blank" class="action-btn btn-inscricao" onclick="clicarAcao(event, this, '${safeLink}', 'inscricao')">
                     ✍️ Inscrição
                 </a>
             </div>
