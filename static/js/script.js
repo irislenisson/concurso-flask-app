@@ -1,8 +1,8 @@
-/* static/js/script.js - Versão Final Completa */
+/* static/js/script.js - Versão Final Completa com Toggle Switch */
 
 let todosConcursos = [];
 let paginaAtual = 0;
-const itensPorPagina = 20; // 20 itens por vez para melhor performance
+const itensPorPagina = 20;
 
 // --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
@@ -19,8 +19,8 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// --- DARK MODE LOGIC ---
-const themeToggleBtn = document.getElementById('theme-toggle');
+// --- DARK MODE LOGIC (COM SWITCH) ---
+const themeCheckbox = document.getElementById('checkbox');
 const htmlElement = document.documentElement;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -28,10 +28,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
-        atualizarIcone(savedTheme);
+        if (savedTheme === 'dark') {
+            themeCheckbox.checked = true;
+        }
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         htmlElement.setAttribute('data-theme', 'dark');
-        atualizarIcone('dark');
+        themeCheckbox.checked = true;
     }
     
     // Verifica Cookies LGPD
@@ -41,20 +43,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function alternarTema() {
-    const currentTheme = htmlElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    htmlElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    atualizarIcone(newTheme);
+// Event listener para o switch
+if (themeCheckbox) {
+    themeCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            htmlElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            htmlElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+    });
 }
 
-function atualizarIcone(theme) {
-    if (themeToggleBtn) {
-        if (theme === 'dark') themeToggleBtn.innerText = '☀️';
-        else themeToggleBtn.innerText = '🌙';
-    }
-}
 
 function aceitarCookies() {
     localStorage.setItem("cookieConsent", "true");
@@ -71,11 +72,10 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// --- FUNÇÃO DE REPORTAR ERRO (NOVO) ---
+// --- FUNÇÃO DE REPORTAR ERRO ---
 function reportarErro(texto) {
     const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
     const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
-    // Abre o cliente de e-mail padrão
     window.open(`mailto:?subject=${assunto}&body=${corpo}`);
 }
 
@@ -145,12 +145,10 @@ function renderizarLote() {
     const lote = todosConcursos.slice(inicio, fim);
 
     lote.forEach((c, index) => {
-        // Lógica de Injeção de Anúncio (A cada 5 itens absolutos)
         const indiceAbsoluto = inicio + index;
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
-            // Placeholder para AdSense (No futuro você troca o innerHTML abaixo pelo script do Google)
             adDiv.innerHTML = `
                 <span class="ad-label">Publicidade</span>
                 <div style="background:var(--border-color); height:90px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:var(--text-secondary); opacity:0.7;">
@@ -160,7 +158,6 @@ function renderizarLote() {
             container.appendChild(adDiv);
         }
 
-        // Renderização do Card Normal
         const div = document.createElement('div');
         div.className = 'concurso-card';
         const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
@@ -248,7 +245,6 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     paginaAtual = 0;
     btnLoadMore.style.display = 'none';
 
-    // Skeleton Loading
     container.innerHTML = '';
     statusDiv.style.display = 'none';
     let skeletonsHTML = '';
@@ -309,8 +305,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         if (todosConcursos.length === 0) {
             statusDiv.style.display = 'block';
             statusDiv.className = 'empty';
-            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>
-            Tente ajustar os filtros e buscar novamente.`;
+            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>Se o problema persistir, pode ser instabilidade no site de origem (PCI Concursos).`;
             return;
         }
 

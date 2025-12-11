@@ -30,9 +30,15 @@
 </head>
 <body>
     <div class="container">
-        <button id="theme-toggle" class="theme-toggle" onclick="alternarTema()" title="Alternar Modo Escuro">
-            🌙
-        </button>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="checkbox">
+                <input type="checkbox" id="checkbox" />
+                <div class="slider round">
+                    <i class="fas fa-sun sun-icon"></i>
+                    <i class="fas fa-moon moon-icon"></i>
+                </div>
+            </label>
+        </div>
 
         <h1>🚀 Buscador de Concursos</h1>
 
