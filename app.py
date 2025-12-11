@@ -16,11 +16,7 @@ CORS(app)
 
 # Configurações de Persistência
 DB_FILE = os.path.join(basedir, 'concursos.json')
-
-# --- AJUSTE DE CACHE: 60 MINUTOS ---
-# Como o servidor é mantido ativo pelo ping a cada 5 min, 
-# podemos segurar os dados na memória por 1 hora com segurança.
-CACHE_TIMEOUT = 3600  # 60 minutos (3600 segundos)
+CACHE_TIMEOUT = 3600  # 60 minutos (com Keep-Alive)
 
 # Cache em Memória
 CACHE_MEMORIA = {
@@ -162,12 +158,10 @@ def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
-    # Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         print(f"--> Usando CACHE (Expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
-    # Verifica Cache em Disco (JSON)
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -179,7 +173,6 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
-    # Se nada funcionar, baixa da web
     print("--> Baixando dados novos...")
     novos_dados = raspar_dados_online()
     CACHE_MEMORIA["dados"] = novos_dados
@@ -264,6 +257,14 @@ def extrair_link_final(url_base, tipo):
 def index():
     return render_template('index.html')
 
+@app.route('/termos')
+def termos():
+    return "<h1>Termos de Uso</h1><p>Conteúdo em construção...</p>"
+
+@app.route('/privacidade')
+def privacidade():
+    return "<h1>Política de Privacidade</h1><p>Conteúdo em construção...</p>"
+
 @app.route('/api/link-profundo', methods=['POST'])
 def api_link_profundo():
     data = request.json or {}
@@ -299,7 +300,6 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    # Busca correta usando a função de persistência
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     

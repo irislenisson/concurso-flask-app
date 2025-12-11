@@ -5,12 +5,19 @@
       crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Concursos</title>
+    
+    <title>Buscador de Concursos | Vagas e Editais</title>
+    <meta name="description" content="Encontre rapidamente concursos públicos abertos em todo o Brasil. Filtre por salário, região e cargo.">
+    <meta property="og:title" content="Buscador de Concursos - Encontre sua Vaga">
+    <meta property="og:description" content="Ferramenta gratuita para buscar editais e inscrições de concursos públicos.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#2c3e50">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 850px; margin: 0 auto; padding-bottom: 40px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; scroll-behavior: smooth; }
+        .container { max-width: 850px; margin: 0 auto; padding-bottom: 60px; }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-weight: 800; }
         
         form { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: grid; gap: 20px; }
@@ -58,7 +65,7 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO */
+        /* BOTÕES DE AÇÃO (3D) */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
@@ -70,23 +77,12 @@
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
         .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
-        /* BOTÃO EDITAL - Vermelho Suave */
-        .btn-edital { 
-            background-color: #ef5350; 
-            color: white; 
-            border: 1px solid #ef5350; 
-        }
+        .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
         .btn-edital:hover { background-color: #e53935; }
         
-        /* BOTÃO INSCRIÇÃO - Azul */
-        .btn-inscricao { 
-            background-color: #0d6efd; 
-            color: white; 
-            border: 1px solid #0d6efd; 
-        }
+        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
-        /* PAGINAÇÃO */
         #btn-load-more {
             display: none;
             width: 100%; max-width: 300px; margin: 30px auto 0; padding: 12px;
@@ -96,10 +92,38 @@
         }
         #btn-load-more:hover { background-color: #5a6268; transform: translateY(-2px); }
 
+        /* SKELETON LOADING (ANIMAÇÃO) */
+        .skeleton {
+            background: #e9ecef;
+            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        .skeleton-card { background: #fff; padding: 25px; border-left: 5px solid #dee2e6; border-radius: 10px; margin-bottom: 20px; }
+        .skeleton-title { height: 24px; width: 80%; margin-bottom: 15px; }
+        .skeleton-badge { height: 30px; width: 80px; display: inline-block; margin-right: 10px; border-radius: 6px; }
+
+        /* BOTÃO VOLTAR AO TOPO */
+        #btn-back-to-top {
+            position: fixed; bottom: 20px; right: 20px;
+            display: none; background-color: #2c3e50; color: white;
+            border: none; border-radius: 50%; width: 50px; height: 50px;
+            font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 1000;
+        }
+        #btn-back-to-top:hover { background-color: #1a252f; transform: scale(1.1); }
+
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
             border-top: 1px solid #e9ecef; padding-top: 20px;
         }
+        .legal-footer a { color: #6c757d; text-decoration: none; margin: 0 5px; }
+        .legal-footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -168,8 +192,14 @@
         
         <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
         
+        <button id="btn-back-to-top" onclick="scrollToTop()" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
+
         <div class="legal-footer">
-            Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis
+            <p>Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis.</p>
+            <p>
+                <a href="/termos">Termos de Uso</a> | 
+                <a href="/privacidade">Política de Privacidade</a>
+            </p>
         </div>
     </div>
 
@@ -190,6 +220,19 @@
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => { btn.classList.toggle('active'); });
         });
+
+        // BOTÃO VOLTAR AO TOPO
+        window.onscroll = function() {
+            const btn = document.getElementById("btn-back-to-top");
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                btn.style.display = "block";
+            } else {
+                btn.style.display = "none";
+            }
+        };
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         async function clicarAcao(el, urlBase, tipo) {
             const textoOriginal = el.innerHTML;
@@ -226,7 +269,6 @@
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
-                // HTML DOS BOTÕES VISUALIZADO PELO USUÁRIO
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
                     <div class="meta-line">
@@ -296,14 +338,26 @@
             paginaAtual = 0;
             btnLoadMore.style.display = 'none';
 
-            const textoOriginal = "Buscar Oportunidades";
-            btnBuscar.value = "⏳ Buscando...";
-            btnBuscar.disabled = true;
-            
+            // ATIVA O SKELETON LOADING
             container.innerHTML = '';
-            statusDiv.className = 'loading';
-            statusDiv.innerText = 'Processando sua busca...';
-            statusDiv.style.display = 'block';
+            statusDiv.style.display = 'none';
+            let skeletonsHTML = '';
+            for(let i=0; i<5; i++) {
+                skeletonsHTML += `
+                    <div class="skeleton-card">
+                        <div class="skeleton skeleton-title"></div>
+                        <div class="skeleton skeleton-title" style="width: 60%"></div>
+                        <div style="margin-top: 20px;">
+                            <div class="skeleton skeleton-badge"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = skeletonsHTML;
+
+            btnBuscar.disabled = true;
 
             const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
             const activeRegions = Array.from(document.querySelectorAll('.region-btn.active')).map(btn => btn.getAttribute('data-value'));
@@ -341,7 +395,11 @@
                 btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
                 btnBuscar.disabled = false;
 
+                // Limpa o skeleton antes de mostrar os resultados
+                container.innerHTML = '';
+
                 if (todosConcursos.length === 0) {
+                    statusDiv.style.display = 'block';
                     statusDiv.className = 'empty';
                     statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado para os filtros selecionados.';
                     return;
@@ -352,9 +410,11 @@
 
             } catch (error) {
                 console.error(error);
+                container.innerHTML = '';
+                statusDiv.style.display = 'block';
                 statusDiv.className = 'error';
                 statusDiv.innerHTML = `❌ Erro de conexão.`;
-                btnBuscar.value = textoOriginal;
+                btnBuscar.value = "Buscar Oportunidades";
                 btnBuscar.disabled = false;
             }
         });
