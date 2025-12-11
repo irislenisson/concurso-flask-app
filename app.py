@@ -16,35 +16,20 @@ CORS(app)
 
 # --- SISTEMA DE PERSISTÊNCIA E CACHE ---
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 3600  # 60 minutos
+CACHE_TIMEOUT = 3600  # 60 minutos (Server mantido vivo por ping externo)
 
 CACHE_MEMORIA = {
     "timestamp": 0,
     "dados": []
 }
 
-# --- REGEX E PADRÕES DE EXTRAÇÃO (APRIMORADOS) ---
-
-# Padrões de Salário
-REGEX_SALARIOS = [
-    r'R\$\s*([\d\.]+,\d{2})',
-    r'at[eé]\s*R\$\s*([\d\.]+,\d{2})',
-    r'inicial\s*R\$\s*([\d\.]+,\d{2})',
-    r'remunera[cç][aã]o\s*(?:de)?\s*R\$\s*([\d\.]+,\d{2})',
-    r'([\d\.]+,\d{2})\s*(?:reais|bruto|l[ií]quido)?'
+# --- LISTAS DE REFERÊNCIA ---
+UFS_SIGLAS = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+    'SP', 'SE', 'TO'
 ]
 
-# Padrões de Data
-REGEX_DATAS = [
-    r'\b(\d{2}/\d{2}/\d{4})\b',     # completo (dd/mm/aaaa)
-    r'\b(\d{2}/\d{2}/\d{2})\b',     # dois dígitos (dd/mm/aa)
-    r'\b(\d{2}/\d{2})\b'            # sem ano (dd/mm)
-]
-
-# Padrão de UF
-REGEX_UF = re.compile(r'\b(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', re.IGNORECASE)
-
-# Regiões para filtro
 REGIOES = {
     'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
     'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
@@ -53,7 +38,23 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# Lista de Bancas
+# --- REGEX E PADRÕES DE EXTRAÇÃO ---
+REGEX_SALARIOS = [
+    r'R\$\s*([\d\.]+,\d{2})',
+    r'at[eé]\s*R\$\s*([\d\.]+,\d{2})',
+    r'inicial\s*R\$\s*([\d\.]+,\d{2})',
+    r'remunera[cç][aã]o\s*(?:de)?\s*R\$\s*([\d\.]+,\d{2})',
+    r'([\d\.]+,\d{2})\s*(?:reais|bruto|l[ií]quido)?'
+]
+
+REGEX_DATAS = [
+    r'\b(\d{2}/\d{2}/\d{4})\b',     # completo
+    r'\b(\d{2}/\d{2}/\d{2})\b',     # dois dígitos
+    r'\b(\d{2}/\d{2})\b'            # sem ano
+]
+
+REGEX_UF = re.compile(r'\b(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', re.IGNORECASE)
+
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -117,57 +118,43 @@ def extrair_salario(texto):
         m = re.search(padrao, texto, re.IGNORECASE)
         if m:
             try:
-                # Remove pontos de milhar e troca vírgula decimal por ponto
                 return float(m.group(1).replace('.', '').replace(',', '.'))
-            except:
-                pass
+            except: pass
     return 0.0
 
 def extrair_data(texto):
     hoje = datetime.now().date()
     ano_atual = hoje.year
-
     for padrao in REGEX_DATAS:
         m = re.findall(padrao, texto)
         if m:
             data_str = m[-1]
             try:
                 partes = data_str.split('/')
-                
-                # Caso: dd/mm (sem ano) -> Adiciona ano atual
                 if len(partes) == 2:  
                     data_str = f"{partes[0]}/{partes[1]}/{ano_atual}"
-                
-                # Caso: dd/mm/aa (ano 2 dígitos) -> Transforma em 20aa
                 elif len(partes) == 3 and len(partes[2]) == 2:
                     partes[2] = "20" + partes[2]
                     data_str = "/".join(partes)
-                
                 data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
                 return data_obj
-            except:
-                pass
+            except: pass
     return None
 
 def extrair_uf(texto):
-    # Tenta encontrar a sigla do estado
     m = REGEX_UF.search(texto)
     if m:
         return m.group(0).upper()
-
-    # Fallback: Se encontrar "Prefeitura de X", mas não tem UF, assume Nacional/Outro
-    # Aqui poderíamos adicionar um mapa de Cidades -> UF no futuro
     m2 = re.search(r'prefeitura de ([A-Za-zà-ú]+)', texto, re.IGNORECASE)
     if m2:
         return "Nacional/Outro"
-
     return "Nacional/Outro"
 
-# --- RASPAGEM E PROCESSAMENTO ---
+# --- RASPAGEM, PROCESSAMENTO E OTIMIZAÇÃO DE TOKENS ---
 
 def raspar_dados_online():
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-    print("--> Iniciando raspagem online (Lógica Aprimorada)...")
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    print("--> Iniciando raspagem online (Lógica Otimizada)...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
@@ -180,7 +167,6 @@ def raspar_dados_online():
         for c in itens_brutos:
             texto = c.get_text(separator=' ', strip=True)
             
-            # Extração de Link
             link_original = "#"
             try:
                 tag_link = c.find('a')
@@ -188,20 +174,24 @@ def raspar_dados_online():
                     link_original = tag_link['href']
             except: pass
 
-            # Extração Otimizada de Data, Salário e UF
             data_fim_obj = extrair_data(texto)
             salario_num = extrair_salario(texto)
             uf_detectada = extrair_uf(texto)
 
-            # Verifica validade da data
             data_str = "Indefinida"
             if data_fim_obj:
-                if data_fim_obj < hoje: continue # Ignora concursos vencidos
+                if data_fim_obj < hoje: continue
                 data_str = data_fim_obj.strftime('%d/%m/%Y')
+
+            # OTIMIZAÇÃO (4): Pré-computar set de palavras-chave
+            # Limpa o texto (remove pontuação básica) e cria um set de palavras únicas
+            texto_limpo = re.sub(r'[^\w\s]', ' ', texto.lower())
+            tokens_set = list(set(texto_limpo.split())) # Salva como lista para o JSON
 
             lista_processada.append({
                 'texto': texto,
                 'texto_lower': texto.lower(),
+                'tokens': tokens_set, # Usado para filtro rápido
                 'link': link_original,
                 'data_fim': data_str,
                 'salario_num': salario_num,
@@ -209,7 +199,6 @@ def raspar_dados_online():
                 'uf': uf_detectada
             })
         
-        # Ordena por maior salário
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
         return lista_processada
 
@@ -221,9 +210,15 @@ def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
+    # Função interna para converter listas de tokens em SETs (Performance)
+    def hidratar_cache(dados):
+        for item in dados:
+            if isinstance(item.get('tokens'), list):
+                item['tokens'] = set(item['tokens'])
+        return dados
+
     # 1. Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
-        print(f"--> Usando CACHE (Expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
     # 2. Verifica Cache em Disco (JSON)
@@ -233,7 +228,9 @@ def obter_dados():
                 conteudo = json.load(f)
                 if agora - conteudo.get('timestamp', 0) < CACHE_TIMEOUT:
                     print("--> Usando JSON do Disco")
-                    CACHE_MEMORIA["dados"] = conteudo.get('dados', [])
+                    dados_json = conteudo.get('dados', [])
+                    # Converte tokens de lista para set ao carregar na memória
+                    CACHE_MEMORIA["dados"] = hidratar_cache(dados_json)
                     CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
                     return CACHE_MEMORIA["dados"]
         except: pass
@@ -241,22 +238,35 @@ def obter_dados():
     # 3. Baixa da Web (Fallback)
     print("--> Baixando dados novos...")
     novos_dados = raspar_dados_online()
-    CACHE_MEMORIA["dados"] = novos_dados
-    CACHE_MEMORIA["timestamp"] = agora
     
+    # Salva no JSON (com tokens como lista)
     try:
         with open(DB_FILE, 'w', encoding='utf-8') as f:
             json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
     except: pass
 
-    return novos_dados
+    # Converte tokens para set na memória
+    CACHE_MEMORIA["dados"] = hidratar_cache(novos_dados)
+    CACHE_MEMORIA["timestamp"] = agora
+
+    return CACHE_MEMORIA["dados"]
 
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
     modo_restritivo = len(lista_ufs_alvo) > 0
 
+    # OTIMIZAÇÃO: Pré-computar set de exclusão
+    set_exclusao = set(p.lower() for p in excluir_palavras) if excluir_palavras else None
+
     for item in todos_dados:
-        if excluir_palavras and any(ex.lower() in item['texto_lower'] for ex in excluir_palavras):
+        # Filtro de Exclusão OTIMIZADO (Set Operation - O(1))
+        # Verifica se há intersecção entre as palavras do concurso e as palavras proibidas
+        if set_exclusao and 'tokens' in item:
+            # Se não forem disjuntos (ou seja, têm palavras em comum), exclui
+            if not set_exclusao.isdisjoint(item['tokens']):
+                continue
+        # Fallback para string search se tokens não existirem ou para frases compostas
+        elif excluir_palavras and any(ex.lower() in item['texto_lower'] for ex in excluir_palavras):
             continue
 
         if lista_palavras_chave:
@@ -266,7 +276,6 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
-        # Lógica Estrita: Se houver filtros de local, UF tem que bater
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -392,6 +401,7 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
+    # Chama a função correta
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
