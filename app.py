@@ -14,6 +14,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
+# Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
@@ -22,6 +23,7 @@ except ImportError:
     REGIOES = {}
     REGEX_BANCAS = None
 
+# --- CONFIGURAÇÃO ---
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -42,10 +44,10 @@ LEADS_FILE = os.path.join(basedir, 'leads.txt')
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
-# --- FUNÇÃO DE ENVIO DE E-MAIL (DUPLO DISPARO) ---
+# --- FUNÇÃO DE ENVIO DE E-MAIL (COM SUPORTE A SSL/465) ---
 def enviar_emails_sistema(email_usuario):
     smtp_server = os.environ.get('SMTP_SERVER')
-    smtp_port = os.environ.get('SMTP_PORT')
+    smtp_port = int(os.environ.get('SMTP_PORT', 587))
     smtp_user = os.environ.get('SMTP_USER')
     smtp_pass = os.environ.get('SMTP_PASS')
     admin_email = "concursoideal@icloud.com"
@@ -55,9 +57,17 @@ def enviar_emails_sistema(email_usuario):
         return
 
     try:
-        # Conecta ao servidor (Usa SMTP normal com starttls para porta 587)
-        server = smtplib.SMTP(smtp_server, int(smtp_port))
-        server.starttls()
+        print(f"--> [EMAIL] Tentando conectar em {smtp_server}:{smtp_port}...")
+        
+        # Lógica inteligente para Portas (465 SSL vs 587 TLS)
+        if smtp_port == 465:
+            # Conexão SSL Direta (Mais segura e menos bloqueada)
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+        else:
+            # Conexão TLS Padrão (Geralmente bloqueada em free tier)
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+
         server.login(smtp_user, smtp_pass)
 
         # 1. E-MAIL PARA O ADMIN (VOCÊ)
@@ -249,13 +259,12 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
-    # Salva no arquivo local (Backup)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # Inicia envio de e-mails em segundo plano (Admin + Usuário)
+    # Envia e-mail em segundo plano
     thread = threading.Thread(target=enviar_emails_sistema, args=(email,))
     thread.start()
 
