@@ -58,11 +58,11 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO 3D DOS BOTÕES */
+        /* ESTILO DOS BOTÕES DE AÇÃO */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 5px; border: none;
+            align-items: center; gap: 8px; border: none;
             cursor: pointer; font-family: inherit; text-decoration: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
@@ -78,7 +78,7 @@
         }
         .btn-edital:hover { background-color: #e53935; }
         
-        /* BOTÃO INSCRIÇÃO - Azul (Original) */
+        /* BOTÃO INSCRIÇÃO - Azul */
         .btn-inscricao { 
             background-color: #0d6efd; 
             color: white; 
@@ -226,6 +226,7 @@
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
+                // HTML DOS BOTÕES VISUALIZADO PELO USUÁRIO
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
                     <div class="meta-line">

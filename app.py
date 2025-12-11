@@ -38,7 +38,7 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA DE BANCAS (ORGANIZADA ALFABETICAMENTE) ---
+# Lista de Bancas (Ordenada Alfabeticamente)
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -97,6 +97,7 @@ def formatar_real(valor):
 
 def raspar_dados_online():
     headers = {'User-Agent': 'Mozilla/5.0'}
+    print("--> Iniciando raspagem online...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
@@ -154,13 +155,16 @@ def raspar_dados_online():
         print(f"Erro raspagem: {e}")
         return []
 
+# FUNÇÃO CENTRAL DE DADOS (CACHE + JSON + SCRAPER)
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
+    # 1. Tenta Memória RAM
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         return CACHE_MEMORIA["dados"]
 
+    # 2. Tenta Arquivo JSON
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -171,10 +175,12 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
+    # 3. Faz Raspagem Online
     novos_dados = raspar_dados_online()
     CACHE_MEMORIA["dados"] = novos_dados
     CACHE_MEMORIA["timestamp"] = agora
     
+    # Salva no JSON
     try:
         with open(DB_FILE, 'w', encoding='utf-8') as f:
             json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
@@ -289,7 +295,8 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    # Busca usando a função de persistência
+    # --- CORREÇÃO DO NAME ERROR ---
+    # Agora chamamos 'obter_dados' em vez de 'buscar_concursos'
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
