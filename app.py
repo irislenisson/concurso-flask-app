@@ -96,10 +96,7 @@ def formatar_real(valor):
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
 def raspar_dados_online():
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-    print("--> Iniciando raspagem online...")
+    headers = {'User-Agent': 'Mozilla/5.0'}
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
@@ -120,9 +117,7 @@ def raspar_dados_online():
             except: pass
 
             datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
-            data_fim_obj = None
             data_str = "Indefinida"
-            
             if datas:
                 try:
                     data_fim_obj = datetime.strptime(datas[-1], '%d/%m/%Y').date()
@@ -155,9 +150,8 @@ def raspar_dados_online():
         
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
         return lista_processada
-
     except Exception as e:
-        print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
+        print(f"Erro raspagem: {e}")
         return []
 
 def obter_dados():
@@ -165,38 +159,33 @@ def obter_dados():
     agora = time.time()
 
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
-        print("--> Fonte: Memória RAM")
         return CACHE_MEMORIA["dados"]
 
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
                 conteudo = json.load(f)
-                ts_arquivo = conteudo.get('timestamp', 0)
-                if agora - ts_arquivo < CACHE_TIMEOUT:
-                    print("--> Fonte: Arquivo JSON (Disco)")
+                if agora - conteudo.get('timestamp', 0) < CACHE_TIMEOUT:
                     CACHE_MEMORIA["dados"] = conteudo.get('dados', [])
-                    CACHE_MEMORIA["timestamp"] = ts_arquivo
+                    CACHE_MEMORIA["timestamp"] = conteudo.get('timestamp', 0)
                     return CACHE_MEMORIA["dados"]
-        except Exception as e:
-            print(f"--> Erro ao ler JSON: {e}")
+        except: pass
 
-    print("--> Fonte: Web Scraping (Atualizando...)")
     novos_dados = raspar_dados_online()
-    
     CACHE_MEMORIA["dados"] = novos_dados
     CACHE_MEMORIA["timestamp"] = agora
     
     try:
         with open(DB_FILE, 'w', encoding='utf-8') as f:
             json.dump({"timestamp": agora, "dados": novos_dados}, f, ensure_ascii=False)
-    except Exception as e:
-        print(f"--> Erro ao salvar JSON: {e}")
+    except: pass
 
     return novos_dados
 
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
+    # Modo Restritivo: Se houver ALGUM item na lista alvo (Nacional ou Estados), ative o filtro.
+    # Se a lista estiver vazia (usuário não clicou em nada), mostra tudo.
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for item in todos_dados:
@@ -210,13 +199,12 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
-        # --- CORREÇÃO DA LÓGICA DO FILTRO NACIONAL ---
-        # Se estiver em modo restritivo (algum filtro selecionado), 
-        # aceita apenas se a UF estiver explicitamente na lista de alvos.
+        # LÓGICA CORRIGIDA: Se modo restritivo estiver ON,
+        # o item SÓ passa se a UF dele estiver na lista de alvos.
+        # "Nacional/Outro" só passa se "Nacional" foi clicado.
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
-        # ---------------------------------------------
 
         resultados.append({
             'Salário': item['salario_formatado'],
@@ -304,8 +292,10 @@ def api_buscar():
         if reg == 'Nacional': conjunto_ufs_alvo.add('Nacional/Outro')
         elif reg in REGIOES: conjunto_ufs_alvo.update(REGIOES[reg])
     
-    todos_dados = obter_dados()
-    resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, list(conjunto_ufs_alvo), excluir_palavras)
+    lista_final_ufs = list(conjunto_ufs_alvo)
+    
+    todos = buscar_concursos()
+    resultados = filtrar_concursos(todos, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
     return jsonify(resultados)
 

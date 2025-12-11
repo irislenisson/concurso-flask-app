@@ -58,59 +58,35 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* ESTILO DOS BOTÕES DE AÇÃO */
+        /* ESTILO 3D DOS BOTÕES */
         .action-btn {
-            font-size: 0.85em; font-weight: 600; padding: 7px 14px;
+            font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
-            align-items: center; gap: 5px; border: 1px solid transparent;
+            align-items: center; gap: 8px; border: none;
             cursor: pointer; font-family: inherit; text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
-        /* BOTÃO EDITAL - VERMELHO SUAVE COM ÍCONE */
-        .btn-edital { 
-            background-color: #ef5350; 
-            color: white; 
-            border: 1px solid #ef5350; 
-        }
-        .btn-edital:hover { 
-            background-color: #e53935; 
-            color: white; 
-        }
+        /* EDITAL: Vermelho Suave */
+        .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
+        .btn-edital:hover { background-color: #e53935; }
         
-        /* BOTÃO INSCRIÇÃO - AZUL */
-        .btn-inscricao { 
-            background-color: #0d6efd; 
-            color: white; 
-            border: 1px solid #0d6efd; 
-        }
-        .btn-inscricao:hover { 
-            background-color: #0b5ed7; 
-        }
+        /* INSCRIÇÃO: Azul Vibrante */
+        .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
+        .btn-inscricao:hover { background-color: #0b5ed7; }
 
-        /* --- BOTÃO CARREGAR MAIS (PAGINAÇÃO) --- */
+        /* PAGINAÇÃO */
         #btn-load-more {
-            display: none; /* Oculto por padrão */
-            width: 100%;
-            max-width: 300px;
-            margin: 30px auto 0;
-            padding: 12px;
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+            width: 100%; max-width: 300px; margin: 30px auto 0; padding: 12px;
+            background-color: #6c757d; color: white; border: none; border-radius: 30px;
+            font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        #btn-load-more:hover {
-            background-color: #5a6268;
-            transform: translateY(-2px);
-        }
+        #btn-load-more:hover { background-color: #5a6268; transform: translateY(-2px); }
 
         .legal-footer {
             margin-top: 40px; text-align: center; font-size: 0.75em; color: #b0b8c1;
@@ -190,7 +166,6 @@
     </div>
 
     <script>
-        // --- VARIÁVEIS GLOBAIS DE PAGINAÇÃO ---
         let todosConcursos = [];
         let paginaAtual = 0;
         const itensPorPagina = 30;
@@ -231,26 +206,23 @@
             }
         }
 
-        // --- SISTEMA DE RENDERIZAÇÃO POR LOTE (Paginação) ---
         function renderizarLote() {
             const container = document.getElementById('resultados-container');
             const btnLoadMore = document.getElementById('btn-load-more');
-            
-            // Calcula início e fim do lote
             const inicio = paginaAtual * itensPorPagina;
             const fim = inicio + itensPorPagina;
             const lote = todosConcursos.slice(inicio, fim);
 
-            // Gera HTML do lote
             lote.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
 
+                // CORREÇÃO: Ícone alterado para fa-money-bill-wave
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
                     <div class="meta-line">
-                        <span class="badge money"><i class="fas fa-dollar-sign"></i> ${c['Salário']}</span>
+                        <span class="badge money"><i class="fas fa-money-bill-wave"></i> ${c['Salário']}</span>
                         <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
                         <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                         
@@ -265,7 +237,6 @@
                 container.appendChild(div);
             });
 
-            // Lógica do Botão "Carregar Mais"
             if (fim < todosConcursos.length) {
                 btnLoadMore.style.display = 'block';
                 btnLoadMore.innerText = `👇 Carregar mais (${todosConcursos.length - fim} restantes)`;
@@ -279,43 +250,30 @@
             renderizarLote();
         }
 
-        // --- LÓGICA DE URL E BUSCA ---
         window.addEventListener('load', () => {
             const params = new URLSearchParams(window.location.search);
             let deveBuscar = false;
 
-            if (params.has('q')) {
-                document.getElementById('palavra_chave').value = params.get('q');
-                deveBuscar = true;
-            }
-            if (params.has('salario')) {
-                document.getElementById('salario_minimo').value = params.get('salario');
-                deveBuscar = true;
-            }
-            if (params.has('excluir')) {
-                document.getElementById('excluir_palavra').value = params.get('excluir');
-                deveBuscar = true;
-            }
+            if (params.has('q')) { document.getElementById('palavra_chave').value = params.get('q'); deveBuscar = true; }
+            if (params.has('salario')) { document.getElementById('salario_minimo').value = params.get('salario'); deveBuscar = true; }
+            if (params.has('excluir')) { document.getElementById('excluir_palavra').value = params.get('excluir'); deveBuscar = true; }
+            
             if (params.has('uf')) {
-                const ufs = params.get('uf').split(',');
-                ufs.forEach(uf => {
+                params.get('uf').split(',').forEach(uf => {
                     const btn = document.querySelector(`.uf-btn[data-value="${uf}"]`);
                     if (btn) btn.classList.add('active');
                 });
                 deveBuscar = true;
             }
             if (params.has('regiao')) {
-                const regioes = params.get('regiao').split(',');
-                regioes.forEach(reg => {
+                params.get('regiao').split(',').forEach(reg => {
                     const btn = document.querySelector(`.region-btn[data-value="${reg}"]`);
                     if (btn) btn.classList.add('active');
                 });
                 deveBuscar = true;
             }
 
-            if (deveBuscar) {
-                document.getElementById('searchForm').dispatchEvent(new Event('submit'));
-            }
+            if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
         });
 
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
@@ -326,7 +284,6 @@
             const container = document.getElementById('resultados-container');
             const btnLoadMore = document.getElementById('btn-load-more');
             
-            // Reseta paginação
             todosConcursos = [];
             paginaAtual = 0;
             btnLoadMore.style.display = 'none';
@@ -346,7 +303,6 @@
             const palavraChave = document.getElementById('palavra_chave').value;
             const excluir = document.getElementById('excluir_palavra').value;
 
-            // URL
             const params = new URLSearchParams();
             if (palavraChave) params.set('q', palavraChave);
             if (salario) params.set('salario', salario);
@@ -354,8 +310,7 @@
             if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
             if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
             
-            const novaUrl = window.location.pathname + '?' + params.toString();
-            window.history.pushState({}, '', novaUrl);
+            window.history.pushState({}, '', window.location.pathname + '?' + params.toString());
 
             const payload = {
                 salario_minimo: salario,
@@ -373,7 +328,7 @@
                 });
 
                 if (!response.ok) throw new Error(`Erro: ${response.status}`);
-                todosConcursos = await response.json(); // Guarda tudo na variável global
+                todosConcursos = await response.json();
                 
                 btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
                 btnBuscar.disabled = false;
@@ -385,8 +340,6 @@
                 }
 
                 statusDiv.style.display = 'none';
-                
-                // CHAMA A RENDERIZAÇÃO DO PRIMEIRO LOTE
                 renderizarLote();
 
             } catch (error) {
