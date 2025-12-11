@@ -14,7 +14,6 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
@@ -23,7 +22,6 @@ except ImportError:
     REGIOES = {}
     REGEX_BANCAS = None
 
-# --- CONFIGURAÇÃO ---
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -44,39 +42,59 @@ LEADS_FILE = os.path.join(basedir, 'leads.txt')
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
-# --- FUNÇÃO DE ENVIO DE E-MAIL ---
-def enviar_email_alerta(novo_lead):
+# --- FUNÇÃO DE ENVIO DE E-MAIL (DUPLO DISPARO) ---
+def enviar_emails_sistema(email_usuario):
     smtp_server = os.environ.get('SMTP_SERVER')
     smtp_port = os.environ.get('SMTP_PORT')
     smtp_user = os.environ.get('SMTP_USER')
     smtp_pass = os.environ.get('SMTP_PASS')
-    destinatario = "concursoideal@icloud.com"
+    admin_email = "concursoideal@icloud.com"
 
     if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
-        print("--> [EMAIL ERRO] Variáveis SMTP não configuradas.")
+        print("--> [ERRO] Variáveis SMTP faltando no Render.")
         return
 
     try:
-        msg = MIMEMultipart()
-        msg['From'] = f"Concurso Ideal <{smtp_user}>"
-        msg['To'] = destinatario
-        msg['Subject'] = f"🔔 Novo Lead: {novo_lead}"
-
-        corpo = f"""
-        <h2>🚀 Novo Interessado Cadastrado!</h2>
-        <p><strong>E-mail:</strong> {novo_lead}</p>
-        <p><strong>Data:</strong> {time.strftime('%d/%m/%Y %H:%M')}</p>
-        """
-        msg.attach(MIMEText(corpo, 'html'))
-
+        # Conecta ao servidor (Usa SMTP normal com starttls para porta 587)
         server = smtplib.SMTP(smtp_server, int(smtp_port))
         server.starttls()
         server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, destinatario, msg.as_string())
+
+        # 1. E-MAIL PARA O ADMIN (VOCÊ)
+        msg_admin = MIMEMultipart()
+        msg_admin['From'] = f"Sistema Concurso Ideal <{smtp_user}>"
+        msg_admin['To'] = admin_email
+        msg_admin['Subject'] = f"🔔 Novo Lead: {email_usuario}"
+        corpo_admin = f"<h2>Novo Cadastro!</h2><p>O usuário <strong>{email_usuario}</strong> se cadastrou na newsletter.</p>"
+        msg_admin.attach(MIMEText(corpo_admin, 'html'))
+        server.sendmail(smtp_user, admin_email, msg_admin.as_string())
+        print(f"--> [SUCESSO] Aviso enviado para o Admin ({admin_email})")
+
+        # 2. E-MAIL PARA O USUÁRIO (BOAS-VINDAS)
+        msg_user = MIMEMultipart()
+        msg_user['From'] = f"Concurso Ideal <{smtp_user}>"
+        msg_user['To'] = email_usuario
+        msg_user['Subject'] = "Bem-vindo ao Concurso Ideal! 🚀"
+        
+        corpo_user = f"""
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color: #007bff;">Obrigado por se cadastrar!</h2>
+            <p>Olá,</p>
+            <p>Recebemos seu interesse em receber as melhores vagas de concursos públicos.</p>
+            <p>Em breve, você receberá atualizações selecionadas diretamente no seu e-mail.</p>
+            <br>
+            <p>Atenciosamente,<br><strong>Equipe Concurso Ideal</strong></p>
+            <p><small><a href="https://concurso-app-2.onrender.com">Acesse o site</a></small></p>
+        </div>
+        """
+        msg_user.attach(MIMEText(corpo_user, 'html'))
+        server.sendmail(smtp_user, email_usuario, msg_user.as_string())
+        print(f"--> [SUCESSO] Boas-vindas enviada para o Usuário ({email_usuario})")
+
         server.quit()
-        print(f"--> [EMAIL SUCESSO] Alerta enviado para {destinatario}")
+
     except Exception as e:
-        print(f"--> [EMAIL FALHA] Erro: {e}")
+        print(f"--> [ERRO CRÍTICO NO ENVIO] {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados():
@@ -149,7 +167,6 @@ def index():
 @app.route('/sobre')
 def sobre(): return render_template('sobre.html')
 
-# ROTA FALE CONOSCO (NOVA)
 @app.route('/contato')
 def contato(): return render_template('contato.html')
 
@@ -169,22 +186,12 @@ def ads_txt(): return send_from_directory(basedir, 'ads.txt')
 def sitemap():
     xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-    
-    # Adicionei 'contato' na lista de estáticos
-    estaticas = [
-        ('index', 'daily', '1.0'), 
-        ('sobre', 'monthly', '0.8'), 
-        ('contato', 'monthly', '0.8'), 
-        ('termos', 'yearly', '0.5'), 
-        ('privacidade', 'yearly', '0.5')
-    ]
-    
+    estaticas = [('index', 'daily', '1.0'), ('sobre', 'monthly', '0.8'), ('contato', 'monthly', '0.8'), ('termos', 'yearly', '0.5'), ('privacidade', 'yearly', '0.5')]
     for endpoint, freq, prio in estaticas:
         try:
             url = url_for(endpoint, _external=True)
             xml_content.append(f'<url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>')
         except: pass
-        
     dados = obter_dados()
     urls_adicionadas = set()
     for item in dados:
@@ -193,7 +200,6 @@ def sitemap():
             urls_adicionadas.add(termo_limpo)
             link_dinamico = url_for('index', _external=True) + f"?q={quote(termo_limpo)}"
             xml_content.append(f'<url><loc>{link_dinamico}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>')
-            
     xml_content.append('</urlset>')
     return Response('\n'.join(xml_content), mimetype="application/xml")
 
@@ -243,13 +249,14 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
+    # Salva no arquivo local (Backup)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # Envia e-mail em segundo plano
-    thread = threading.Thread(target=enviar_email_alerta, args=(email,))
+    # Inicia envio de e-mails em segundo plano (Admin + Usuário)
+    thread = threading.Thread(target=enviar_emails_sistema, args=(email,))
     thread.start()
 
     return jsonify({'message': 'Sucesso! Você receberá novidades.'})
