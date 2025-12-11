@@ -2,6 +2,9 @@ import os
 import locale
 import json
 import time
+import smtplib # <--- NOVO
+from email.mime.text import MIMEText # <--- NOVO
+from email.mime.multipart import MIMEMultipart # <--- NOVO
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
 from flask_cors import CORS
 from flask_compress import Compress
@@ -36,9 +39,55 @@ limiter = Limiter(
 CORS(app)
 
 DB_FILE = os.path.join(basedir, 'concursos.json')
-LEADS_FILE = os.path.join(basedir, 'leads.txt') # Arquivo para salvar e-mails
+# Atenção: Este arquivo apaga quando o Render reinicia. O e-mail é o backup real.
+LEADS_FILE = os.path.join(basedir, 'leads.txt') 
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
+
+# --- FUNÇÃO DE ENVIO DE E-MAIL (NOVA) ---
+def enviar_email_alerta(novo_lead):
+    # Configurações do Servidor SMTP (Pegando das Variáveis de Ambiente do Render)
+    # Se não estiver configurado, ele avisa no log e não quebra o site
+    smtp_server = os.environ.get('SMTP_SERVER') # ex: smtp.gmail.com
+    smtp_port = os.environ.get('SMTP_PORT')     # ex: 587
+    smtp_user = os.environ.get('SMTP_USER')     # seu email (ex: gmail)
+    smtp_pass = os.environ.get('SMTP_PASS')     # sua senha de aplicativo
+    destinatario = "concursoideal@icloud.com"
+
+    if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
+        print("⚠️ AVISO: Configurações de SMTP não encontradas. E-mail não enviado.")
+        return False
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = f"Concurso Ideal <{smtp_user}>"
+        msg['To'] = destinatario
+        msg['Subject'] = f"🔔 Novo Lead Cadastrado: {novo_lead}"
+
+        corpo = f"""
+        <html>
+          <body>
+            <h2>🚀 Novo Interessado Cadastrado!</h2>
+            <p>Um usuário acabou de deixar o e-mail no site.</p>
+            <p><strong>E-mail:</strong> {novo_lead}</p>
+            <p><strong>Data:</strong> {time.strftime('%d/%m/%Y %H:%M')}</p>
+            <hr>
+            <small>Sistema automático Concurso Ideal</small>
+          </body>
+        </html>
+        """
+        msg.attach(MIMEText(corpo, 'html'))
+
+        server = smtplib.SMTP(smtp_server, int(smtp_port))
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, destinatario, msg.as_string())
+        server.quit()
+        print(f"--> E-MAIL DE ALERTA ENVIADO PARA {destinatario}")
+        return True
+    except Exception as e:
+        print(f"❌ ERRO AO ENVIAR E-MAIL: {e}")
+        return False
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados():
@@ -153,7 +202,6 @@ def ping():
         "itens_cache": len(CACHE_MEMORIA.get("dados", []))
     }), 200
 
-# --- API BUSCA ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
 def api_link_profundo():
@@ -182,7 +230,7 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- API NEWSLETTER (NOVA) ---
+# --- ROTA NEWSLETTER (ATUALIZADA) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -192,13 +240,15 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
-    # Salva no arquivo (Temporário até ter Banco de Dados)
+    # 1. Tenta salvar no arquivo (Backup temporário)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
-            f.write(f"{datetime.now()} - {email}\n")
-        print(f"--> NOVO LEAD CAPTURADO: {email}") # Log do Render
-    except Exception as e:
-        print(f"Erro ao salvar lead: {e}")
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
+    except: pass
+
+    # 2. Tenta enviar o e-mail de notificação (O REAL)
+    # Roda em segundo plano (na verdade síncrono aqui por simplicidade, mas rápido)
+    enviar_email_alerta(email)
 
     return jsonify({'message': 'Sucesso! Você receberá novidades.'})
 
