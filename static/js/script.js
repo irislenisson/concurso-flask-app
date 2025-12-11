@@ -1,9 +1,10 @@
-/* static/js/script.js */
+/* static/js/script.js - Versão Final Completa */
 
 let todosConcursos = [];
 let paginaAtual = 0;
-const itensPorPagina = 20; // Ajustado para 20 conforme seu pedido
+const itensPorPagina = 20; // 20 itens por vez para melhor performance
 
+// --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -13,6 +14,7 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
+// --- INTERATIVIDADE DOS BOTÕES DE FILTRO ---
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
@@ -22,6 +24,7 @@ const themeToggleBtn = document.getElementById('theme-toggle');
 const htmlElement = document.documentElement;
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Recupera tema salvo
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
@@ -31,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
         atualizarIcone('dark');
     }
     
-    // Check Cookies
+    // Verifica Cookies LGPD
     if (!localStorage.getItem("cookieConsent")) {
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
@@ -68,7 +71,30 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
+// --- FUNÇÃO DE REPORTAR ERRO (NOVO) ---
+function reportarErro(texto) {
+    const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
+    const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
+    // Abre o cliente de e-mail padrão
+    window.open(`mailto:?subject=${assunto}&body=${corpo}`);
+}
+
 // --- COMPARTILHAMENTO ---
+function copiarLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        const toast = document.getElementById("toast");
+        toast.innerText = "Link da busca copiado!";
+        toast.className = "show";
+        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+    });
+}
+
+function compartilharWhatsApp() {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent("Olha esses concursos que encontrei:");
+    window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+}
+
 function copiarLinkUnico(texto) {
     const urlBase = window.location.origin + window.location.pathname;
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
@@ -87,6 +113,7 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
+// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
 async function clicarAcao(el, urlBase, tipo) {
     const textoOriginal = el.innerHTML;
     el.classList.add('disabled');
@@ -109,6 +136,7 @@ async function clicarAcao(el, urlBase, tipo) {
     }
 }
 
+// --- RENDERIZAÇÃO DOS CARDS (COM ANÚNCIOS IN-FEED) ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -116,7 +144,23 @@ function renderizarLote() {
     const fim = inicio + itensPorPagina;
     const lote = todosConcursos.slice(inicio, fim);
 
-    lote.forEach(c => {
+    lote.forEach((c, index) => {
+        // Lógica de Injeção de Anúncio (A cada 5 itens absolutos)
+        const indiceAbsoluto = inicio + index;
+        if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
+            const adDiv = document.createElement('div');
+            adDiv.className = 'ad-slot';
+            // Placeholder para AdSense (No futuro você troca o innerHTML abaixo pelo script do Google)
+            adDiv.innerHTML = `
+                <span class="ad-label">Publicidade</span>
+                <div style="background:var(--border-color); height:90px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:var(--text-secondary); opacity:0.7;">
+                    Espaço para Anúncio (In-Feed)
+                </div>
+            `;
+            container.appendChild(adDiv);
+        }
+
+        // Renderização do Card Normal
         const div = document.createElement('div');
         div.className = 'concurso-card';
         const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
@@ -143,6 +187,11 @@ function renderizarLote() {
                     ✍️ Inscrição
                 </a>
             </div>
+            <div style="text-align: right;">
+                <button class="btn-report" onclick="reportarErro('${textoConcurso}')">
+                    <i class="fas fa-flag"></i> Reportar problema
+                </button>
+            </div>
         `;
         container.appendChild(div);
     });
@@ -160,6 +209,7 @@ function carregarMais() {
     renderizarLote();
 }
 
+// --- CARREGAMENTO INICIAL ---
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     let deveBuscar = false;
@@ -186,6 +236,7 @@ window.addEventListener('load', () => {
     if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
 });
 
+// --- SUBMIT DO FORMULÁRIO ---
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btnBuscar = document.getElementById('btn-buscar');
@@ -197,6 +248,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     paginaAtual = 0;
     btnLoadMore.style.display = 'none';
 
+    // Skeleton Loading
     container.innerHTML = '';
     statusDiv.style.display = 'none';
     let skeletonsHTML = '';
@@ -258,7 +310,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
             statusDiv.style.display = 'block';
             statusDiv.className = 'empty';
             statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>
-            Tente ajustar os filtros e buscar novamente.;
+            Tente ajustar os filtros e buscar novamente.`;
             return;
         }
 

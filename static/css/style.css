@@ -222,3 +222,36 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 .legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
 .legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
 .legal-footer a:hover { text-decoration: underline; }
+
+/* --- PUBLICIDADE IN-FEED --- */
+.ad-slot {
+    background-color: var(--bg-container);
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+.ad-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: block;
+    opacity: 0.6;
+}
+
+/* --- BOTÃO REPORTAR ERRO (Discreto) --- */
+.btn-report {
+    background: none;
+    border: none;
+    color: #ef5350; /* Vermelho suave */
+    font-size: 0.85em;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 10px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.btn-report:hover { opacity: 1; }
