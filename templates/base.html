@@ -14,19 +14,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <meta name="description" content="Busque concursos públicos por salário, região e palavra-chave. Agregador automático de editais e inscrições.">
+    <title>{{ meta_title | default('Concurso Ideal | Encontre sua Vaga em 2025') }}</title>
+    <meta name="description" content="{{ meta_description | default('O Concurso Ideal monitora editais e inscrições de concursos públicos em todo o Brasil. Filtre por salário, região e cargo.') }}">
+    
     <meta name="robots" content="index,follow">
     <link rel="canonical" href="https://concurso-app-2.onrender.com/">
     
     <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ meta_title | default('Concurso Ideal') }}">
+    <meta property="og:description" content="{{ meta_description | default('Encontre o concurso público perfeito para você.') }}">
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="static/css/style.css">
-
-    <title>{% block title %}Buscador de Concursos{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
@@ -40,20 +42,25 @@
             </label>
         </div>
 
-        <h1>🚀 Buscador de Concursos</h1>
+        <h1>🚀 Concurso Ideal</h1>
 
         {% block content %}{% endblock %}
 
         <div class="legal-footer">
-            <p>Agregador de dados públicos, sem reprodução de conteúdo protegido, sem dados pessoais sensíveis.</p>
-            <p><a href="/termos">Termos de Uso</a> | <a href="/privacidade">Política de Privacidade</a> | <a href="/">Início</a></p>
+            <p>&copy; 2025 Concurso Ideal - Agregador de dados públicos.</p>
+            <p>
+                <a href="/sobre">Sobre Nós</a> | 
+                <a href="/termos">Termos de Uso</a> | 
+                <a href="/privacidade">Privacidade</a> | 
+                <a href="/">Início</a>
+            </p>
         </div>
     </div>
 
     <div id="cookie-banner" class="cookie-banner">
         <div class="cookie-content">
             <p>
-                Usamos cookies para melhorar sua experiência e analisar o tráfego. 
+                Usamos cookies para melhorar sua experiência no <strong>Concurso Ideal</strong>. 
                 Ao continuar, você concorda com nossa <a href="/privacidade" target="_blank">Política de Privacidade</a>.
             </p>
             <button onclick="aceitarCookies()" class="cookie-btn">Aceitar e Fechar</button>

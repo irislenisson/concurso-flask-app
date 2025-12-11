@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Buscador de Concursos | Vagas Abertas 2025{% endblock %}
+{% block title %}Concurso Ideal | Vagas Abertas 2025{% endblock %}
 
 {% block content %}
     <form id="searchForm">
@@ -77,5 +77,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="static/js/script.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}

@@ -1,13 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Política de Privacidade - Buscador de Concursos{% endblock %}
+{% block title %}Política de Privacidade - Concurso Ideal{% endblock %}
 
 {% block content %}
-    <a href="/" class="action-btn" style="background:#6c757d; color:white; margin-bottom:20px;">← Voltar</a>
+    <a href="/" class="action-btn" style="background:var(--border-color); color:var(--text-secondary); margin-bottom:20px; text-decoration:none;">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
 
-    <h1>Política de Privacidade</h1>
-    <p><em>Última atualização: Dezembro de 2025</em></p>
+    <div class="concurso-card">
+        <h1>Política de Privacidade</h1>
+        <p><em>Última atualização: Dezembro de 2025</em></p>
 
-    <h2>1. Coleta de Dados</h2>
-    <p>Atualmente, não coletamos dados pessoais identificáveis...</p>
-    {% endblock %}
+        <h2>1. Coleta de Dados</h2>
+        <p>O <strong>Concurso Ideal</strong> preza pela sua privacidade. Atualmente, não coletamos dados pessoais identificáveis (como nome ou CPF) de forma direta.</p>
+
+        <h2>2. Cookies e Tecnologias de Rastreamento</h2>
+        <p>Utilizamos cookies para melhorar a experiência de navegação e para fins de análise de tráfego (via Google Analytics) e exibição de publicidade (via Google AdSense).</p>
+        <p>Você pode optar por desativar os cookies nas configurações do seu navegador, mas isso pode afetar a funcionalidade do site.</p>
+
+        <h2>3. Publicidade</h2>
+        <p>Fornecedores terceiros, incluindo o Google, usam cookies para veicular anúncios com base em visitas anteriores do usuário ao nosso website ou a outros websites.</p>
+
+        <h2>4. Alterações nesta Política</h2>
+        <p>Podemos atualizar nossa Política de Privacidade periodicamente. Recomendamos revisar esta página regularmente.</p>
+
+        <h2>5. Contato</h2>
+        <p>Questões sobre privacidade? Envie um e-mail para: concursoideal@icloud.com</p>
+    </div>
+{% endblock %}

@@ -98,8 +98,36 @@ def add_header(response):
         response.cache_control.public = True
     return response
 
+# ... (imports e configurações anteriores permanecem iguais) ...
+
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    # Captura o termo de busca da URL
+    query = request.args.get('q')
+    
+    meta = {}
+    if query:
+        termo_limpo = query.strip()
+        # REBRANDING AQUI:
+        meta['title'] = f"Concurso: {termo_limpo} | Concurso Ideal"
+        meta['description'] = f"Veja vagas, salários e editais para {termo_limpo} no Concurso Ideal."
+    else:
+        # TÍTULO PADRÃO DA MARCA:
+        meta['title'] = None 
+        meta['description'] = None
+
+    return render_template(
+        'index.html', 
+        meta_title=meta['title'], 
+        meta_description=meta['description']
+    )
+
+    # Passa as variáveis para o template
+    return render_template(
+        'index.html', 
+        meta_title=meta['title'], 
+        meta_description=meta['description']
+    )
 
 @app.route('/termos')
 def termos(): return render_template('termos.html')
