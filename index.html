@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
+      crossorigin="anonymous"></script>
     
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
     <script>
@@ -13,10 +14,16 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Concursos | Vagas Abertas 2025</title>
     
+    <title>Buscador de Concursos | Vagas Abertas 2025</title>
+    <meta name="description" content="Busque concursos públicos por salário, região e palavra-chave. Agregador automático de editais e inscrições.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://concurso-app-2.onrender.com/">
+
     <meta property="og:title" content="Buscador de Concursos">
-    <meta property="og:description" content="Encontre a vaga ideal para você no serviço público.">
+    <meta property="og:description" content="Filtre concursos por salário, região e palavra-chave.">
+    <meta property="og:url" content="https://concurso-app-2.onrender.com/">
+    <meta property="og:type" content="website">
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
@@ -50,12 +57,37 @@
         .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
         .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
 
+        /* ÁREA DE BOTÕES PRINCIPAIS */
+        .main-actions { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 10px; 
+            align-items: center;
+        }
+        
         input[type="submit"] { 
             background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
-            font-weight: bold; padding: 16px; font-size: 16px; border-radius: 8px; 
-            transition: transform 0.2s; width: 100%; 
+            font-weight: bold; padding: 14px; font-size: 16px; border-radius: 8px; 
+            transition: transform 0.2s; 
+            margin-top: 0;
+            width: auto; 
+            flex-grow: 1; 
         }
         input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
+
+        .share-btn { 
+            width: 50px; 
+            height: 50px;
+            border-radius: 8px; border: none; cursor: pointer; color: white; 
+            font-size: 1.2em; transition: all 0.2s; 
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; 
+        }
+        #btn-copy { background-color: #6c757d; }
+        #btn-copy:hover { background-color: #5a6268; transform: translateY(-2px); }
+        
+        #btn-whatsapp { background-color: #25D366; } 
+        #btn-whatsapp:hover { background-color: #128C7E; transform: translateY(-2px); }
 
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
@@ -74,7 +106,7 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* BOTÕES PRINCIPAIS DE AÇÃO */
+        /* BOTÕES 3D DE AÇÃO */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
@@ -91,7 +123,7 @@
         .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
-        /* NOVOS BOTÕES DE COMPARTILHAMENTO (PEQUENOS) */
+        /* BOTÕES PEQUENOS (Card) */
         .icon-btn {
             width: 36px; height: 36px; border-radius: 6px; border: none; 
             cursor: pointer; color: white; font-size: 1em; 
@@ -199,7 +231,15 @@
                 <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
             </div>
 
-            <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
+            <div class="main-actions">
+                <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
+                <button type="button" class="share-btn" id="btn-copy" onclick="copiarLink()" title="Copiar Link">
+                    <i class="fas fa-link"></i>
+                </button>
+                <button type="button" class="share-btn" id="btn-whatsapp" onclick="compartilharWhatsApp()" title="Enviar no WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </button>
+            </div>
         </form>
 
         <div id="status-msg"></div>
@@ -241,12 +281,26 @@
         };
         function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        // --- FUNÇÕES DE COMPARTILHAMENTO DE CONCURSO ESPECÍFICO ---
+        // --- FUNÇÕES DE COMPARTILHAMENTO ---
+        function copiarLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                const toast = document.getElementById("toast");
+                toast.innerText = "Link da busca copiado!";
+                toast.className = "show";
+                setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+            });
+        }
+
+        function compartilharWhatsApp() {
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent("Olha esses concursos que encontrei:");
+            window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+        }
+
+        // COMPARTILHAMENTO DE CONCURSO ÚNICO (DENTRO DO CARD)
         function copiarLinkUnico(texto) {
-            // Cria um link que busca exatamente o texto do concurso
             const urlBase = window.location.origin + window.location.pathname;
             const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
-            
             navigator.clipboard.writeText(linkUnico).then(() => {
                 const toast = document.getElementById("toast");
                 toast.innerText = "Link deste concurso copiado!";
@@ -296,7 +350,7 @@
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
                 
-                // Texto do concurso para gerar link único (escapando aspas simples para não quebrar o HTML)
+                // Prepara texto para link único
                 const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
                 div.innerHTML = `
@@ -437,7 +491,11 @@
                 if (todosConcursos.length === 0) {
                     statusDiv.style.display = 'block';
                     statusDiv.className = 'empty';
-                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado para os filtros selecionados.';
+                    // MENSAGEM DE ERRO AMIGÁVEL
+                    statusDiv.innerHTML = `
+                        ❌ Não foi possível encontrar concursos com esses filtros.<br>
+                        Se o problema persistir, pode ser instabilidade no site de origem (PCI Concursos).
+                    `;
                     return;
                 }
 
@@ -449,7 +507,7 @@
                 container.innerHTML = '';
                 statusDiv.style.display = 'block';
                 statusDiv.className = 'error';
-                statusDiv.innerHTML = `❌ Erro de conexão.`;
+                statusDiv.innerHTML = `❌ Erro de conexão ou instabilidade no servidor. Tente novamente em instantes.`;
                 btnBuscar.value = "Buscar Oportunidades";
                 btnBuscar.disabled = false;
             }
