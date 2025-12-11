@@ -16,7 +16,7 @@ CORS(app)
 
 # --- SISTEMA DE PERSISTÊNCIA E CACHE ---
 DB_FILE = os.path.join(basedir, 'concursos.json')
-CACHE_TIMEOUT = 3600  # 60 minutos (Server mantido vivo por ping externo)
+CACHE_TIMEOUT = 3600  # 60 minutos
 
 CACHE_MEMORIA = {
     "timestamp": 0,
@@ -38,7 +38,6 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
-# --- LISTA GIGANTE DE BANCAS (PARA DETECÇÃO DE LINKS) ---
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -90,14 +89,13 @@ REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECAS
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
-# --- FUNÇÕES AUXILIARES ---
 def formatar_real(valor):
     if valor <= 0: return "Ver Edital/Variável"
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
 def raspar_dados_online():
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0'}
     print("--> Iniciando raspagem online...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
@@ -110,7 +108,6 @@ def raspar_dados_online():
 
         for c in itens_brutos:
             texto = c.get_text(separator=' ', strip=True)
-            
             link_original = "#"
             try:
                 tag_link = c.find('a')
@@ -153,19 +150,17 @@ def raspar_dados_online():
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
         return lista_processada
     except Exception as e:
-        print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
+        print(f"Erro raspagem: {e}")
         return []
 
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
-    # 1. Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         print(f"--> Usando CACHE (Expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
-    # 2. Verifica Cache em Disco (JSON)
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -177,7 +172,6 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
-    # 3. Baixa da Web (Fallback)
     print("--> Baixando dados novos...")
     novos_dados = raspar_dados_online()
     CACHE_MEMORIA["dados"] = novos_dados
@@ -205,9 +199,6 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
-        # LÓGICA ESTRITA DO FILTRO:
-        # Se algum filtro de local (UF/Região) estiver ativo, 
-        # o item SÓ entra se sua UF estiver na lista permitida.
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -261,8 +252,6 @@ def extrair_link_final(url_base, tipo):
     except:
         return url_base
 
-# --- ROTAS DA APLICAÇÃO ---
-
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -275,7 +264,6 @@ def termos():
 def privacidade():
     return render_template('privacidade.html')
 
-# Rotas de SEO
 @app.route('/robots.txt')
 def robots():
     content = "User-agent: *\nAllow: /\nSitemap: https://concurso-app-2.onrender.com/sitemap.xml"
@@ -291,7 +279,6 @@ def sitemap():
     </urlset>"""
     return Response(xml, mimetype="application/xml")
 
-# Tratamento de Erros
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('index.html'), 404
@@ -300,7 +287,6 @@ def page_not_found(e):
 def internal_server_error(e):
     return "<h1>Erro no Servidor</h1><p>Tente novamente em instantes.</p>", 500
 
-# API Endpoints
 @app.route('/api/link-profundo', methods=['POST'])
 def api_link_profundo():
     data = request.json or {}
@@ -313,7 +299,6 @@ def api_link_profundo():
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():
     data = request.json or {}
-    
     try:
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw).replace(',', '.')
@@ -336,7 +321,6 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    # Chama a função correta de persistência
     todos_dados = obter_dados()
     resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     

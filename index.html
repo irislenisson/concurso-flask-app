@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262"
-      crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
     
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
     <script>
@@ -51,39 +50,12 @@
         .section-divider { border-top: 1px solid #eee; margin: 10px 0; }
         .help-text { font-size: 0.8em; color: #adb5bd; margin-top: 5px; font-style: italic;}
 
-        /* --- CORREÇÃO DA ÁREA DE BOTÕES --- */
-        .main-actions { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 10px; 
-            align-items: center;
-        }
-        
-        /* Botão Buscar ocupa o espaço sobrando */
         input[type="submit"] { 
             background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
-            font-weight: bold; padding: 14px; font-size: 16px; border-radius: 8px; 
-            transition: transform 0.2s; 
-            margin-top: 0;
-            width: auto; 
-            flex-grow: 1; 
+            font-weight: bold; padding: 16px; font-size: 16px; border-radius: 8px; 
+            transition: transform 0.2s; width: 100%; 
         }
         input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
-
-        /* Botões de Compartilhar com tamanho fixo */
-        .share-btn { 
-            width: 50px; 
-            height: 50px;
-            border-radius: 8px; border: none; cursor: pointer; color: white; 
-            font-size: 1.2em; transition: all 0.2s; 
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; 
-        }
-        #btn-copy { background-color: #6c757d; }
-        #btn-copy:hover { background-color: #5a6268; transform: translateY(-2px); }
-        
-        #btn-whatsapp { background-color: #25D366; } 
-        #btn-whatsapp:hover { background-color: #128C7E; transform: translateY(-2px); }
 
         #status-msg { margin: 20px 0; text-align: center; font-weight: bold; display: none; padding: 15px; border-radius: 8px;}
         .loading { color: #0056b3; background: #e7f1ff; }
@@ -102,7 +74,7 @@
         .badge.uf { background-color: #cfe2ff; color: #084298; }
         .badge.date { background-color: #fff3cd; color: #664d03; }
 
-        /* BOTÕES 3D DE AÇÃO */
+        /* BOTÕES PRINCIPAIS DE AÇÃO */
         .action-btn {
             font-size: 0.85em; font-weight: 600; padding: 8px 16px;
             border-radius: 6px; transition: all 0.2s; display: inline-flex;
@@ -119,7 +91,20 @@
         .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
         .btn-inscricao:hover { background-color: #0b5ed7; }
 
-        /* SKELETON LOADING */
+        /* NOVOS BOTÕES DE COMPARTILHAMENTO (PEQUENOS) */
+        .icon-btn {
+            width: 36px; height: 36px; border-radius: 6px; border: none; 
+            cursor: pointer; color: white; font-size: 1em; 
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; margin-right: 2px;
+        }
+        .btn-copy-small { background-color: #6c757d; }
+        .btn-copy-small:hover { background-color: #5a6268; transform: translateY(-2px); }
+        
+        .btn-zap-small { background-color: #25D366; }
+        .btn-zap-small:hover { background-color: #128C7E; transform: translateY(-2px); }
+
+        /* SKELETON */
         .skeleton {
             background: #e9ecef; background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
             background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px;
@@ -214,15 +199,7 @@
                 <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
             </div>
 
-            <div class="main-actions">
-                <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
-                <button type="button" class="share-btn" id="btn-copy" onclick="copiarLink()" title="Copiar Link">
-                    <i class="fas fa-link"></i>
-                </button>
-                <button type="button" class="share-btn" id="btn-whatsapp" onclick="compartilharWhatsApp()" title="Enviar no WhatsApp">
-                    <i class="fab fa-whatsapp"></i>
-                </button>
-            </div>
+            <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
         </form>
 
         <div id="status-msg"></div>
@@ -264,19 +241,25 @@
         };
         function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        // COMPARTILHAMENTO
-        function copiarLink() {
-            navigator.clipboard.writeText(window.location.href).then(() => {
+        // --- FUNÇÕES DE COMPARTILHAMENTO DE CONCURSO ESPECÍFICO ---
+        function copiarLinkUnico(texto) {
+            // Cria um link que busca exatamente o texto do concurso
+            const urlBase = window.location.origin + window.location.pathname;
+            const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
+            
+            navigator.clipboard.writeText(linkUnico).then(() => {
                 const toast = document.getElementById("toast");
+                toast.innerText = "Link deste concurso copiado!";
                 toast.className = "show";
                 setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
             });
         }
 
-        function compartilharWhatsApp() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent("Olha esses concursos que encontrei:");
-            window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+        function compartilharZapUnico(texto) {
+            const urlBase = window.location.origin + window.location.pathname;
+            const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
+            const mensagem = encodeURIComponent(`Olha esse concurso: ${texto}\n${linkUnico}`);
+            window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
         }
 
         async function clicarAcao(el, urlBase, tipo) {
@@ -312,6 +295,9 @@
                 const div = document.createElement('div');
                 div.className = 'concurso-card';
                 const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
+                
+                // Texto do concurso para gerar link único (escapando aspas simples para não quebrar o HTML)
+                const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
                 div.innerHTML = `
                     <h3>${c['Informações do Concurso']}</h3>
@@ -320,6 +306,13 @@
                         <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
                         <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                         
+                        <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link deste concurso">
+                            <i class="fas fa-link"></i>
+                        </button>
+                        <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="Enviar no WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </button>
+
                         <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
                             <i class="fas fa-file-pdf"></i> Ver Edital
                         </a>
