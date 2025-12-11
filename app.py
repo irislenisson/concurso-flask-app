@@ -23,13 +23,28 @@ CACHE_MEMORIA = {
     "dados": []
 }
 
-# --- LISTAS DE REFERÊNCIA ---
-UFS_SIGLAS = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
-    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
-    'SP', 'SE', 'TO'
+# --- REGEX E PADRÕES DE EXTRAÇÃO (APRIMORADOS) ---
+
+# Padrões de Salário
+REGEX_SALARIOS = [
+    r'R\$\s*([\d\.]+,\d{2})',
+    r'at[eé]\s*R\$\s*([\d\.]+,\d{2})',
+    r'inicial\s*R\$\s*([\d\.]+,\d{2})',
+    r'remunera[cç][aã]o\s*(?:de)?\s*R\$\s*([\d\.]+,\d{2})',
+    r'([\d\.]+,\d{2})\s*(?:reais|bruto|l[ií]quido)?'
 ]
 
+# Padrões de Data
+REGEX_DATAS = [
+    r'\b(\d{2}/\d{2}/\d{4})\b',     # completo (dd/mm/aaaa)
+    r'\b(\d{2}/\d{2}/\d{2})\b',     # dois dígitos (dd/mm/aa)
+    r'\b(\d{2}/\d{2})\b'            # sem ano (dd/mm)
+]
+
+# Padrão de UF
+REGEX_UF = re.compile(r'\b(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b', re.IGNORECASE)
+
+# Regiões para filtro
 REGIOES = {
     'Norte': ['AM', 'RR', 'AP', 'PA', 'TO', 'RO', 'AC'],
     'Nordeste': ['MA', 'PI', 'CE', 'RN', 'PE', 'PB', 'SE', 'AL', 'BA'],
@@ -38,6 +53,7 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
+# Lista de Bancas
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -89,14 +105,69 @@ REGEX_BANCAS = re.compile(r'|'.join(map(re.escape, TERMOS_BANCAS)), re.IGNORECAS
 
 URL_BASE = 'https://www.pciconcursos.com.br/concursos/'
 
+# --- FUNÇÕES DE EXTRAÇÃO INTELIGENTE ---
+
 def formatar_real(valor):
     if valor <= 0: return "Ver Edital/Variável"
     formatado = f"{valor:,.2f}"
     return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
+def extrair_salario(texto):
+    for padrao in REGEX_SALARIOS:
+        m = re.search(padrao, texto, re.IGNORECASE)
+        if m:
+            try:
+                # Remove pontos de milhar e troca vírgula decimal por ponto
+                return float(m.group(1).replace('.', '').replace(',', '.'))
+            except:
+                pass
+    return 0.0
+
+def extrair_data(texto):
+    hoje = datetime.now().date()
+    ano_atual = hoje.year
+
+    for padrao in REGEX_DATAS:
+        m = re.findall(padrao, texto)
+        if m:
+            data_str = m[-1]
+            try:
+                partes = data_str.split('/')
+                
+                # Caso: dd/mm (sem ano) -> Adiciona ano atual
+                if len(partes) == 2:  
+                    data_str = f"{partes[0]}/{partes[1]}/{ano_atual}"
+                
+                # Caso: dd/mm/aa (ano 2 dígitos) -> Transforma em 20aa
+                elif len(partes) == 3 and len(partes[2]) == 2:
+                    partes[2] = "20" + partes[2]
+                    data_str = "/".join(partes)
+                
+                data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
+                return data_obj
+            except:
+                pass
+    return None
+
+def extrair_uf(texto):
+    # Tenta encontrar a sigla do estado
+    m = REGEX_UF.search(texto)
+    if m:
+        return m.group(0).upper()
+
+    # Fallback: Se encontrar "Prefeitura de X", mas não tem UF, assume Nacional/Outro
+    # Aqui poderíamos adicionar um mapa de Cidades -> UF no futuro
+    m2 = re.search(r'prefeitura de ([A-Za-zà-ú]+)', texto, re.IGNORECASE)
+    if m2:
+        return "Nacional/Outro"
+
+    return "Nacional/Outro"
+
+# --- RASPAGEM E PROCESSAMENTO ---
+
 def raspar_dados_online():
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    print("--> Iniciando raspagem online...")
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    print("--> Iniciando raspagem online (Lógica Aprimorada)...")
     try:
         resp = requests.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
@@ -108,6 +179,8 @@ def raspar_dados_online():
 
         for c in itens_brutos:
             texto = c.get_text(separator=' ', strip=True)
+            
+            # Extração de Link
             link_original = "#"
             try:
                 tag_link = c.find('a')
@@ -115,27 +188,16 @@ def raspar_dados_online():
                     link_original = tag_link['href']
             except: pass
 
-            datas = re.findall(r'\b(\d{2}/\d{2}/\d{4})\b', texto)
+            # Extração Otimizada de Data, Salário e UF
+            data_fim_obj = extrair_data(texto)
+            salario_num = extrair_salario(texto)
+            uf_detectada = extrair_uf(texto)
+
+            # Verifica validade da data
             data_str = "Indefinida"
-            if datas:
-                try:
-                    data_fim_obj = datetime.strptime(datas[-1], '%d/%m/%Y').date()
-                    if data_fim_obj < hoje: continue
-                    data_str = data_fim_obj.strftime('%d/%m/%Y')
-                except: pass
-
-            salario_num = 0.0
-            m = re.search(r'R\$\s*([\d\.]+,\d{2})', texto)
-            if m:
-                try:
-                    salario_num = float(m.group(1).replace('.', '').replace(',', '.'))
-                except: salario_num = 0.0
-
-            uf_detectada = 'Nacional/Outro'
-            for sigla in UFS_SIGLAS:
-                if re.search(r'\b' + re.escape(sigla) + r'\b', texto):
-                    uf_detectada = sigla
-                    break
+            if data_fim_obj:
+                if data_fim_obj < hoje: continue # Ignora concursos vencidos
+                data_str = data_fim_obj.strftime('%d/%m/%Y')
 
             lista_processada.append({
                 'texto': texto,
@@ -147,20 +209,24 @@ def raspar_dados_online():
                 'uf': uf_detectada
             })
         
+        # Ordena por maior salário
         lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
         return lista_processada
+
     except Exception as e:
-        print(f"Erro raspagem: {e}")
+        print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
         return []
 
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
 
+    # 1. Verifica Cache em Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         print(f"--> Usando CACHE (Expira em {int(CACHE_TIMEOUT - (agora - CACHE_MEMORIA['timestamp']))}s)")
         return CACHE_MEMORIA["dados"]
 
+    # 2. Verifica Cache em Disco (JSON)
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -172,6 +238,7 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
+    # 3. Baixa da Web (Fallback)
     print("--> Baixando dados novos...")
     novos_dados = raspar_dados_online()
     CACHE_MEMORIA["dados"] = novos_dados
@@ -199,6 +266,7 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
+        # Lógica Estrita: Se houver filtros de local, UF tem que bater
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -252,6 +320,8 @@ def extrair_link_final(url_base, tipo):
     except:
         return url_base
 
+# --- ROTAS DA APLICAÇÃO ---
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -299,6 +369,7 @@ def api_link_profundo():
 @app.route('/api/buscar', methods=['POST'])
 def api_buscar():
     data = request.json or {}
+    
     try:
         s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw).replace(',', '.')
