@@ -154,6 +154,7 @@ def raspar_dados_online():
         print(f"Erro raspagem: {e}")
         return []
 
+# FUNÇÃO CORRETA PARA OBTER DADOS
 def obter_dados():
     global CACHE_MEMORIA
     agora = time.time()
@@ -184,8 +185,6 @@ def obter_dados():
 
 def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
     resultados = []
-    # Modo Restritivo: Se houver ALGUM item na lista alvo (Nacional ou Estados), ative o filtro.
-    # Se a lista estiver vazia (usuário não clicou em nada), mostra tudo.
     modo_restritivo = len(lista_ufs_alvo) > 0
 
     for item in todos_dados:
@@ -199,9 +198,6 @@ def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_
         if salario_min > 0 and item['salario_num'] < salario_min:
             continue
 
-        # LÓGICA CORRIGIDA: Se modo restritivo estiver ON,
-        # o item SÓ passa se a UF dele estiver na lista de alvos.
-        # "Nacional/Outro" só passa se "Nacional" foi clicado.
         if modo_restritivo:
             if item['uf'] not in lista_ufs_alvo:
                 continue
@@ -294,8 +290,9 @@ def api_buscar():
     
     lista_final_ufs = list(conjunto_ufs_alvo)
     
-    todos = buscar_concursos()
-    resultados = filtrar_concursos(todos, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
+    # CORREÇÃO: Chama a função correta 'obter_dados()'
+    todos_dados = obter_dados()
+    resultados = filtrar_concursos(todos_dados, salario_minimo, lista_palavras_chave, lista_final_ufs, excluir_palavras)
     
     return jsonify(resultados)
 
