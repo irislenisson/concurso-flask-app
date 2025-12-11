@@ -305,7 +305,8 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         if (todosConcursos.length === 0) {
             statusDiv.style.display = 'block';
             statusDiv.className = 'empty';
-            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>Se o problema persistir, pode ser instabilidade no site de origem (PCI Concursos).`;
+            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>
+            Tente ajustar os filtros ou palavras-chave e buscar novamente.`;
             return;
         }
 
