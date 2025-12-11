@@ -18,14 +18,18 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
+# ... (início igual) ...
+
 # --- REGEX E PADRÕES DE EXTRAÇÃO ---
 REGEX_SALARIOS = [
-    r'R\$\s*([\d\.]+,\d{2})',
-    r'at[eé]\s*R\$\s*([\d\.]+,\d{2})',
-    r'inicial\s*R\$\s*([\d\.]+,\d{2})',
-    r'remunera[cç][aã]o\s*(?:de)?\s*R\$\s*([\d\.]+,\d{2})',
+    r'R\$\s*([\d\.]+)(?:,\d{1,2})?',           # R$ 1.000,00 ou R$ 1.000
+    r'at[eé]\s*R\$\s*([\d\.]+)(?:,\d{1,2})?',  # Até R$ ...
+    r'inicial\s*R\$\s*([\d\.]+)(?:,\d{1,2})?', # Inicial R$ ...
+    r'remunera[cç][aã]o\s*(?:de)?\s*R\$\s*([\d\.]+)(?:,\d{1,2})?',
     r'([\d\.]+,\d{2})\s*(?:reais|bruto|l[ií]quido)?'
 ]
+
+# ... (resto do arquivo igual) ...
 
 REGEX_DATAS = [
     r'\b(\d{2}/\d{2}/\d{4})\b',     # completo
