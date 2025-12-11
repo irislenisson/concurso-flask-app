@@ -1,4 +1,4 @@
-/* static/js/script.js - Versão com Links Reais e Robustos */
+/* static/js/script.js - Versão Final com Redirecionamento Server-Side (/ir) */
 
 let todosConcursos = [];
 let paginaAtual = 0;
@@ -54,7 +54,6 @@ function aceitarCookies() {
     document.getElementById("cookie-banner").style.display = "none";
 }
 
-// --- BOTÃO VOLTAR AO TOPO ---
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (btn) {
@@ -64,14 +63,12 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// --- REPORTAR ERRO ---
 function reportarErro(texto) {
     const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
     const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
     window.open(`mailto:?subject=${assunto}&body=${corpo}`);
 }
 
-// --- COMPARTILHAMENTO ---
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
         const toast = document.getElementById("toast");
@@ -105,35 +102,6 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
-// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
-async function clicarAcao(event, el, urlBase, tipo) {
-    // Impede o navegador de abrir o link original imediatamente
-    if(event) event.preventDefault();
-
-    const textoOriginal = el.innerHTML;
-    el.classList.add('disabled');
-    el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
-
-    try {
-        const response = await fetch('/api/link-profundo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: urlBase, tipo: tipo })
-        });
-        const data = await response.json();
-        // Abre o link retornado (PDF ou Página de Inscrição)
-        window.open(data.url, '_blank');
-    } catch (err) {
-        console.error("Erro na busca profunda:", err);
-        // Fallback: Se der erro, abre o link original que estava no botão
-        window.open(urlBase, '_blank');
-    } finally {
-        el.innerHTML = textoOriginal;
-        el.classList.remove('disabled');
-    }
-}
-
-// --- NEWSLETTER ---
 async function cadastrarLead() {
     const emailInput = document.getElementById('email-lead');
     const email = emailInput.value;
@@ -159,16 +127,14 @@ async function cadastrarLead() {
             btn.innerText = "Cadastrado! ✅";
             emailInput.value = "";
             setTimeout(() => { btn.innerText = "Cadastrar"; btn.disabled = false; }, 3000);
-        } else {
-            throw new Error();
-        }
+        } else { throw new Error(); }
     } catch (e) {
         btn.innerText = "Erro ❌";
         setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
     }
 }
 
-// --- RENDERIZAÇÃO DOS CARDS ---
+// --- RENDERIZAÇÃO DOS CARDS (COM REDIRECIONAMENTO SERVER-SIDE) ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -179,7 +145,6 @@ function renderizarLote() {
     lote.forEach((c, index) => {
         const indiceAbsoluto = inicio + index;
         
-        // Injeção de Anúncio
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
@@ -195,13 +160,19 @@ function renderizarLote() {
         const div = document.createElement('div');
         div.className = 'concurso-card';
         
-        // Tratamento robusto de links e textos
+        // Link Base
         let linkBase = c['Link'];
-        if (!linkBase || linkBase === '#') linkBase = 'https://www.pciconcursos.com.br/concursos/';
+        if (!linkBase || linkBase === '#' || linkBase === '') {
+            linkBase = 'https://www.pciconcursos.com.br/concursos/';
+        }
         
-        // Protege contra aspas simples que quebram o HTML
-        const safeLink = linkBase.replace(/'/g, "%27"); 
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
+
+        // Cria links que passam pelo nosso servidor (/ir)
+        // Isso garante que o navegador abra a aba (sem bloqueio) e o servidor resolva o link final (inteligência)
+        const encodedLink = encodeURIComponent(linkBase);
+        const linkEdital = `/ir?url=${encodedLink}&tipo=edital`;
+        const linkInscricao = `/ir?url=${encodedLink}&tipo=inscricao`;
 
         div.innerHTML = `
             <h3>${c['Informações do Concurso']}</h3>
@@ -217,10 +188,10 @@ function renderizarLote() {
                     <i class="fab fa-whatsapp"></i>
                 </button>
 
-                <a href="${safeLink}" target="_blank" class="action-btn btn-edital" onclick="clicarAcao(event, this, '${safeLink}', 'edital')">
+                <a href="${linkEdital}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital">
                     <i class="fas fa-file-pdf"></i> Ver Edital
                 </a>
-                <a href="${safeLink}" target="_blank" class="action-btn btn-inscricao" onclick="clicarAcao(event, this, '${safeLink}', 'inscricao')">
+                <a href="${linkInscricao}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">
                     ✍️ Inscrição
                 </a>
             </div>
