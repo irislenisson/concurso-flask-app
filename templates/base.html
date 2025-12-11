@@ -30,6 +30,10 @@
 </head>
 <body>
     <div class="container">
+        <button id="theme-toggle" class="theme-toggle" onclick="alternarTema()" title="Alternar Modo Escuro">
+            🌙
+        </button>
+
         <h1>🚀 Buscador de Concursos</h1>
 
         {% block content %}{% endblock %}
@@ -39,7 +43,8 @@
             <p><a href="/termos">Termos de Uso</a> | <a href="/privacidade">Política de Privacidade</a> | <a href="/">Início</a></p>
         </div>
     </div>
-<div id="cookie-banner" class="cookie-banner">
+
+    <div id="cookie-banner" class="cookie-banner">
         <div class="cookie-content">
             <p>
                 Usamos cookies para melhorar sua experiência e analisar o tráfego. 

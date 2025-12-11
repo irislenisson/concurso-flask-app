@@ -2,9 +2,8 @@
 
 let todosConcursos = [];
 let paginaAtual = 0;
-const itensPorPagina = 20;
+const itensPorPagina = 20; // Ajustado para 20 conforme seu pedido
 
-// --- FORMATAÇÃO DE MOEDA ---
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -14,54 +13,62 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
-// --- INTERATIVIDADE DOS BOTÕES DE FILTRO ---
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// --- BOTÃO VOLTAR AO TOPO ---
-window.onscroll = function() {
-    const btn = document.getElementById("btn-back-to-top");
-    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "block";
-    else btn.style.display = "none";
-};
-function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+// --- DARK MODE LOGIC ---
+const themeToggleBtn = document.getElementById('theme-toggle');
+const htmlElement = document.documentElement;
 
-// --- SISTEMA DE COOKIES LGPD (NOVO) ---
-document.addEventListener("DOMContentLoaded", function() {
-    // Verifica se já aceitou (salvo no navegador)
+document.addEventListener("DOMContentLoaded", () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        htmlElement.setAttribute('data-theme', savedTheme);
+        atualizarIcone(savedTheme);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        htmlElement.setAttribute('data-theme', 'dark');
+        atualizarIcone('dark');
+    }
+    
+    // Check Cookies
     if (!localStorage.getItem("cookieConsent")) {
-        // Se não tem o registro, mostra o banner
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
     }
 });
 
+function alternarTema() {
+    const currentTheme = htmlElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    htmlElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    atualizarIcone(newTheme);
+}
+
+function atualizarIcone(theme) {
+    if (themeToggleBtn) {
+        if (theme === 'dark') themeToggleBtn.innerText = '☀️';
+        else themeToggleBtn.innerText = '🌙';
+    }
+}
+
 function aceitarCookies() {
-    // Salva a decisão no navegador do usuário
     localStorage.setItem("cookieConsent", "true");
-    
-    // Esconde o banner visualmente
     document.getElementById("cookie-banner").style.display = "none";
 }
 
-// --- FUNÇÕES DE COMPARTILHAMENTO GERAL ---
-function copiarLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-        const toast = document.getElementById("toast");
-        toast.innerText = "Link da busca copiado!";
-        toast.className = "show";
-        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
-    });
-}
+// --- BOTÃO VOLTAR AO TOPO ---
+window.onscroll = function() {
+    const btn = document.getElementById("btn-back-to-top");
+    if (btn) {
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "block";
+        else btn.style.display = "none";
+    }
+};
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-function compartilharWhatsApp() {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent("Olha esses concursos que encontrei:");
-    window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
-}
-
-// --- COMPARTILHAMENTO DE CONCURSO ÚNICO (DENTRO DO CARD) ---
+// --- COMPARTILHAMENTO ---
 function copiarLinkUnico(texto) {
     const urlBase = window.location.origin + window.location.pathname;
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
@@ -80,7 +87,6 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
-// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
 async function clicarAcao(el, urlBase, tipo) {
     const textoOriginal = el.innerHTML;
     el.classList.add('disabled');
@@ -103,7 +109,6 @@ async function clicarAcao(el, urlBase, tipo) {
     }
 }
 
-// --- RENDERIZAÇÃO DOS CARDS ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -115,8 +120,6 @@ function renderizarLote() {
         const div = document.createElement('div');
         div.className = 'concurso-card';
         const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
-        
-        // Prepara texto para link único (escapa aspas simples)
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
         div.innerHTML = `
@@ -126,10 +129,10 @@ function renderizarLote() {
                 <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
                 <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
                 
-                <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link deste concurso">
+                <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link">
                     <i class="fas fa-link"></i>
                 </button>
-                <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="Enviar no WhatsApp">
+                <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="WhatsApp">
                     <i class="fab fa-whatsapp"></i>
                 </button>
 
@@ -157,7 +160,6 @@ function carregarMais() {
     renderizarLote();
 }
 
-// --- CARREGAMENTO INICIAL (URL PARAMS) ---
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     let deveBuscar = false;
@@ -184,10 +186,8 @@ window.addEventListener('load', () => {
     if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
 });
 
-// --- LÓGICA DE BUSCA PRINCIPAL ---
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     const btnBuscar = document.getElementById('btn-buscar');
     const statusDiv = document.getElementById('status-msg');
     const container = document.getElementById('resultados-container');
@@ -197,7 +197,6 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     paginaAtual = 0;
     btnLoadMore.style.display = 'none';
 
-    // SKELETON LOADING (Animação de carregamento)
     container.innerHTML = '';
     statusDiv.style.display = 'none';
     let skeletonsHTML = '';
@@ -253,16 +252,13 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         
         btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
         btnBuscar.disabled = false;
-
-        container.innerHTML = ''; // Limpa skeleton
+        container.innerHTML = '';
 
         if (todosConcursos.length === 0) {
             statusDiv.style.display = 'block';
             statusDiv.className = 'empty';
-            statusDiv.innerHTML = `
-                ❌ Não foi possível encontrar concursos com esses filtros.<br>
-                Tente ajustar os filtros ou palavras-chave e buscar novamente.
-            `;
+            statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>
+            Tente ajustar os filtros e buscar novamente.;
             return;
         }
 

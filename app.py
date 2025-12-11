@@ -2,30 +2,28 @@ import os
 import locale
 import json
 import time
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, send_from_directory
 from flask_cors import CORS
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from werkzeug.middleware.proxy_fix import ProxyFix # <--- NECESSÁRIO NO RENDER
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Imports locais (Tentativa robusta de importação)
+# Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
-except ImportError as e:
-    print(f"ERRO CRÍTICO DE IMPORTAÇÃO: {e}")
-    # Fallback para evitar crash total se mover arquivos errado
+except ImportError:
+    # Fallback para evitar crash se arquivos não estiverem prontos
     UFS_SIGLAS = []
-    REGIOES = {} 
+    REGIOES = {}
     REGEX_BANCAS = None
 
 # --- CONFIGURAÇÃO ---
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# CORREÇÃO PARA O RENDER (ProxyFix)
-# Isso permite que o Flask veja o IP real do usuário através do proxy do Render
+# Correção de Proxy para o Render (IP Real)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
 # 1. Performance
@@ -35,7 +33,7 @@ Compress(app)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["2000 per day", "200 per minute"], # Aumentei um pouco para evitar bloqueio falso nos testes
+    default_limits=["2000 per day", "200 per minute"],
     storage_uri="memory://"
 )
 
@@ -56,11 +54,9 @@ def obter_dados():
                 item['tokens'] = set(item['tokens'])
         return dados
 
-    # 1. Cache Memória
     if CACHE_MEMORIA["dados"] and (agora - CACHE_MEMORIA["timestamp"] < CACHE_TIMEOUT):
         return CACHE_MEMORIA["dados"]
 
-    # 2. Cache Disco
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -71,7 +67,6 @@ def obter_dados():
                     return CACHE_MEMORIA["dados"]
         except: pass
 
-    # 3. Web Scraper
     novos_dados = raspar_dados_online()
     if novos_dados:
         try:
@@ -82,7 +77,6 @@ def obter_dados():
         CACHE_MEMORIA["timestamp"] = agora
         return CACHE_MEMORIA["dados"]
     
-    # 4. Fallback
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -116,16 +110,23 @@ def privacidade(): return render_template('privacidade.html')
 @app.route('/robots.txt')
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
+# ROTA ADS.TXT (NOVA) - Obrigatória para AdSense
+@app.route('/ads.txt')
+def ads_txt():
+    return send_from_directory(basedir, 'ads.txt')
+
 @app.route('/sitemap.xml')
 def sitemap():
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>https://concurso-app-2.onrender.com/</loc><changefreq>daily</changefreq></url>
+      <url><loc>https://concurso-app-2.onrender.com/termos</loc><changefreq>monthly</changefreq></url>
+      <url><loc>https://concurso-app-2.onrender.com/privacidade</loc><changefreq>monthly</changefreq></url>
     </urlset>"""
     return Response(xml, mimetype="application/xml")
 
 @app.route('/ping')
-@limiter.exempt # O Ping não deve ter limite
+@limiter.exempt
 def ping():
     return jsonify({
         "status": "ok",
@@ -144,11 +145,9 @@ def api_link_profundo():
 def api_buscar():
     data = request.json or {}
     
-    # Tratamento de salário (recolocado o import re que faltava para limpeza, caso precise)
     try: 
-        s_raw = str(data.get('salario_minimo', ''))
-        # Remove caracteres não numéricos exceto vírgula
         import re
+        s_raw = str(data.get('salario_minimo', ''))
         s_clean = re.sub(r'[^\d,]', '', s_raw)
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
     except: 
@@ -170,5 +169,4 @@ if __name__ == '__main__':
     try: locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
     except: pass
     port = int(os.environ.get('PORT', 5000))
-    # MANTENHA DEBUG=TRUE ENQUANTO ESTIVER COM PROBLEMAS
     app.run(host='0.0.0.0', port=port, debug=True)
