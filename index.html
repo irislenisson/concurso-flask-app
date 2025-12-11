@@ -276,4 +276,80 @@
             if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
         });
 
-        document.getElementById('searchForm').addEventListener('submit',
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btnBuscar = document.getElementById('btn-buscar');
+            const statusDiv = document.getElementById('status-msg');
+            const container = document.getElementById('resultados-container');
+            const btnLoadMore = document.getElementById('btn-load-more');
+            
+            todosConcursos = [];
+            paginaAtual = 0;
+            btnLoadMore.style.display = 'none';
+
+            const textoOriginal = "Buscar Oportunidades";
+            btnBuscar.value = "⏳ Buscando...";
+            btnBuscar.disabled = true;
+            
+            container.innerHTML = '';
+            statusDiv.className = 'loading';
+            statusDiv.innerText = 'Processando sua busca...';
+            statusDiv.style.display = 'block';
+
+            const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
+            const activeRegions = Array.from(document.querySelectorAll('.region-btn.active')).map(btn => btn.getAttribute('data-value'));
+            const salario = document.getElementById('salario_minimo').value;
+            const palavraChave = document.getElementById('palavra_chave').value;
+            const excluir = document.getElementById('excluir_palavra').value;
+
+            const params = new URLSearchParams();
+            if (palavraChave) params.set('q', palavraChave);
+            if (salario) params.set('salario', salario);
+            if (excluir) params.set('excluir', excluir);
+            if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
+            if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
+            
+            window.history.pushState({}, '', window.location.pathname + '?' + params.toString());
+
+            const payload = {
+                salario_minimo: salario,
+                palavra_chave: palavraChave,
+                excluir_palavra: excluir,
+                regioes: activeRegions,
+                ufs: activeUfs
+            };
+
+            try {
+                const response = await fetch('/api/buscar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                todosConcursos = await response.json();
+                
+                btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
+                btnBuscar.disabled = false;
+
+                if (todosConcursos.length === 0) {
+                    statusDiv.className = 'empty';
+                    statusDiv.innerHTML = '⚠️ Nenhum concurso encontrado para os filtros selecionados.';
+                    return;
+                }
+
+                statusDiv.style.display = 'none';
+                renderizarLote();
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `❌ Erro de conexão.`;
+                btnBuscar.value = textoOriginal;
+                btnBuscar.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
