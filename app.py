@@ -9,7 +9,7 @@ from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 
-# Configuração do App
+# Configuração do App (Template na raiz)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=basedir, static_folder=basedir)
 CORS(app)
@@ -38,6 +38,7 @@ REGIOES = {
     'Sul': ['PR', 'RS', 'SC'],
 }
 
+# Lista de Bancas (Ordenada Alfabeticamente)
 RAW_BANCAS = """
 1dn, 2dn, 3dn, 4dn, 5dn, 6dn, 7dn, 8dn, 9dn, abare, abcp, acafe, acaplam, access, acep, actio, adm&tec, advise, 
 agata, agirh, agu, air, ajuri, alfa, alternative, amac, amazul, ameosc, 
@@ -259,11 +260,11 @@ def index():
 
 @app.route('/termos')
 def termos():
-    return "<h1>Termos de Uso</h1><p>Conteúdo em construção...</p>"
+    return render_template('termos.html')
 
 @app.route('/privacidade')
 def privacidade():
-    return "<h1>Política de Privacidade</h1><p>Conteúdo em construção...</p>"
+    return render_template('privacidade.html')
 
 @app.route('/api/link-profundo', methods=['POST'])
 def api_link_profundo():
