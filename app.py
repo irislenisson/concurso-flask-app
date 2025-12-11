@@ -3,7 +3,7 @@ import locale
 import json
 import time
 import smtplib
-import threading  # <--- NOVO: Para não travar o site
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for
@@ -44,19 +44,16 @@ LEADS_FILE = os.path.join(basedir, 'leads.txt')
 CACHE_TIMEOUT = 3600 
 CACHE_MEMORIA = { "timestamp": 0, "dados": [] }
 
-# --- FUNÇÃO DE ENVIO DE E-MAIL (COM LOGS DETALHADOS) ---
+# --- FUNÇÃO DE ENVIO DE E-MAIL ---
 def enviar_email_alerta(novo_lead):
-    print(f"--> [EMAIL] Iniciando tentativa de envio para {novo_lead}...")
-    
     smtp_server = os.environ.get('SMTP_SERVER')
     smtp_port = os.environ.get('SMTP_PORT')
     smtp_user = os.environ.get('SMTP_USER')
     smtp_pass = os.environ.get('SMTP_PASS')
     destinatario = "concursoideal@icloud.com"
 
-    # Verificação de variáveis
     if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
-        print("--> [EMAIL ERRO] Variáveis de ambiente SMTP não configuradas no Render!")
+        print("--> [EMAIL ERRO] Variáveis SMTP não configuradas.")
         return
 
     try:
@@ -72,18 +69,12 @@ def enviar_email_alerta(novo_lead):
         """
         msg.attach(MIMEText(corpo, 'html'))
 
-        print(f"--> [EMAIL] Conectando ao servidor {smtp_server}:{smtp_port}...")
         server = smtplib.SMTP(smtp_server, int(smtp_port))
         server.starttls()
-        
-        print("--> [EMAIL] Fazendo Login...")
         server.login(smtp_user, smtp_pass)
-        
-        print("--> [EMAIL] Enviando mensagem...")
         server.sendmail(smtp_user, destinatario, msg.as_string())
-        
         server.quit()
-        print(f"--> [EMAIL SUCESSO] E-mail de alerta enviado para {destinatario}!")
+        print(f"--> [EMAIL SUCESSO] Alerta enviado para {destinatario}")
     except Exception as e:
         print(f"--> [EMAIL FALHA] Erro: {e}")
 
@@ -158,6 +149,10 @@ def index():
 @app.route('/sobre')
 def sobre(): return render_template('sobre.html')
 
+# ROTA FALE CONOSCO (NOVA)
+@app.route('/contato')
+def contato(): return render_template('contato.html')
+
 @app.route('/termos')
 def termos(): return render_template('termos.html')
 
@@ -174,12 +169,22 @@ def ads_txt(): return send_from_directory(basedir, 'ads.txt')
 def sitemap():
     xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-    estaticas = [('index', 'daily', '1.0'), ('sobre', 'monthly', '0.8'), ('termos', 'yearly', '0.5'), ('privacidade', 'yearly', '0.5')]
+    
+    # Adicionei 'contato' na lista de estáticos
+    estaticas = [
+        ('index', 'daily', '1.0'), 
+        ('sobre', 'monthly', '0.8'), 
+        ('contato', 'monthly', '0.8'), 
+        ('termos', 'yearly', '0.5'), 
+        ('privacidade', 'yearly', '0.5')
+    ]
+    
     for endpoint, freq, prio in estaticas:
         try:
             url = url_for(endpoint, _external=True)
             xml_content.append(f'<url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>')
         except: pass
+        
     dados = obter_dados()
     urls_adicionadas = set()
     for item in dados:
@@ -188,6 +193,7 @@ def sitemap():
             urls_adicionadas.add(termo_limpo)
             link_dinamico = url_for('index', _external=True) + f"?q={quote(termo_limpo)}"
             xml_content.append(f'<url><loc>{link_dinamico}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>')
+            
     xml_content.append('</urlset>')
     return Response('\n'.join(xml_content), mimetype="application/xml")
 
@@ -228,7 +234,6 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- ROTA NEWSLETTER (ATUALIZADA COM THREADING) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -238,18 +243,15 @@ def api_newsletter():
     if not email or '@' not in email:
         return jsonify({'error': 'E-mail inválido'}), 400
     
-    # 1. Salva no arquivo local (Backup rápido)
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 2. Envia e-mail em SEGUNDO PLANO (Não trava o usuário)
-    # Cria uma "linha paralela" de execução só para mandar o e-mail
+    # Envia e-mail em segundo plano
     thread = threading.Thread(target=enviar_email_alerta, args=(email,))
     thread.start()
 
-    # Retorna sucesso IMEDIATAMENTE para o frontend
     return jsonify({'message': 'Sucesso! Você receberá novidades.'})
 
 if __name__ == '__main__':

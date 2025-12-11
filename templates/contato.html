@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Fale Conosco - Concurso Ideal{% endblock %}
+
+{% block content %}
+    <a href="/" class="action-btn" style="background:var(--border-color); color:var(--text-secondary); margin-bottom:20px; text-decoration:none;">
+        <i class="fas fa-arrow-left"></i> Voltar para o Início
+    </a>
+
+    <div class="concurso-card" style="margin-top: 10px;">
+        <h1 style="text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; font-size: 1.5em;">
+            Fale Conosco
+        </h1>
+
+        <p>Agradecemos seu interesse no <strong>CONCURSO IDEAL</strong>. Valorizamos a comunicação transparente com nossos usuários.</p>
+
+        <h3>❓ Como podemos ajudar?</h3>
+        <p>Estamos à disposição para atender solicitações relacionadas a:</p>
+        <ul>
+            <li><strong>Relatório de Erros:</strong> Links quebrados ou informações desatualizadas.</li>
+            <li><strong>Sugestões:</strong> Ideias para melhorar nossa plataforma.</li>
+            <li><strong>Publicidade:</strong> Dúvidas sobre anúncios ou parcerias comerciais.</li>
+            <li><strong>Privacidade:</strong> Questões sobre seus dados ou LGPD.</li>
+        </ul>
+
+        <h3>📧 Canal de Atendimento</h3>
+        <p>Para garantir que sua solicitação seja registrada e respondida adequadamente, pedimos que entre em contato exclusivamente através do nosso e-mail oficial:</p>
+        
+        <div style="background: var(--bg-body); padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed var(--primary-color);">
+            <i class="fas fa-envelope" style="font-size: 2em; color: var(--primary-color); margin-bottom: 10px;"></i><br>
+            <a href="mailto:concursoideal@icloud.com" style="font-size: 1.2em; font-weight: bold; color: var(--text-primary); text-decoration: none;">
+                concursoideal@icloud.com
+            </a>
+        </div>
+
+        <p><em>Nosso tempo médio de resposta é de até 48 horas úteis.</em></p>
+    </div>
+{% endblock %}
