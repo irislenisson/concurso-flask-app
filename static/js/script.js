@@ -1,4 +1,4 @@
-/* static/js/script.js - Versão Final com Captura de Leads */
+/* static/js/script.js - Versão com Links Reais e Robustos */
 
 let todosConcursos = [];
 let paginaAtual = 0;
@@ -16,41 +16,6 @@ function formatarMoeda(elemento) {
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
-
-// --- NEWSLETTER ---
-async function cadastrarLead() {
-    const emailInput = document.getElementById('email-lead');
-    const email = emailInput.value;
-    const btn = document.querySelector('.news-form button');
-
-    if (!email || !email.includes('@')) {
-        alert("Por favor, digite um e-mail válido.");
-        return;
-    }
-
-    const textoOriginal = btn.innerText;
-    btn.innerText = "Enviando...";
-    btn.disabled = true;
-
-    try {
-        const response = await fetch('/api/newsletter', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        });
-        
-        if (response.ok) {
-            btn.innerText = "Cadastrado! ✅";
-            emailInput.value = "";
-            setTimeout(() => { btn.innerText = "Cadastrar"; btn.disabled = false; }, 3000);
-        } else {
-            throw new Error();
-        }
-    } catch (e) {
-        btn.innerText = "Erro ❌";
-        setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
-    }
-}
 
 // --- DARK MODE LOGIC ---
 const themeCheckbox = document.getElementById('checkbox');
@@ -89,6 +54,7 @@ function aceitarCookies() {
     document.getElementById("cookie-banner").style.display = "none";
 }
 
+// --- BOTÃO VOLTAR AO TOPO ---
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (btn) {
@@ -98,12 +64,14 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
+// --- REPORTAR ERRO ---
 function reportarErro(texto) {
     const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
-    const corpo = encodeURIComponent(`Olá, encontrei um problema:\n\n"${texto}"\n\nPoderia verificar?`);
+    const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
     window.open(`mailto:?subject=${assunto}&body=${corpo}`);
 }
 
+// --- COMPARTILHAMENTO ---
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
         const toast = document.getElementById("toast");
@@ -137,7 +105,11 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
-async function clicarAcao(el, urlBase, tipo) {
+// --- AÇÃO NOS BOTÕES (LINK PROFUNDO) ---
+async function clicarAcao(event, el, urlBase, tipo) {
+    // Impede o navegador de abrir o link original imediatamente
+    if(event) event.preventDefault();
+
     const textoOriginal = el.innerHTML;
     el.classList.add('disabled');
     el.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${tipo === 'edital' ? 'Buscando PDF...' : 'Buscando Site...'}`;
@@ -149,9 +121,11 @@ async function clicarAcao(el, urlBase, tipo) {
             body: JSON.stringify({ url: urlBase, tipo: tipo })
         });
         const data = await response.json();
+        // Abre o link retornado (PDF ou Página de Inscrição)
         window.open(data.url, '_blank');
     } catch (err) {
-        console.error(err);
+        console.error("Erro na busca profunda:", err);
+        // Fallback: Se der erro, abre o link original que estava no botão
         window.open(urlBase, '_blank');
     } finally {
         el.innerHTML = textoOriginal;
@@ -159,6 +133,42 @@ async function clicarAcao(el, urlBase, tipo) {
     }
 }
 
+// --- NEWSLETTER ---
+async function cadastrarLead() {
+    const emailInput = document.getElementById('email-lead');
+    const email = emailInput.value;
+    const btn = document.querySelector('.news-form button');
+
+    if (!email || !email.includes('@')) {
+        alert("Por favor, digite um e-mail válido.");
+        return;
+    }
+
+    const textoOriginal = btn.innerText;
+    btn.innerText = "Enviando...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/newsletter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        
+        if (response.ok) {
+            btn.innerText = "Cadastrado! ✅";
+            emailInput.value = "";
+            setTimeout(() => { btn.innerText = "Cadastrar"; btn.disabled = false; }, 3000);
+        } else {
+            throw new Error();
+        }
+    } catch (e) {
+        btn.innerText = "Erro ❌";
+        setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
+    }
+}
+
+// --- RENDERIZAÇÃO DOS CARDS ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -168,6 +178,8 @@ function renderizarLote() {
 
     lote.forEach((c, index) => {
         const indiceAbsoluto = inicio + index;
+        
+        // Injeção de Anúncio
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
@@ -182,7 +194,13 @@ function renderizarLote() {
 
         const div = document.createElement('div');
         div.className = 'concurso-card';
-        const linkBase = c['Link'] && c['Link'] !== '#' ? c['Link'] : 'https://www.pciconcursos.com.br/concursos/';
+        
+        // Tratamento robusto de links e textos
+        let linkBase = c['Link'];
+        if (!linkBase || linkBase === '#') linkBase = 'https://www.pciconcursos.com.br/concursos/';
+        
+        // Protege contra aspas simples que quebram o HTML
+        const safeLink = linkBase.replace(/'/g, "%27"); 
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
 
         div.innerHTML = `
@@ -199,10 +217,10 @@ function renderizarLote() {
                     <i class="fab fa-whatsapp"></i>
                 </button>
 
-                <a href="javascript:void(0)" class="action-btn btn-edital" onclick="clicarAcao(this, '${linkBase}', 'edital')">
+                <a href="${safeLink}" target="_blank" class="action-btn btn-edital" onclick="clicarAcao(event, this, '${safeLink}', 'edital')">
                     <i class="fas fa-file-pdf"></i> Ver Edital
                 </a>
-                <a href="javascript:void(0)" class="action-btn btn-inscricao" onclick="clicarAcao(this, '${linkBase}', 'inscricao')">
+                <a href="${safeLink}" target="_blank" class="action-btn btn-inscricao" onclick="clicarAcao(event, this, '${safeLink}', 'inscricao')">
                     ✍️ Inscrição
                 </a>
             </div>
