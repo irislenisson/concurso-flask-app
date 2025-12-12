@@ -4,7 +4,7 @@
 
 {% block content %}
     <form id="searchForm">
-        <div class="form-cols">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="form-cols">
             <div>
                 <label>💰 Salário Inicial</label>
                 <input type="tel" id="salario_minimo" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
@@ -59,8 +59,10 @@
 
         <div class="search-grid">
             <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
+            
             <button type="button" class="btn-clear" onclick="limparFiltros()" title="Limpar todos os filtros">
-                <i class="fas fa-eraser"></i>
+                <i class="fas fa-eraser"></i> 
+                <span>LIMPAR FILTROS</span>
             </button>
         </div>
 

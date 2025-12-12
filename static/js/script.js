@@ -17,7 +17,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// --- FUNÇÃO LIMPAR FILTROS (NOVA) ---
+// --- FUNÇÃO LIMPAR FILTROS ---
 function limparFiltros() {
     document.getElementById('searchForm').reset();
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -26,6 +26,8 @@ function limparFiltros() {
     document.getElementById('resultados-container').innerHTML = '';
     document.getElementById('btn-load-more').style.display = 'none';
     document.getElementById('status-msg').style.display = 'none';
+    
+    // Reseta URL
     window.history.pushState({}, '', window.location.pathname);
 }
 
