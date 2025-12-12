@@ -1,46 +1,97 @@
 {% extends "base.html" %}
 
-{% block title %}Sobre Nós - Concurso Ideal{% endblock %}
+{% block title %}Sobre Nós | CONCURSO IDEAL{% endblock %}
 
 {% block content %}
-    <a href="/" class="action-btn" style="background:var(--border-color); color:var(--text-secondary); margin-bottom:20px; text-decoration:none;">
-        <i class="fas fa-arrow-left"></i> Voltar para o Início
-    </a>
+<style>
+    .sobre-container {
+        background: var(--bg-container);
+        border-radius: 15px;
+        box-shadow: 0 10px 25px var(--card-shadow);
+        padding: 40px;
+        margin-top: 20px;
+        line-height: 1.8;
+        color: var(--text-primary);
+    }
+    .sobre-header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 20px;
+    }
+    .sobre-header h2 {
+        color: var(--primary-color);
+        font-size: 2rem;
+        margin: 0;
+    }
+    .sobre-content p {
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+    }
+    .highlight-box {
+        background-color: var(--input-bg);
+        border-left: 5px solid var(--primary-color);
+        padding: 20px;
+        margin: 30px 0;
+        font-style: italic;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    .cta-container {
+        text-align: center;
+        margin-top: 40px;
+    }
+    .btn-cta {
+        background-color: #2c3e50;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 30px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: transform 0.2s, background-color 0.2s;
+        display: inline-block;
+    }
+    .btn-cta:hover {
+        transform: translateY(-3px);
+        background-color: #1a252f;
+    }
+    @media (max-width: 600px) {
+        .sobre-container { padding: 25px; }
+        .sobre-header h2 { font-size: 1.5rem; }
+    }
+</style>
 
-    <div class="concurso-card" style="margin-top: 10px;">
-        <h1 style="text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; font-size: 1.5em;">
-            Sobre o Concurso Ideal
-        </h1>
+<div class="sobre-container">
+    <div class="sobre-header">
+        <h2>Quem Somos</h2>
+        <p style="color: var(--text-secondary); margin-top: 5px;">Tecnologia a favor da sua aprovação.</p>
+    </div>
 
-        <p>Bem-vindo ao <strong>Concurso Ideal</strong>, sua ferramenta ágil e simplificada para encontrar oportunidades no serviço público brasileiro.</p>
-
-        <h3>🎯 Nossa Missão</h3>
-        <p>Sabemos que encontrar o edital ideal em meio a milhares de publicações pode ser exaustivo. Nossa missão é <strong>democratizar o acesso à informação</strong>, centralizando dados de diversas fontes públicas em uma interface limpa, rápida e fácil de usar.</p>
-
-        <h3>⚙️ Como Funciona?</h3>
-        <p>Nosso sistema utiliza tecnologia automatizada para monitorar e agregar informações das principais bancas organizadoras e portais de notícias. No <strong>Concurso Ideal</strong>, você pesquisa instantaneamente por:</p>
-        <ul>
-            <li><strong>Faixa Salarial:</strong> Filtre pelo salário desejado.</li>
-            <li><strong>Localização:</strong> Encontre vagas no seu Estado ou Região.</li>
-            <li><strong>Área de Atuação:</strong> Busque por TI, Saúde, Administrativo, etc.</li>
-        </ul>
-
-        <h3>⚠️ Isenção de Responsabilidade</h3>
-        <p>Este site é um <strong>agregador independente</strong> de conteúdo. </p>
-        <p><strong>Importante:</strong></p>
-        <ul>
-            <li>Não possuímos vínculo com o Governo Federal ou bancas examinadoras.</li>
-            <li>Não realizamos inscrições nem vendemos apostilas diretamente.</li>
-            <li>Todas as informações devem ser conferidas nos editais oficiais, cujos links fornecemos para sua conveniência.</li>
-        </ul>
-
-        <h3>📧 Contato</h3>
-        <p>Encontrou algum erro ou tem uma sugestão de melhoria? Ficaremos felizes em ouvir você.</p>
-        <p>Entre em contato pelo e-mail oficial:</p>
+    <div class="sobre-content">
         <p>
-            <a href="mailto:concursoideal@icloud.com" style="color: var(--primary-color); font-weight:bold; font-size:1.1em;">
-                concursoideal@icloud.com
-            </a>
+            O <strong>Concurso Ideal</strong> nasceu de uma necessidade real: simplificar a vida do concurseiro. Sabemos que encontrar o edital certo em meio a milhares de informações dispersas pode ser tão desafiador quanto a própria prova.
+        </p>
+
+        <p>
+            Nossa missão é democratizar o acesso à informação pública. Desenvolvemos uma tecnologia proprietária que monitora, filtra e organiza as melhores oportunidades de concursos públicos em todo o Brasil, em tempo real.
+        </p>
+
+        <div class="highlight-box">
+            "Acreditamos que a preparação começa muito antes dos estudos: começa na escolha estratégica da oportunidade certa."
+        </div>
+
+        <p>
+            Não somos apenas um agregador de links. Somos uma ferramenta estratégica. 
+            A partir de agora, nós fazemos o trabalho pesado de garimpar editais e analisar dados para que você possa focar no que realmente importa: <strong>seus estudos e sua preparação.</strong>
+        </p>
+
+        <p>
+            Seja bem-vindo ao futuro da busca por concursos públicos.
         </p>
     </div>
+
+    <div class="cta-container">
+        <a href="/" class="btn-cta">🚀 Encontrar Minha Vaga Agora</a>
+    </div>
+</div>
 {% endblock %}

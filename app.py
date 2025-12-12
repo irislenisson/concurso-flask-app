@@ -61,28 +61,54 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- FUNÇÃO GOOGLE SHEETS (Mantida pois usa API Web segura) ---
-def salvar_lead_sheets(email):
-    if not gspread: return
-    creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-    if not creds_json: return
+# --- FUNÇÕES GOOGLE SHEETS ---
 
+def get_gspread_client():
+    """Função auxiliar para conectar ao Google Sheets"""
+    if not gspread: return None
+    creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    if not creds_json: return None
+    
     try:
         creds_dict = json.loads(creds_json)
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
-        
-        # Abre a planilha
+        return gspread.authorize(creds)
+    except Exception as e:
+        print(f"--> [GSPREAD CONNECT ERROR] {e}")
+        return None
+
+def salvar_lead_sheets(email):
+    """Salva o E-mail na aba padrao (ou Sheet1)"""
+    client = get_gspread_client()
+    if not client: return
+
+    try:
         sheet = client.open("Leads Concurso Ideal").sheet1
-        
-        # Salva
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
         sheet.append_row([data_hora, email])
         print(f"--> [SHEETS] Lead {email} salvo!")
-        
     except Exception as e:
-        print(f"--> [SHEETS ERROR] {e}")
+        print(f"--> [SHEETS LEAD ERROR] {e}")
+
+def salvar_termo_sheets(termo):
+    """Salva o Termo Buscado na aba 'Termos'"""
+    client = get_gspread_client()
+    if not client: return
+
+    try:
+        # Tenta abrir a aba específica 'Termos'
+        try:
+            sheet = client.open("Leads Concurso Ideal").worksheet("Termos")
+        except:
+            # Se não existir a aba Termos, usa a primeira msm (fallback)
+            sheet = client.open("Leads Concurso Ideal").sheet1
+        
+        data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
+        sheet.append_row([data_hora, termo])
+        print(f"--> [SHEETS] Termo '{termo}' registrado!")
+    except Exception as e:
+        print(f"--> [SHEETS TERMO ERROR] {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
@@ -263,6 +289,7 @@ def api_buscar():
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
     except: s_min = 0.0
 
+    # Captura os dados da busca
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]
     ufs = set(data.get('ufs', []))
@@ -270,6 +297,13 @@ def api_buscar():
         if reg == 'Nacional': ufs.add('Nacional/Outro')
         elif reg in REGIOES: ufs.update(REGIOES[reg])
     
+    # --- NOVO: Business Intelligence (Salva o que foi buscado) ---
+    termo_bruto = data.get('palavra_chave', '').strip()
+    if termo_bruto and len(termo_bruto) > 2:
+        # Usa thread para não deixar a busca lenta
+        threading.Thread(target=salvar_termo_sheets, args=(termo_bruto,)).start()
+    # -------------------------------------------------------------
+
     todos = obter_dados()
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
@@ -281,7 +315,7 @@ def page_not_found(e): return render_template('404.html'), 404
 @app.errorhandler(500)
 def internal_server_error(e): return render_template('500.html'), 500
 
-# --- NEWSLETTER (LIMPA: SÓ SALVA, NÃO ENVIA) ---
+# --- NEWSLETTER (LIMPA: SÓ SALVA, NÃO ENVIA EMAIL) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
