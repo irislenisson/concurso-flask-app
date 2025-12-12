@@ -5,5 +5,5 @@ flask-limiter
 requests
 beautifulsoup4
 gunicorn
-gspread  <-- NOVO
-oauth2client <-- NOVO
+gspread
+oauth2client 
