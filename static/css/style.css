@@ -1,4 +1,4 @@
-/* static/css/style.css - Versão Final: Visual Pílula e Equilibrado */
+/* static/css/style.css - Visual Pílula com Espaçamento Otimizado */
 
 /* VARIÁVEIS DE CORES */
 :root {
@@ -43,12 +43,12 @@ body {
 
 .container { max-width: 850px; margin: 0 auto; padding-bottom: 50px; position: relative; }
 
-/* --- CABEÇALHO (Lado a Lado) --- */
+/* CABEÇALHO */
 .header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px; /* Reduzido levemente */
     padding: 0 5px;
 }
 
@@ -64,17 +64,17 @@ h1 {
 
 form { 
     background: var(--bg-container); 
-    padding: 25px; /* Espaço interno confortável */
+    padding: 25px; 
     border-radius: 15px; 
     box-shadow: 0 10px 25px var(--card-shadow); 
     display: grid; 
-    gap: 15px; /* Espaço entre linhas confortável */
+    gap: 10px; /* Reduzido de 15px para ganhar espaço vertical */
 }
 
 label { 
     font-weight: 700; 
     color: var(--text-secondary); 
-    margin-bottom: 6px; 
+    margin-bottom: 4px; /* Reduzido */
     display: block; 
     font-size: 0.85em; 
     text-transform: uppercase; 
@@ -96,7 +96,6 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 
 .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* Botões Gerais */
 .filter-btn {
     background-color: var(--bg-container); 
     border: 1px solid var(--border-color); 
@@ -109,33 +108,43 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .filter-btn:hover { background-color: var(--border-color); transform: translateY(-1px); }
 .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
 
-/* --- GRID DE ESTADOS (UF) ESTILO PÍLULA (IGUAL SUA IMAGEM) --- */
+/* --- ESTADOS ESTILO PÍLULA (MANTIDO) --- */
 .uf-grid {
     display: grid;
-    /* Cria colunas que se adaptam, mas com largura mínima de 60px para o formato pílula */
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 10px;
 }
 
 .uf-btn {
-    border-radius: 50px; /* Formato Pílula Arredondada */
-    padding: 8px 0; /* Altura equilibrada */
+    border-radius: 50px; 
+    padding: 8px 0; 
     text-align: center;
     justify-content: center;
     display: flex;
-    width: 100%; /* Ocupa a célula do grid */
-    font-weight: 700; /* Letra um pouco mais grossa como na imagem */
+    width: 100%; 
+    font-weight: 700;
 }
 
-/* Regiões */
 .region-btn { padding: 10px 20px; font-size: 0.95em; border-radius: 8px; }
 .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
 .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
-.section-divider { border-top: 1px solid var(--border-color); margin: 10px 0; opacity: 0.5; }
-.help-text { font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; font-style: italic; opacity: 0.7;}
+/* --- AJUSTE DO ESPAÇO DO DIVISOR --- */
+.section-divider { 
+    border-top: 1px solid var(--border-color); 
+    margin: 2px 0; /* Reduzido de 10px para 2px (Puxa o botão para cima) */
+    opacity: 0.5; 
+}
 
-.main-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.help-text { 
+    font-size: 0.8em; 
+    color: var(--text-secondary); 
+    margin-top: 2px; /* Colado nos botões */
+    font-style: italic; 
+    opacity: 0.7;
+}
+
+.main-actions { display: flex; gap: 10px; margin-top: 5px; align-items: center; }
 
 input[type="submit"] { 
     background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
@@ -144,7 +153,7 @@ input[type="submit"] {
 }
 input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
 
-/* NEWSLETTER GRADIENTE */
+/* NEWSLETTER */
 .newsletter-box {
     margin-top: 30px;
     background: linear-gradient(135deg, #2c3e50, #4ca1af);
@@ -170,7 +179,7 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 }
 .news-form button:hover { transform: scale(1.05); background-color: #e67e22; }
 
-/* THEME SWITCH */
+/* SWITCH */
 .theme-switch { display: inline-block; height: 34px; position: relative; width: 60px; }
 .theme-switch input { display: none; }
 .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; display: flex; align-items: center; justify-content: space-between; padding: 0 5px; }
@@ -190,7 +199,7 @@ input:checked + .slider .moon-icon { opacity: 1; }
 
 #resultados-container { margin-top: 40px; }
 
-/* CARD DE CONCURSO */
+/* CARDS */
 .concurso-card { 
     background: var(--bg-container); margin-bottom: 20px; padding: 25px; 
     border-left: 5px solid var(--primary-color); border-radius: 10px; 
@@ -218,11 +227,6 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .btn-zap-small { background-color: #25D366; }
 .btn-zap-small:hover { background-color: #128C7E; transform: translateY(-2px); }
 
-/* FOOTER */
-.legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
-.legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
-.legal-footer a:hover { text-decoration: underline; }
-
 /* AUXILIARES */
 .skeleton { background: var(--skeleton-start); background: linear-gradient(90deg, var(--skeleton-start) 25%, var(--skeleton-mid) 50%, var(--skeleton-end) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px; }
 @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -235,3 +239,15 @@ input:checked + .slider .moon-icon { opacity: 1; }
 #btn-back-to-top:hover { background-color: #1a252f; transform: scale(1.1); }
 #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px; }
 #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+@keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+@keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+.cookie-banner { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background-color: #2c3e50; color: white; padding: 15px 20px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 9999; font-size: 0.9em; }
+.cookie-content { max-width: 850px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+.cookie-content p { margin: 0; flex: 1; line-height: 1.4; }
+.cookie-content a { color: #4dabf7; text-decoration: underline; }
+.cookie-btn { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: background 0.2s; }
+.cookie-btn:hover { background-color: #218838; }
+.legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
+.legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
+.legal-footer a:hover { text-decoration: underline; }
+.ad-slot { background-color: var(--
