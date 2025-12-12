@@ -1,94 +1,133 @@
 {% extends "base.html" %}
 
+{% block title %}CONCURSO IDEAL | Vagas Abertas 2025{% endblock %}
+
 {% block content %}
-    <form id="searchForm">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="form-cols">
-            <div>
-                <label>💰 Salário Inicial</label>
-                <input type="tel" id="salario_minimo" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
-            </div>
-            <div>
-                <label>🔍 Palavra-chave</label>
-                <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Analista">
-            </div>
-        </div>
-
-        <div class="section-divider"></div>
-
-        <div>
-            <label>🌎 Regiões (Clique para ativar)</label>
-            <div class="btn-grid">
-                <div class="filter-btn region-btn" data-value="Nacional">Nacional</div>
-                <div class="filter-btn region-btn" data-value="Norte">Norte</div>
-                <div class="filter-btn region-btn" data-value="Nordeste">Nordeste</div>
-                <div class="filter-btn region-btn" data-value="Centro-Oeste">Centro-Oeste</div>
-                <div class="filter-btn region-btn" data-value="Sudeste">Sudeste</div>
-                <div class="filter-btn region-btn" data-value="Sul">Sul</div>
-            </div>
-        </div>
-
-        <div>
-            <label>📍 Estados Específicos</label>
-            <div class="uf-grid">
-                <div class="filter-btn uf-btn" data-value="AC">AC</div> <div class="filter-btn uf-btn" data-value="AL">AL</div>
-                <div class="filter-btn uf-btn" data-value="AP">AP</div> <div class="filter-btn uf-btn" data-value="AM">AM</div>
-                <div class="filter-btn uf-btn" data-value="BA">BA</div> <div class="filter-btn uf-btn" data-value="CE">CE</div>
-                <div class="filter-btn uf-btn" data-value="DF">DF</div> <div class="filter-btn uf-btn" data-value="ES">ES</div>
-                <div class="filter-btn uf-btn" data-value="GO">GO</div> <div class="filter-btn uf-btn" data-value="MA">MA</div>
-                <div class="filter-btn uf-btn" data-value="MT">MT</div> <div class="filter-btn uf-btn" data-value="MS">MS</div>
-                <div class="filter-btn uf-btn" data-value="MG">MG</div> <div class="filter-btn uf-btn" data-value="PA">PA</div>
-                <div class="filter-btn uf-btn" data-value="PB">PB</div> <div class="filter-btn uf-btn" data-value="PR">PR</div>
-                <div class="filter-btn uf-btn" data-value="PE">PE</div> <div class="filter-btn uf-btn" data-value="PI">PI</div>
-                <div class="filter-btn uf-btn" data-value="RJ">RJ</div> <div class="filter-btn uf-btn" data-value="RN">RN</div>
-                <div class="filter-btn uf-btn" data-value="RS">RS</div> <div class="filter-btn uf-btn" data-value="RO">RO</div>
-                <div class="filter-btn uf-btn" data-value="RR">RR</div> <div class="filter-btn uf-btn" data-value="SC">SC</div>
-                <div class="filter-btn uf-btn" data-value="SP">SP</div> <div class="filter-btn uf-btn" data-value="SE">SE</div>
-                <div class="filter-btn uf-btn" data-value="TO">TO</div>
-            </div>
-            <p class="help-text">Dica: O filtro soma Regiões + Estados selecionados.</p>
-        </div>
-
-        <div class="section-divider"></div>
-
-        <div>
-            <label>🚫 Excluir palavras</label>
-            <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
-        </div>
-
-        <div class="search-grid">
-            <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
-            <button type="button" class="btn-clear" onclick="limparFiltros()" title="Limpar todos os filtros">
-                <i class="fas fa-eraser"></i> 
-                <span>LIMPAR FILTROS</span>
+    <div class="header-row">
+        <h1>🚀 CONCURSO IDEAL</h1>
+        
+        <div style="display: flex; align-items: center;">
+            <button class="btn-fav-header" onclick="toggleTelaFavoritos()" title="Meus Favoritos Salvos">
+                ❤️
             </button>
-        </div>
 
-        <div class="share-row">
-            <button type="button" class="share-btn" onclick="compartilharWhatsApp()">
-                <i class="fab fa-whatsapp"></i> Compartilhar
-            </button>
-            <button type="button" class="share-btn" onclick="copiarLink()">
-                <i class="fas fa-link"></i> Copiar Link
-            </button>
-        </div>
-    </form>
-
-    <div class="newsletter-box">
-        <div class="news-icon">🔔</div>
-        <div class="news-text">
-            <h3>Seja avisado primeiro!</h3>
-            <p>Receba os melhores editais no seu e-mail.</p>
-        </div>
-        <div class="news-form">
-            <input type="email" id="email-lead" placeholder="Seu melhor e-mail...">
-            <button onclick="cadastrarLead()">Cadastrar</button>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox">
+                    <input type="checkbox" id="checkbox" />
+                    <div class="slider round">
+                        <i class="fas fa-sun sun-icon"></i>
+                        <i class="fas fa-moon moon-icon"></i>
+                    </div>
+                </label>
+            </div>
         </div>
     </div>
 
-    <div id="status-msg"></div>
-    <div id="resultados-container"></div>
-    
-    <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
+    <div id="favorites-view">
+        <div class="fav-header-title">
+            <h2 style="margin:0; color: var(--primary-color);">❤️ Minhas Vagas Salvas</h2>
+            <button class="btn-close-fav" onclick="toggleTelaFavoritos()">&times;</button>
+        </div>
+        <div id="favorites-list-container">
+            </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="toggleTelaFavoritos()" class="action-btn" style="background: var(--text-secondary); color: white;">
+                Voltar para Busca
+            </button>
+        </div>
+    </div>
+
+    <div id="main-view">
+        <form id="searchForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="form-cols">
+                <div>
+                    <label>💰 Salário Inicial</label>
+                    <input type="tel" id="salario_minimo" placeholder="R$ 0,00" oninput="formatarMoeda(this)">
+                </div>
+                <div>
+                    <label>🔍 Palavra-chave</label>
+                    <input type="text" id="palavra_chave" placeholder="Ex: TI, Fiscal, Analista">
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div>
+                <label>🌎 Regiões (Clique para ativar)</label>
+                <div class="btn-grid">
+                    <div class="filter-btn region-btn" data-value="Nacional">Nacional</div>
+                    <div class="filter-btn region-btn" data-value="Norte">Norte</div>
+                    <div class="filter-btn region-btn" data-value="Nordeste">Nordeste</div>
+                    <div class="filter-btn region-btn" data-value="Centro-Oeste">Centro-Oeste</div>
+                    <div class="filter-btn region-btn" data-value="Sudeste">Sudeste</div>
+                    <div class="filter-btn region-btn" data-value="Sul">Sul</div>
+                </div>
+            </div>
+
+            <div>
+                <label>📍 Estados Específicos</label>
+                <div class="uf-grid">
+                    <div class="filter-btn uf-btn" data-value="AC">AC</div> <div class="filter-btn uf-btn" data-value="AL">AL</div>
+                    <div class="filter-btn uf-btn" data-value="AP">AP</div> <div class="filter-btn uf-btn" data-value="AM">AM</div>
+                    <div class="filter-btn uf-btn" data-value="BA">BA</div> <div class="filter-btn uf-btn" data-value="CE">CE</div>
+                    <div class="filter-btn uf-btn" data-value="DF">DF</div> <div class="filter-btn uf-btn" data-value="ES">ES</div>
+                    <div class="filter-btn uf-btn" data-value="GO">GO</div> <div class="filter-btn uf-btn" data-value="MA">MA</div>
+                    <div class="filter-btn uf-btn" data-value="MT">MT</div> <div class="filter-btn uf-btn" data-value="MS">MS</div>
+                    <div class="filter-btn uf-btn" data-value="MG">MG</div> <div class="filter-btn uf-btn" data-value="PA">PA</div>
+                    <div class="filter-btn uf-btn" data-value="PB">PB</div> <div class="filter-btn uf-btn" data-value="PR">PR</div>
+                    <div class="filter-btn uf-btn" data-value="PE">PE</div> <div class="filter-btn uf-btn" data-value="PI">PI</div>
+                    <div class="filter-btn uf-btn" data-value="RJ">RJ</div> <div class="filter-btn uf-btn" data-value="RN">RN</div>
+                    <div class="filter-btn uf-btn" data-value="RS">RS</div> <div class="filter-btn uf-btn" data-value="RO">RO</div>
+                    <div class="filter-btn uf-btn" data-value="RR">RR</div> <div class="filter-btn uf-btn" data-value="SC">SC</div>
+                    <div class="filter-btn uf-btn" data-value="SP">SP</div> <div class="filter-btn uf-btn" data-value="SE">SE</div>
+                    <div class="filter-btn uf-btn" data-value="TO">TO</div>
+                </div>
+                <p class="help-text">Dica: O filtro soma Regiões + Estados selecionados.</p>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div>
+                <label>🚫 Excluir palavras</label>
+                <input type="text" id="excluir_palavra" placeholder="Ex: fundamental, estágio">
+            </div>
+
+            <div class="search-grid">
+                <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
+                <button type="button" class="btn-clear" onclick="limparFiltros()" title="Limpar todos os filtros">
+                    <i class="fas fa-eraser"></i> 
+                    <span>LIMPAR FILTROS</span>
+                </button>
+            </div>
+
+            <div class="share-row">
+                <button type="button" class="share-btn" onclick="compartilharWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> Compartilhar
+                </button>
+                <button type="button" class="share-btn" onclick="copiarLink()">
+                    <i class="fas fa-link"></i> Copiar Link
+                </button>
+            </div>
+        </form>
+
+        <div class="newsletter-box">
+            <div class="news-icon">🔔</div>
+            <div class="news-text">
+                <h3>Seja avisado primeiro!</h3>
+                <p>Receba os melhores editais no seu e-mail.</p>
+            </div>
+            <div class="news-form">
+                <input type="email" id="email-lead" placeholder="Seu melhor e-mail...">
+                <button onclick="cadastrarLead()">Cadastrar</button>
+            </div>
+        </div>
+
+        <div id="status-msg"></div>
+        <div id="resultados-container"></div>
+        
+        <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
+    </div>
+
     <button id="btn-back-to-top" onclick="scrollToTop()" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
     <div id="toast">Link copiado com sucesso!</div>
 {% endblock %}

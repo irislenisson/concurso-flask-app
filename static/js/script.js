@@ -1,8 +1,132 @@
-/* static/js/script.js - Versão Final */
+/* static/js/script.js - Com Sistema de Favoritos */
 
 let todosConcursos = [];
 let paginaAtual = 0;
 const itensPorPagina = 20;
+
+// --- GERENCIAMENTO DE FAVORITOS (LOCALSTORAGE) ---
+function getFavoritos() {
+    const salvos = localStorage.getItem('concursosFavoritos');
+    return salvos ? JSON.parse(salvos) : [];
+}
+
+function isFavorito(textoConcurso) {
+    const favs = getFavoritos();
+    return favs.some(f => f.texto === textoConcurso);
+}
+
+function toggleFavorito(texto, link, salario, uf, dataFim, btnElement) {
+    let favs = getFavoritos();
+    const index = favs.findIndex(f => f.texto === texto);
+
+    if (index > -1) {
+        // Remove
+        favs.splice(index, 1);
+        if(btnElement) btnElement.classList.remove('favorited');
+    } else {
+        // Adiciona
+        favs.push({ texto, link, salario, uf, dataFim });
+        if(btnElement) btnElement.classList.add('favorited');
+    }
+    
+    localStorage.setItem('concursosFavoritos', JSON.stringify(favs));
+    
+    // Se estiver na tela de favoritos, atualiza a lista
+    if (document.getElementById('favorites-view').style.display === 'block') {
+        renderizarMeusFavoritos();
+    }
+}
+
+function toggleTelaFavoritos() {
+    const mainView = document.getElementById('main-view');
+    const favView = document.getElementById('favorites-view');
+    
+    if (favView.style.display === 'none' || favView.style.display === '') {
+        // Mostrar Favoritos
+        mainView.style.display = 'none';
+        favView.style.display = 'block';
+        renderizarMeusFavoritos();
+    } else {
+        // Voltar para Busca
+        favView.style.display = 'none';
+        mainView.style.display = 'block';
+    }
+}
+
+function renderizarMeusFavoritos() {
+    const container = document.getElementById('favorites-list-container');
+    const favs = getFavoritos();
+    container.innerHTML = '';
+
+    if (favs.length === 0) {
+        container.innerHTML = '<p style="text-align:center; padding:40px; color:#666;">Você ainda não salvou nenhum concurso. <br> Clique no ❤️ para salvar!</p>';
+        return;
+    }
+
+    favs.forEach(c => {
+        // Reusa a lógica de card, mas com botão de remover
+        const card = criarHTMLCard(c, true); 
+        container.appendChild(card);
+    });
+}
+
+// Função auxiliar para criar o HTML do card (usada na busca e nos favoritos)
+function criarHTMLCard(c, isFavPage = false) {
+    const div = document.createElement('div');
+    div.className = 'concurso-card';
+    
+    // Tratamento de dados
+    const linkBase = (c.link || c['Link'] || '#').replace(/'/g, "%27");
+    const textoConcurso = (c.texto || c['Informações do Concurso']).replace(/'/g, "\\'");
+    const salario = c.salario || c['Salário'];
+    const uf = c.uf || c['UF'];
+    const dataFim = c.dataFim || c['Data Fim Inscrição'];
+
+    const linkEdital = `/ir?url=${encodeURIComponent(linkBase)}&tipo=edital`;
+    const linkInscricao = `/ir?url=${encodeURIComponent(linkBase)}&tipo=inscricao`;
+    
+    // Verifica se já é favorito para pintar o coração
+    const classeFav = (isFavPage || isFavorito(c.texto || c['Informações do Concurso'])) ? 'favorited' : '';
+
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+            <h3>${c.texto || c['Informações do Concurso']}</h3>
+            <button class="btn-fav-card ${classeFav}" 
+                onclick="toggleFavorito('${textoConcurso}', '${linkBase}', '${salario}', '${uf}', '${dataFim}', this)" 
+                title="${classeFav ? 'Remover dos favoritos' : 'Salvar vaga'}">
+                ❤️
+            </button>
+        </div>
+        
+        <div class="meta-line">
+            <span class="badge money"><i class="fas fa-money-bill-wave"></i> ${salario}</span>
+            <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${uf}</span>
+            <span class="badge date"><i class="far fa-calendar-alt"></i> ${dataFim}</span>
+            
+            <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+            </button>
+
+            <a href="${linkEdital}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital">
+                <i class="fas fa-file-pdf"></i> Edital
+            </a>
+            <a href="${linkInscricao}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">
+                ✍️ Inscrição
+            </a>
+        </div>
+        <div style="text-align: right;">
+            <button class="btn-report" onclick="reportarErro('${textoConcurso}')">
+                <i class="fas fa-flag"></i> Reportar
+            </button>
+        </div>
+    `;
+    return div;
+}
+
+// --- FIM DA LÓGICA DE FAVORITOS ---
 
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
@@ -17,7 +141,6 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
 
-// --- FUNÇÃO LIMPAR FILTROS ---
 function limparFiltros() {
     document.getElementById('searchForm').reset();
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -26,12 +149,10 @@ function limparFiltros() {
     document.getElementById('resultados-container').innerHTML = '';
     document.getElementById('btn-load-more').style.display = 'none';
     document.getElementById('status-msg').style.display = 'none';
-    
-    // Reseta URL
     window.history.pushState({}, '', window.location.pathname);
 }
 
-// --- DARK MODE LOGIC ---
+// Theme Logic
 const themeCheckbox = document.getElementById('checkbox');
 const htmlElement = document.documentElement;
 
@@ -45,6 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (themeCheckbox) themeCheckbox.checked = true;
     }
     
+    // Cookie
     if (!localStorage.getItem("cookieConsent")) {
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
@@ -86,7 +208,7 @@ function reportarErro(texto) {
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
         const toast = document.getElementById("toast");
-        toast.innerText = "Link da busca copiado!";
+        toast.innerText = "Link copiado!";
         toast.className = "show";
         setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
     });
@@ -103,7 +225,7 @@ function copiarLinkUnico(texto) {
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
     navigator.clipboard.writeText(linkUnico).then(() => {
         const toast = document.getElementById("toast");
-        toast.innerText = "Link deste concurso copiado!";
+        toast.innerText = "Link copiado!";
         toast.className = "show";
         setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
     });
@@ -148,6 +270,7 @@ async function cadastrarLead() {
     }
 }
 
+// --- RENDERIZAÇÃO ATUALIZADA (Usa a função auxiliar) ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -164,58 +287,20 @@ function renderizarLote() {
             adDiv.innerHTML = `
                 <span class="ad-label">Publicidade</span>
                 <div style="background:var(--border-color); height:90px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:var(--text-secondary); opacity:0.7;">
-                    Espaço para Anúncio (In-Feed)
+                    Espaço para Anúncio
                 </div>
             `;
             container.appendChild(adDiv);
         }
 
-        const div = document.createElement('div');
-        div.className = 'concurso-card';
-        
-        let linkBase = c['Link'];
-        if (!linkBase || linkBase === '#' || linkBase === '') {
-            linkBase = 'https://www.pciconcursos.com.br/concursos/';
-        }
-        
-        const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
-        const encodedLink = encodeURIComponent(linkBase);
-        const linkEdital = `/ir?url=${encodedLink}&tipo=edital`;
-        const linkInscricao = `/ir?url=${encodedLink}&tipo=inscricao`;
-
-        div.innerHTML = `
-            <h3>${c['Informações do Concurso']}</h3>
-            <div class="meta-line">
-                <span class="badge money"><i class="fas fa-money-bill-wave"></i> ${c['Salário']}</span>
-                <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${c['UF']}</span>
-                <span class="badge date"><i class="far fa-calendar-alt"></i> ${c['Data Fim Inscrição']}</span>
-                
-                <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link">
-                    <i class="fas fa-link"></i>
-                </button>
-                <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="WhatsApp">
-                    <i class="fab fa-whatsapp"></i>
-                </button>
-
-                <a href="${linkEdital}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital">
-                    <i class="fas fa-file-pdf"></i> Ver Edital
-                </a>
-                <a href="${linkInscricao}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">
-                    ✍️ Inscrição
-                </a>
-            </div>
-            <div style="text-align: right;">
-                <button class="btn-report" onclick="reportarErro('${textoConcurso}')">
-                    <i class="fas fa-flag"></i> Reportar problema
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
+        // AQUI ESTÁ A MUDANÇA: Usamos a função unificada
+        const card = criarHTMLCard(c);
+        container.appendChild(card);
     });
 
     if (fim < todosConcursos.length) {
         btnLoadMore.style.display = 'block';
-        btnLoadMore.innerText = `👇 Carregar mais (${todosConcursos.length - fim} restantes)`;
+        btnLoadMore.innerText = `👇 Carregar mais (${todosConcursos.length - fim})`;
     } else {
         btnLoadMore.style.display = 'none';
     }
