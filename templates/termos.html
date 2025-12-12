@@ -1,29 +1,88 @@
 {% extends "base.html" %}
 
-{% block title %}Termos de Uso - Concurso Ideal{% endblock %}
+{% block title %}Termos de Uso | CONCURSO IDEAL{% endblock %}
 
 {% block content %}
-    <a href="/" class="action-btn" style="background:var(--border-color); color:var(--text-secondary); margin-bottom:20px; text-decoration:none;">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
-    
-    <div class="concurso-card">
+<style>
+    .legal-container {
+        background: var(--bg-container);
+        border-radius: 15px;
+        box-shadow: 0 10px 25px var(--card-shadow);
+        padding: 40px;
+        color: var(--text-primary);
+        line-height: 1.8;
+    }
+    .legal-container h1 {
+        color: var(--primary-color);
+        font-size: 2rem;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+    .legal-container h2 {
+        color: var(--text-secondary);
+        font-size: 1.3rem;
+        margin-top: 30px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+    .legal-container p, .legal-container li {
+        color: var(--text-primary);
+        font-size: 1rem;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    }
+    .legal-meta {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+        font-style: italic;
+    }
+    .btn-back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .btn-back:hover { color: var(--primary-color); }
+</style>
+
+<div class="container">
+    <a href="/" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar para o Início</a>
+
+    <div class="legal-container">
         <h1>Termos de Uso</h1>
-        <p><em>Última atualização: Dezembro de 2025</em></p>
+        <p class="legal-meta">Última atualização: Dezembro de 2025</p>
 
-        <h2>1. Aceitação dos Termos</h2>
-        <p>Ao acessar e usar o <strong>Concurso Ideal</strong>, você aceita e concorda em cumprir os termos e disposições deste contrato.</p>
+        <p>Bem-vindo ao <strong>Concurso Ideal</strong>. Ao acessar e utilizar nosso website, você concorda em cumprir e estar vinculado aos seguintes termos e condições de uso.</p>
 
-        <h2>2. Descrição do Serviço</h2>
-        <p>O <strong>Concurso Ideal</strong> é um agregador de links e informações sobre concursos públicos. Não somos responsáveis pela realização dos concursos, nem pela elaboração dos editais.</p>
+        <h2>1. Natureza do Serviço</h2>
+        <p>O Concurso Ideal é uma plataforma de tecnologia que atua como <strong>agregador e facilitador de informações</strong>. Nossa ferramenta monitora, organiza e disponibiliza links para editais e inscrições de concursos públicos realizados por terceiros.</p>
+        <p><strong>Importante:</strong> Nós não realizamos concursos, não elaboramos provas e não temos vínculo com as bancas organizadoras ou órgãos públicos. Somos uma ferramenta de busca e inteligência.</p>
 
-        <h2>3. Precisão das Informações</h2>
-        <p>Embora nos esforcemos para manter as informações atualizadas, não garantimos a precisão completa dos dados. Recomendamos sempre a verificação no site oficial da banca organizadora.</p>
+        <h2>2. Isenção de Responsabilidade</h2>
+        <p>Embora nos esforcemos para manter as informações atualizadas em tempo real, editais podem ser retificados ou cancelados pelas bancas organizadoras sem aviso prévio.</p>
+        <ul>
+            <li>O usuário deve <strong>sempre conferir</strong> as informações (datas, valores, requisitos) diretamente no site oficial da banca organizadora através dos links fornecidos.</li>
+            <li>O Concurso Ideal não se responsabiliza por eventuais erros de digitação, datas alteradas ou inscrições perdidas.</li>
+        </ul>
 
-        <h2>4. Links Externos</h2>
-        <p>Nosso site contém links para sites de terceiros. Não temos controle sobre o conteúdo e práticas desses sites e não assumimos responsabilidade por eles.</p>
+        <h2>3. Uso da Plataforma</h2>
+        <p>Você concorda em usar o site apenas para fins lícitos. É proibido:</p>
+        <ul>
+            <li>Usar robôs, spiders ou scrapers para coletar dados do nosso site sem autorização expressa.</li>
+            <li>Tentar burlar a segurança ou prejudicar o funcionamento dos nossos servidores.</li>
+        </ul>
 
-        <h2>5. Contato</h2>
-        <p>Para dúvidas legais, contate: concursoideal@icloud.com</p>
+        <h2>4. Propriedade Intelectual</h2>
+        <p>A marca "Concurso Ideal", seu logotipo, layout visual e o código-fonte da ferramenta de busca são propriedade exclusiva da nossa empresa. O conteúdo dos editais (texto oficial) pertence aos respectivos órgãos públicos.</p>
+
+        <h2>5. Alterações nos Termos</h2>
+        <p>O Concurso Ideal reserva-se o direito de alterar estes termos a qualquer momento. Recomendamos a visita periódica a esta página.</p>
+
+        <h2>6. Contato</h2>
+        <p>Para dúvidas legais ou sobre o funcionamento do site, entre em contato através da nossa página de "Fale Conosco".</p>
     </div>
+</div>
 {% endblock %}

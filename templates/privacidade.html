@@ -1,30 +1,98 @@
 {% extends "base.html" %}
 
-{% block title %}Política de Privacidade - Concurso Ideal{% endblock %}
+{% block title %}Política de Privacidade | CONCURSO IDEAL{% endblock %}
 
 {% block content %}
-    <a href="/" class="action-btn" style="background:var(--border-color); color:var(--text-secondary); margin-bottom:20px; text-decoration:none;">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
+<style>
+    .legal-container {
+        background: var(--bg-container);
+        border-radius: 15px;
+        box-shadow: 0 10px 25px var(--card-shadow);
+        padding: 40px;
+        color: var(--text-primary);
+        line-height: 1.8;
+    }
+    .legal-container h1 {
+        color: var(--primary-color);
+        font-size: 2rem;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+    .legal-container h2 {
+        color: var(--text-secondary);
+        font-size: 1.3rem;
+        margin-top: 30px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+    .legal-container p {
+        color: var(--text-primary);
+        font-size: 1rem;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    }
+    .legal-meta {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+        font-style: italic;
+    }
+    .btn-back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .btn-back:hover { color: var(--primary-color); }
+</style>
 
-    <div class="concurso-card">
+<div class="container">
+    <a href="/" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar para o Início</a>
+
+    <div class="legal-container">
         <h1>Política de Privacidade</h1>
-        <p><em>Última atualização: Dezembro de 2025</em></p>
+        <p class="legal-meta">Em conformidade com a LGPD (Lei Nº 13.709/2018)</p>
+
+        <p>A sua privacidade é prioridade para o <strong>Concurso Ideal</strong>. Esta política descreve como coletamos, usamos e protegemos suas informações.</p>
 
         <h2>1. Coleta de Dados</h2>
-        <p>O <strong>Concurso Ideal</strong> preza pela sua privacidade. Atualmente, não coletamos dados pessoais identificáveis (como nome ou CPF) de forma direta.</p>
+        <p>Coletamos informações das seguintes formas:</p>
+        <ul>
+            <li><strong>Voluntariamente:</strong> Quando você cadastra seu e-mail em nossa newsletter para receber alertas de vagas.</li>
+            <li><strong>Automaticamente:</strong> Através de cookies e logs de servidor que registram dados de navegação, termos de busca e localização aproximada (IP) para melhoria do serviço.</li>
+        </ul>
 
-        <h2>2. Cookies e Tecnologias de Rastreamento</h2>
-        <p>Utilizamos cookies para melhorar a experiência de navegação e para fins de análise de tráfego (via Google Analytics) e exibição de publicidade (via Google AdSense).</p>
-        <p>Você pode optar por desativar os cookies nas configurações do seu navegador, mas isso pode afetar a funcionalidade do site.</p>
+        <h2>2. Uso das Informações</h2>
+        <p>Utilizamos seus dados para:</p>
+        <ul>
+            <li>Enviar alertas de concursos relevantes ao seu perfil.</li>
+            <li>Melhorar a inteligência da nossa busca e a experiência do usuário.</li>
+            <li>Garantir a segurança do site contra fraudes.</li>
+        </ul>
+        <p><strong>Nós não vendemos seus dados pessoais para terceiros.</strong></p>
 
-        <h2>3. Publicidade</h2>
-        <p>Fornecedores terceiros, incluindo o Google, usam cookies para veicular anúncios com base em visitas anteriores do usuário ao nosso website ou a outros websites.</p>
+        <h2>3. Publicidade e Cookies (Google AdSense)</h2>
+        <p>Utilizamos o Google AdSense para exibir anúncios. O Google utiliza cookies (como o cookie DoubleClick) para exibir anúncios com base nas suas visitas a este e a outros sites.</p>
+        <ul>
+            <li>Você pode optar por desativar o uso de cookies de publicidade personalizada acessando as <a href="https://www.google.com/settings/ads" target="_blank">Configurações de Anúncios do Google</a>.</li>
+        </ul>
 
-        <h2>4. Alterações nesta Política</h2>
-        <p>Podemos atualizar nossa Política de Privacidade periodicamente. Recomendamos revisar esta página regularmente.</p>
+        <h2>4. Seus Direitos (LGPD)</h2>
+        <p>Você tem o direito de solicitar:</p>
+        <ul>
+            <li>A confirmação da existência de tratamento de dados.</li>
+            <li>O acesso aos seus dados.</li>
+            <li>A correção ou exclusão definitiva dos seus dados (como seu e-mail da nossa lista).</li>
+        </ul>
+        <p>Para exercer esses direitos, entre em contato conosco.</p>
 
-        <h2>5. Contato</h2>
-        <p>Questões sobre privacidade? Envie um e-mail para: concursoideal@icloud.com</p>
+        <h2>5. Segurança</h2>
+        <p>Adotamos medidas técnicas de segurança para proteger seus dados, incluindo criptografia SSL em todas as comunicações com o site.</p>
+
+        <h2>6. Contato</h2>
+        <p>Para questões sobre privacidade, utilize nossa página de "Fale Conosco" ou envie um e-mail para o responsável pelos dados.</p>
     </div>
+</div>
 {% endblock %}
