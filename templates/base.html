@@ -2,71 +2,56 @@
 <html lang="pt-BR">
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
-    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-SEU-ID-AQUI');
-    </script>
+    <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-SEU-ID-AQUI');</script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb"> <title>{{ meta_title | default('CONCURSO IDEAL | Encontre sua Vaga em 2025') }}</title>
+    <meta name="description" content="{{ meta_description | default('O CONCURSO IDEAL monitora editais e inscrições de concursos públicos. Filtre por salário, região e cargo.') }}">
     
-    <meta name="theme-color" content="#2c3e50">
-    
-    <title>{{ meta_title | default('CONCURSO IDEAL | Encontre sua Vaga em 2025') }}</title>
-    <meta name="description" content="{{ meta_description | default('O CONCURSO IDEAL monitora editais e inscrições de concursos públicos em todo o Brasil. Filtre por salário, região e cargo.') }}">
-    
-    <meta name="robots" content="index,follow">
     <link rel="canonical" href="https://concurso-app-2.onrender.com/">
-    
-    <meta property="og:type" content="website">
     <meta property="og:title" content="{{ meta_title | default('CONCURSO IDEAL') }}">
-    <meta property="og:description" content="{{ meta_description | default('Encontre o concurso público perfeito para você.') }}">
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
-        <div class="theme-switch-wrapper">
-            <label class="theme-switch" for="checkbox">
-                <input type="checkbox" id="checkbox" />
-                <div class="slider round">
-                    <i class="fas fa-sun sun-icon"></i>
-                    <i class="fas fa-moon moon-icon"></i>
-                </div>
-            </label>
+        <div class="header-row">
+            <h1>🚀 CONCURSO IDEAL</h1>
+            
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox">
+                    <input type="checkbox" id="checkbox" />
+                    <div class="slider round">
+                        <i class="fas fa-sun sun-icon"></i>
+                        <i class="fas fa-moon moon-icon"></i>
+                    </div>
+                </label>
+            </div>
         </div>
-
-        <h1>🚀 CONCURSO IDEAL</h1>
 
         {% block content %}{% endblock %}
 
         <div class="legal-footer">
-            <p>&copy; 2025 CONCURSO IDEAL - Agregador de dados públicos.</p>
+            <p>&copy; 2025 CONCURSO IDEAL</p>
             <p>
-                <a href="/sobre">Sobre Nós</a> | 
+                <a href="/sobre">Sobre</a> | 
                 <a href="/contato">Fale Conosco</a> | 
                 <a href="/termos">Termos</a> | 
                 <a href="/privacidade">Privacidade</a> | 
-                <a href="/">Início</a>
+                <a href="/">Home</a>
             </p>
         </div>
     </div>
 
     <div id="cookie-banner" class="cookie-banner">
         <div class="cookie-content">
-            <p>
-                Usamos cookies para melhorar sua experiência no <strong>CONCURSO IDEAL</strong>. 
-                Ao continuar, você concorda com nossa <a href="/privacidade" target="_blank">Política de Privacidade</a>.
-            </p>
-            <button onclick="aceitarCookies()" class="cookie-btn">Aceitar e Fechar</button>
+            <p>Usamos cookies para melhorar sua experiência.</p>
+            <button onclick="aceitarCookies()" class="cookie-btn">Aceitar</button>
         </div>
     </div>
 
