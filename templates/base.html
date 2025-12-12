@@ -13,7 +13,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a252f"> 
+    <meta name="theme-color" content="#2c3e50">
     
     <title>{% block title %}{{ meta_title if meta_title else 'CONCURSO IDEAL | Encontre sua Vaga em 2025' }}{% endblock %}</title>
     
@@ -27,7 +27,7 @@
     <meta property="og:description" content="{{ meta_description | default('Encontre o concurso público perfeito para você.') }}">
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <link rel="icon" href="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -50,11 +50,7 @@
 <body>
     <div class="container">
         <div class="header-row">
-            <a href="/" style="text-decoration: none; display: flex; align-items: center;">
-                <img src="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}" 
-                     alt="Concurso Ideal - Logomarca" 
-                     style="height: 60px; width: auto; object-fit: contain; max-width: 220px;">
-            </a>
+            <h1>🚀 CONCURSO IDEAL</h1>
             
             <div class="theme-switch-wrapper">
                 <label class="theme-switch" for="checkbox">
