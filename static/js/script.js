@@ -1,4 +1,4 @@
-/* static/js/script.js - Versão Final com Redirecionamento Server-Side (/ir) */
+/* static/js/script.js - Versão Final */
 
 let todosConcursos = [];
 let paginaAtual = 0;
@@ -16,6 +16,18 @@ function formatarMoeda(elemento) {
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
+
+// --- FUNÇÃO LIMPAR FILTROS (NOVA) ---
+function limparFiltros() {
+    document.getElementById('searchForm').reset();
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('resultados-container').innerHTML = '';
+    document.getElementById('btn-load-more').style.display = 'none';
+    document.getElementById('status-msg').style.display = 'none';
+    window.history.pushState({}, '', window.location.pathname);
+}
 
 // --- DARK MODE LOGIC ---
 const themeCheckbox = document.getElementById('checkbox');
@@ -134,7 +146,6 @@ async function cadastrarLead() {
     }
 }
 
-// --- RENDERIZAÇÃO DOS CARDS (COM REDIRECIONAMENTO SERVER-SIDE) ---
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -160,16 +171,12 @@ function renderizarLote() {
         const div = document.createElement('div');
         div.className = 'concurso-card';
         
-        // Link Base
         let linkBase = c['Link'];
         if (!linkBase || linkBase === '#' || linkBase === '') {
             linkBase = 'https://www.pciconcursos.com.br/concursos/';
         }
         
         const textoConcurso = c['Informações do Concurso'].replace(/'/g, "\\'");
-
-        // Cria links que passam pelo nosso servidor (/ir)
-        // Isso garante que o navegador abra a aba (sem bloqueio) e o servidor resolva o link final (inteligência)
         const encodedLink = encodeURIComponent(linkBase);
         const linkEdital = `/ir?url=${encodedLink}&tipo=edital`;
         const linkInscricao = `/ir?url=${encodedLink}&tipo=inscricao`;

@@ -1,4 +1,4 @@
-/* static/css/style.css - Visual Pílula com Espaçamento Otimizado */
+/* static/css/style.css - Versão Final: Pílulas, Grid 75/25 e Espaçamento Otimizado */
 
 /* VARIÁVEIS DE CORES */
 :root {
@@ -43,12 +43,12 @@ body {
 
 .container { max-width: 850px; margin: 0 auto; padding-bottom: 50px; position: relative; }
 
-/* CABEÇALHO */
+/* CABEÇALHO LADO A LADO */
 .header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px; /* Reduzido levemente */
+    margin-bottom: 20px;
     padding: 0 5px;
 }
 
@@ -68,13 +68,20 @@ form {
     border-radius: 15px; 
     box-shadow: 0 10px 25px var(--card-shadow); 
     display: grid; 
-    gap: 10px; /* Reduzido de 15px para ganhar espaço vertical */
+    gap: 15px; /* Mantém respiro entre os blocos principais */
+}
+
+/* Ajuste para inputs ficarem lado a lado no PC e empilhados no mobile */
+.form-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
 label { 
     font-weight: 700; 
     color: var(--text-secondary); 
-    margin-bottom: 4px; /* Reduzido */
+    margin-bottom: 6px; 
     display: block; 
     font-size: 0.85em; 
     text-transform: uppercase; 
@@ -108,15 +115,16 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .filter-btn:hover { background-color: var(--border-color); transform: translateY(-1px); }
 .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
 
-/* --- ESTADOS ESTILO PÍLULA (MANTIDO) --- */
+/* --- ESTADOS (UF) ESTILO PÍLULA --- */
 .uf-grid {
     display: grid;
+    /* Pílula: Mínimo 60px para caber texto e ficar largo */
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 10px;
 }
 
 .uf-btn {
-    border-radius: 50px; 
+    border-radius: 50px; /* Borda totalmente redonda */
     padding: 8px 0; 
     text-align: center;
     justify-content: center;
@@ -129,29 +137,75 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
 .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
-/* --- AJUSTE DO ESPAÇO DO DIVISOR --- */
-.section-divider { 
-    border-top: 1px solid var(--border-color); 
-    margin: 2px 0; /* Reduzido de 10px para 2px (Puxa o botão para cima) */
-    opacity: 0.5; 
-}
-
+/* --- OTIMIZAÇÃO DE ESPAÇO (ESTADOS -> EXCLUIR) --- */
 .help-text { 
     font-size: 0.8em; 
     color: var(--text-secondary); 
     margin-top: 2px; /* Colado nos botões */
     font-style: italic; 
     opacity: 0.7;
+    margin-bottom: 0; /* Remove margem inferior */
 }
 
-.main-actions { display: flex; gap: 10px; margin-top: 5px; align-items: center; }
+.section-divider { 
+    border-top: 1px solid var(--border-color); 
+    margin: 5px 0; /* Reduzido drasticamente o espaço do divisor */
+    opacity: 0.5; 
+}
 
+/* --- GRID DE AÇÃO (75% / 25%) --- */
+.search-grid {
+    display: grid;
+    grid-template-columns: 3fr 1fr; /* 3 partes busca, 1 parte limpar */
+    gap: 10px;
+    margin-top: 5px;
+}
+
+/* Botão Buscar (Original) Ajustado para o Grid */
 input[type="submit"] { 
     background-color: #2c3e50; color: #fff; border: none; cursor: pointer; 
-    font-weight: bold; padding: 16px; font-size: 16px; border-radius: 8px; 
-    transition: transform 0.2s; flex-grow: 1; margin-top: 0; width: auto;
+    font-weight: bold; padding: 0; /* Padding zerado pois usamos height fixa */
+    height: 48px; /* Altura fixa para alinhar */
+    font-size: 16px; border-radius: 8px; 
+    transition: transform 0.2s; width: 100%; margin-top: 0;
+    display: flex; align-items: center; justify-content: center;
 }
 input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
+
+/* Botão Limpar (Novo) */
+.btn-clear {
+    background-color: var(--bg-container);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9em;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+.btn-clear:hover { background-color: #e2e8f0; color: #dc3545; border-color: #dc3545; }
+
+/* Botões de Compartilhar (Linha Abaixo) */
+.share-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+.share-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--primary-color); font-weight: 600; font-size: 0.9em;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.2s;
+}
+.share-btn:hover { opacity: 0.7; }
 
 /* NEWSLETTER */
 .newsletter-box {
@@ -227,7 +281,11 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .btn-zap-small { background-color: #25D366; }
 .btn-zap-small:hover { background-color: #128C7E; transform: translateY(-2px); }
 
-/* AUXILIARES */
+.legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
+.legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
+.legal-footer a:hover { text-decoration: underline; }
+
+/* Auxiliares */
 .skeleton { background: var(--skeleton-start); background: linear-gradient(90deg, var(--skeleton-start) 25%, var(--skeleton-mid) 50%, var(--skeleton-end) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px; }
 @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .skeleton-card { background: var(--bg-container); padding: 25px; border-left: 5px solid var(--border-color); border-radius: 10px; margin-bottom: 20px; }
@@ -247,9 +305,6 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .cookie-content a { color: #4dabf7; text-decoration: underline; }
 .cookie-btn { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: background 0.2s; }
 .cookie-btn:hover { background-color: #218838; }
-.legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
-.legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
-.legal-footer a:hover { text-decoration: underline; }
 .ad-slot { background-color: var(--bg-container); border: 1px dashed var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center; color: var(--text-secondary); }
 .ad-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; opacity: 0.6; }
 .btn-report { background: none; border: none; color: #ef5350; font-size: 0.85em; cursor: pointer; text-decoration: underline; margin-top: 10px; opacity: 0.7; transition: opacity 0.2s; }
@@ -259,6 +314,7 @@ input:checked + .slider .moon-icon { opacity: 1; }
     .cookie-content { flex-direction: column; text-align: center; }
     .cookie-btn { width: 100%; }
     .news-form { width: 100%; }
-    form { grid-template-columns: 1fr; }
+    
+    /* INPUTS EM COLUNA ÚNICA NO CELULAR */
     .form-cols { grid-template-columns: 1fr !important; }
 }

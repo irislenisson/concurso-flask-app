@@ -5,3 +5,5 @@ beautifulsoup4
 gunicorn
 flask-compress
 flask-limiter
+gspread
+oauth2client
