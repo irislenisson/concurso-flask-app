@@ -98,6 +98,7 @@ def salvar_lead_sheets(email):
         print(f"--> [SHEETS ERROR] Falha ao salvar: {e}")
 
 # --- FUNÇÃO EMAIL ---
+# --- FUNÇÃO EMAIL (TEXTO PROFISSIONAL) ---
 def enviar_emails_sistema(email_usuario):
     smtp_server = os.environ.get('SMTP_SERVER')
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
@@ -118,30 +119,62 @@ def enviar_emails_sistema(email_usuario):
 
         server.login(smtp_user, smtp_pass)
 
-        # Admin Alert
+        # 1. Notificação para o Admin (Você)
         msg_admin = MIMEMultipart()
         msg_admin['From'] = f"Sistema <{smtp_user}>"
         msg_admin['To'] = admin_email
-        msg_admin['Subject'] = f"🔔 Lead: {email_usuario}"
-        msg_admin.attach(MIMEText(f"Novo Lead: {email_usuario}", 'html'))
+        msg_admin['Subject'] = f"🔔 Novo Lead Capturado: {email_usuario}"
+        msg_admin.attach(MIMEText(f"<h3>Novo usuário cadastrado!</h3><p>E-mail: <b>{email_usuario}</b></p><p>Data: {time.strftime('%d/%m/%Y %H:%M')}</p>", 'html'))
         server.sendmail(smtp_user, admin_email, msg_admin.as_string())
 
-        # Usuário
+        # 2. E-mail de Boas-vindas para o Usuário (Texto Profissional)
         msg_user = MIMEMultipart()
-        msg_user['From'] = f"Concurso Ideal <{smtp_user}>"
+        msg_user['From'] = f"Equipe Concurso Ideal <{smtp_user}>"
         msg_user['To'] = email_usuario
-        msg_user['Subject'] = "Bem-vindo ao Concurso Ideal! 🚀"
+        msg_user['Subject'] = "Bem-vindo ao Concurso Ideal - Sua aprovação começa aqui! 🚀"
+        
+        # O TEXTO NOVO ESTÁ AQUI:
         corpo_user = f"""
-        <div style="font-family: Arial, sans-serif; color: #333;">
-            <h2 style="color: #007bff;">Obrigado por se cadastrar!</h2>
-            <p>Olá,</p>
-            <p>Recebemos seu interesse em receber as melhores vagas de concursos públicos.</p>
-            <p>Em breve, você receberá atualizações selecionadas diretamente no seu e-mail.</p>
-            <br>
-            <p>Atenciosamente,<br><strong>Equipe Concurso Ideal</strong></p>
-            <p><small><a href="https://concurso-app-2.onrender.com">Acesse o site</a></small></p>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
+                <h1 style="color: #fff; margin: 0; font-size: 24px;">🚀 CONCURSO IDEAL</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2 style="color: #007bff; margin-top: 0;">Olá, seja muito bem-vindo(a)!</h2>
+                
+                <p style="line-height: 1.6; font-size: 16px;">
+                    É um prazer ter você conosco. Ao se cadastrar no <strong>Concurso Ideal</strong>, você deu um passo estratégico na sua preparação.
+                </p>
+                
+                <p style="line-height: 1.6; font-size: 16px;">
+                    <strong>Quem somos?</strong><br>
+                    Nossa missão é simplificar o acesso à informação pública. Sabemos que encontrar o edital certo pode ser tão desafiador quanto a prova em si. Por isso, desenvolvemos uma tecnologia que monitora e filtra as melhores oportunidades de concursos públicos em todo o Brasil, em tempo real.
+                </p>
+                
+                <p style="line-height: 1.6; font-size: 16px;">
+                    A partir de agora, nós fazemos o trabalho pesado de garimpar editais para que você possa focar no que realmente importa: <strong>seus estudos</strong>.
+                </p>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0; font-style: italic;">
+                    "A persistência é o caminho do êxito."
+                </div>
+
+                <p style="line-height: 1.6; font-size: 16px;">
+                    Em breve, você receberá atualizações selecionadas diretamente no seu e-mail.
+                </p>
+
+                <p style="margin-top: 30px;">
+                    Atenciosamente,<br>
+                    <strong>Equipe Concurso Ideal</strong>
+                </p>
+            </div>
+            <div style="background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+                &copy; 2025 Concurso Ideal. Todos os direitos reservados.<br>
+                <a href="https://concurso-app-2.onrender.com" style="color: #007bff; text-decoration: none;">Acesse nosso site</a>
+            </div>
         </div>
         """
+        
         msg_user.attach(MIMEText(corpo_user, 'html'))
         server.sendmail(smtp_user, email_usuario, msg_user.as_string())
 
