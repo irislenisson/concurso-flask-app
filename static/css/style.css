@@ -1,4 +1,4 @@
-/* static/css/style.css - Versão Restaurada (Visual Rico) */
+/* static/css/style.css - Versão Final com Newsletter */
 
 /* VARIÁVEIS DE CORES (TEMA CLARO PADRÃO) */
 :root {
@@ -43,25 +43,7 @@ body {
 }
 
 .container { max-width: 850px; margin: 0 auto; padding-bottom: 60px; position: relative; }
-
-/* CABEÇALHO FLEX (A única mudança que mantivemos para arrumar o mobile) */
-.header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-}
-
-h1 { 
-    text-align: left; 
-    color: var(--text-primary); 
-    margin: 0; 
-    font-weight: 800; 
-    font-size: 1.8rem;
-}
-
-/* Oculta layout antigo se sobrar */
-.theme-switch-wrapper { position: static; } 
+h1 { text-align: center; color: var(--text-primary); margin-bottom: 25px; font-weight: 800; }
 
 form { 
     background: var(--bg-container); 
@@ -70,13 +52,6 @@ form {
     box-shadow: 0 10px 25px var(--card-shadow); 
     display: grid; 
     gap: 20px; 
-}
-
-/* Layout responsivo dos inputs (Um em cima do outro no mobile) */
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
 }
 
 label { font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; display: block; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;}
@@ -96,7 +71,6 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 
 .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* Botões de Filtro (Originais) */
 .filter-btn {
     background-color: var(--bg-container); 
     border: 1px solid var(--border-color); 
@@ -108,17 +82,6 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .filter-btn:hover { background-color: var(--border-color); transform: translateY(-1px); }
 .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
 
-/* UF GRID (Nova organização em grade, mas mantendo estilo visual) */
-.uf-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-    gap: 8px;
-}
-.uf-btn {
-    justify-content: center; /* Centraliza texto */
-    text-align: center;
-}
-
 .region-btn { padding: 10px 20px; font-size: 0.95em; border-radius: 8px; }
 .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
 .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
@@ -126,7 +89,6 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .section-divider { border-top: 1px solid var(--border-color); margin: 10px 0; }
 .help-text { font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; font-style: italic; opacity: 0.7;}
 
-/* BOTÕES PRINCIPAIS (Restaurados) */
 .main-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
 
 input[type="submit"] { 
@@ -136,10 +98,10 @@ input[type="submit"] {
 }
 input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
 
-/* NEWSLETTER BONITA (Restaurada) */
+/* --- NEWSLETTER BOX (NOVO) --- */
 .newsletter-box {
     margin-top: 30px;
-    background: linear-gradient(135deg, #2c3e50, #4ca1af); /* O gradiente voltou! */
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
     border-radius: 12px;
     padding: 20px;
     display: flex;
@@ -163,6 +125,7 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 .news-form button:hover { transform: scale(1.05); background-color: #e67e22; }
 
 /* THEME SWITCH */
+.theme-switch-wrapper { position: absolute; top: 0; right: 0; display: flex; align-items: center; z-index: 100; }
 .theme-switch { display: inline-block; height: 34px; position: relative; width: 60px; }
 .theme-switch input { display: none; }
 .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; display: flex; align-items: center; justify-content: space-between; padding: 0 5px; }
@@ -183,7 +146,6 @@ input:checked + .slider .moon-icon { opacity: 1; }
 
 #resultados-container { margin-top: 40px; }
 
-/* CARD DE CONCURSO (Restaurado) */
 .concurso-card { 
     background: var(--bg-container); margin-bottom: 20px; padding: 25px; 
     border-left: 5px solid var(--primary-color); border-radius: 10px; 
@@ -197,20 +159,11 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .badge.uf { background-color: #cfe2ff; color: #084298; }
 .badge.date { background-color: #fff3cd; color: #664d03; }
 
-/* BOTÕES DE AÇÃO 3D (Restaurados) */
-.action-btn {
-    font-size: 0.85em; font-weight: 600; padding: 8px 16px;
-    border-radius: 6px; transition: all 0.2s; display: inline-flex;
-    align-items: center; gap: 8px; border: none;
-    cursor: pointer; font-family: inherit; text-decoration: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+.action-btn { font-size: 0.85em; font-weight: 600; padding: 8px 16px; border-radius: 6px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; font-family: inherit; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .action-btn.disabled { opacity: 0.7; cursor: wait; pointer-events: none; }
 .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-
 .btn-edital { background-color: #ef5350; color: white; border: 1px solid #ef5350; }
 .btn-edital:hover { background-color: #e53935; }
-
 .btn-inscricao { background-color: #0d6efd; color: white; border: 1px solid #0d6efd; }
 .btn-inscricao:hover { background-color: #0b5ed7; }
 
@@ -220,7 +173,6 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .btn-zap-small { background-color: #25D366; }
 .btn-zap-small:hover { background-color: #128C7E; transform: translateY(-2px); }
 
-/* Skeleton, Toast, etc. permanecem iguais */
 .skeleton { background: var(--skeleton-start); background: linear-gradient(90deg, var(--skeleton-start) 25%, var(--skeleton-mid) 50%, var(--skeleton-end) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px; }
 @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .skeleton-card { background: var(--bg-container); padding: 25px; border-left: 5px solid var(--border-color); border-radius: 10px; margin-bottom: 20px; }
@@ -259,6 +211,4 @@ input:checked + .slider .moon-icon { opacity: 1; }
     .cookie-content { flex-direction: column; text-align: center; }
     .cookie-btn { width: 100%; }
     .news-form { width: 100%; }
-    /* Ajuste para inputs empilhados no mobile */
-    .form-row { grid-template-columns: 1fr; gap: 15px; }
 }
