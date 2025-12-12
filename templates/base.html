@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -12,7 +13,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#1a252f"> 
     
     <title>{% block title %}{{ meta_title if meta_title else 'CONCURSO IDEAL | Encontre sua Vaga em 2025' }}{% endblock %}</title>
     
@@ -49,7 +50,12 @@
 <body>
     <div class="container">
         <div class="header-row">
-            <h1>🚀 CONCURSO IDEAL</h1>
+            <a href="/" style="text-decoration: none; display: flex; align-items: center;">
+                <img src="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}" 
+                     alt="Concurso Ideal - Logomarca" 
+                     style="height: 60px; width: auto; object-fit: contain; max-width: 220px;">
+            </a>
+            
             <div class="theme-switch-wrapper">
                 <label class="theme-switch" for="checkbox">
                     <input type="checkbox" id="checkbox" />
