@@ -2,11 +2,8 @@ import os
 import locale
 import json
 import time
-import smtplib
 import threading
 from functools import wraps
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for, session, redirect, make_response
 from flask_cors import CORS
 from flask_compress import Compress
@@ -15,7 +12,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports Google Sheets (Protegido contra erro de importação)
+# Imports Google Sheets (Protegido contra erro)
 try:
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
@@ -64,124 +61,28 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- FUNÇÃO GOOGLE SHEETS (NOVA) ---
+# --- FUNÇÃO GOOGLE SHEETS (Mantida pois usa API Web segura) ---
 def salvar_lead_sheets(email):
-    # 1. Verifica se temos a biblioteca e a credencial configurada
-    if not gspread: 
-        print("--> [SHEETS] Biblioteca gspread não instalada.")
-        return
-
+    if not gspread: return
     creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-    if not creds_json: 
-        print("--> [SHEETS] Variável GOOGLE_CREDENTIALS_JSON não encontrada.")
-        return
+    if not creds_json: return
 
     try:
-        # 2. Conecta ao Google
         creds_dict = json.loads(creds_json)
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
-        # 3. Abre a planilha e adiciona a linha
-        # IMPORTANTE: A planilha deve se chamar exatamente "Leads Concurso Ideal"
-        # e deve estar compartilhada com o e-mail do client_email do JSON.
+        # Abre a planilha
         sheet = client.open("Leads Concurso Ideal").sheet1
         
-        # Data e Hora de Brasília (aproximada)
+        # Salva
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
         sheet.append_row([data_hora, email])
-        
-        print(f"--> [SHEETS SUCESSO] Lead {email} salvo na nuvem!")
+        print(f"--> [SHEETS] Lead {email} salvo!")
         
     except Exception as e:
-        print(f"--> [SHEETS ERROR] Falha ao salvar: {e}")
-
-# --- FUNÇÃO EMAIL ---
-# --- FUNÇÃO EMAIL (TEXTO PROFISSIONAL) ---
-def enviar_emails_sistema(email_usuario):
-    smtp_server = os.environ.get('SMTP_SERVER')
-    smtp_port = int(os.environ.get('SMTP_PORT', 587))
-    smtp_user = os.environ.get('SMTP_USER')
-    smtp_pass = os.environ.get('SMTP_PASS')
-    admin_email = "concursoideal@icloud.com"
-
-    if not all([smtp_server, smtp_port, smtp_user, smtp_pass]):
-        print("--> [EMAIL AVISO] Variáveis SMTP não configuradas.")
-        return
-
-    try:
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-        else:
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
-
-        server.login(smtp_user, smtp_pass)
-
-        # 1. Notificação para o Admin (Você)
-        msg_admin = MIMEMultipart()
-        msg_admin['From'] = f"Sistema <{smtp_user}>"
-        msg_admin['To'] = admin_email
-        msg_admin['Subject'] = f"🔔 Novo Lead Capturado: {email_usuario}"
-        msg_admin.attach(MIMEText(f"<h3>Novo usuário cadastrado!</h3><p>E-mail: <b>{email_usuario}</b></p><p>Data: {time.strftime('%d/%m/%Y %H:%M')}</p>", 'html'))
-        server.sendmail(smtp_user, admin_email, msg_admin.as_string())
-
-        # 2. E-mail de Boas-vindas para o Usuário (Texto Profissional)
-        msg_user = MIMEMultipart()
-        msg_user['From'] = f"Equipe Concurso Ideal <{smtp_user}>"
-        msg_user['To'] = email_usuario
-        msg_user['Subject'] = "Bem-vindo ao Concurso Ideal - Sua aprovação começa aqui! 🚀"
-        
-        # O TEXTO NOVO ESTÁ AQUI:
-        corpo_user = f"""
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-            <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
-                <h1 style="color: #fff; margin: 0; font-size: 24px;">🚀 CONCURSO IDEAL</h1>
-            </div>
-            <div style="padding: 30px;">
-                <h2 style="color: #007bff; margin-top: 0;">Olá, seja muito bem-vindo(a)!</h2>
-                
-                <p style="line-height: 1.6; font-size: 16px;">
-                    É um prazer ter você conosco. Ao se cadastrar no <strong>Concurso Ideal</strong>, você deu um passo estratégico na sua preparação.
-                </p>
-                
-                <p style="line-height: 1.6; font-size: 16px;">
-                    <strong>Quem somos?</strong><br>
-                    Nossa missão é simplificar o acesso à informação pública. Sabemos que encontrar o edital certo pode ser tão desafiador quanto a prova em si. Por isso, desenvolvemos uma tecnologia que monitora e filtra as melhores oportunidades de concursos públicos em todo o Brasil, em tempo real.
-                </p>
-                
-                <p style="line-height: 1.6; font-size: 16px;">
-                    A partir de agora, nós fazemos o trabalho pesado de garimpar editais para que você possa focar no que realmente importa: <strong>seus estudos</strong>.
-                </p>
-                
-                <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0; font-style: italic;">
-                    "A persistência é o caminho do êxito."
-                </div>
-
-                <p style="line-height: 1.6; font-size: 16px;">
-                    Em breve, você receberá atualizações selecionadas diretamente no seu e-mail.
-                </p>
-
-                <p style="margin-top: 30px;">
-                    Atenciosamente,<br>
-                    <strong>Equipe Concurso Ideal</strong>
-                </p>
-            </div>
-            <div style="background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-                &copy; 2025 Concurso Ideal. Todos os direitos reservados.<br>
-                <a href="https://concurso-app-2.onrender.com" style="color: #007bff; text-decoration: none;">Acesse nosso site</a>
-            </div>
-        </div>
-        """
-        
-        msg_user.attach(MIMEText(corpo_user, 'html'))
-        server.sendmail(smtp_user, email_usuario, msg_user.as_string())
-
-        server.quit()
-        print(f"--> [EMAIL SUCESSO] Enviado para {email_usuario}")
-    except Exception as e:
-        print(f"--> [EMAIL ERROR] {e}")
+        print(f"--> [SHEETS ERROR] {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
@@ -380,7 +281,7 @@ def page_not_found(e): return render_template('404.html'), 404
 @app.errorhandler(500)
 def internal_server_error(e): return render_template('500.html'), 500
 
-# --- NEWSLETTER ---
+# --- NEWSLETTER (LIMPA: SÓ SALVA, NÃO ENVIA) ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -398,11 +299,8 @@ def api_newsletter():
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 3. Google Sheets (Paralelo)
+    # 3. Google Sheets (Salva na nuvem silenciosamente)
     threading.Thread(target=salvar_lead_sheets, args=(email,)).start()
-
-    # 4. Email (Paralelo)
-    threading.Thread(target=enviar_emails_sistema, args=(email,)).start()
 
     return jsonify({'message': 'Sucesso!'})
 
