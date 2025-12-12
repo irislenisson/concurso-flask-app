@@ -61,10 +61,10 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- FUNÇÕES GOOGLE SHEETS ---
+# --- FUNÇÕES GOOGLE SHEETS (BI & LEADS) ---
 
 def get_gspread_client():
-    """Função auxiliar para conectar ao Google Sheets"""
+    """Conecta ao Google Sheets"""
     if not gspread: return None
     creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
     if not creds_json: return None
@@ -75,11 +75,11 @@ def get_gspread_client():
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         return gspread.authorize(creds)
     except Exception as e:
-        print(f"--> [GSPREAD CONNECT ERROR] {e}")
+        print(f"--> [GSPREAD ERROR] {e}")
         return None
 
 def salvar_lead_sheets(email):
-    """Salva o E-mail na aba padrao (ou Sheet1)"""
+    """Salva Lead na aba 'Sheet1'"""
     client = get_gspread_client()
     if not client: return
 
@@ -91,24 +91,39 @@ def salvar_lead_sheets(email):
     except Exception as e:
         print(f"--> [SHEETS LEAD ERROR] {e}")
 
-def salvar_termo_sheets(termo):
-    """Salva o Termo Buscado na aba 'Termos'"""
+def salvar_busca_completa_sheets(payload):
+    """
+    Salva TODOS os filtros da busca para Inteligência de Negócio.
+    Espera uma aba chamada 'Termos' ou 'Buscas'.
+    """
     client = get_gspread_client()
     if not client: return
 
     try:
-        # Tenta abrir a aba específica 'Termos'
+        # Tenta abrir aba 'Termos', se não, cria ou usa sheet1
         try:
             sheet = client.open("Leads Concurso Ideal").worksheet("Termos")
         except:
-            # Se não existir a aba Termos, usa a primeira msm (fallback)
+            # Se você ainda não criou a aba, ele vai salvar na primeira mesmo
             sheet = client.open("Leads Concurso Ideal").sheet1
         
+        # Prepara os dados para ficarem bonitos na planilha
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
-        sheet.append_row([data_hora, termo])
-        print(f"--> [SHEETS] Termo '{termo}' registrado!")
+        palavra = payload.get('palavra_chave', '')
+        salario = payload.get('salario_minimo', '')
+        
+        # Transforma listas em strings separadas por vírgula
+        regioes = ", ".join(payload.get('regioes', []))
+        ufs = ", ".join(payload.get('ufs', []))
+        excluir = payload.get('excluir_palavra', '')
+
+        # Salva a linha completa
+        # Ordem: Data | Palavra | Salário | Regiões | UFs | Excluídas
+        sheet.append_row([data_hora, palavra, salario, regioes, ufs, excluir])
+        
+        print(f"--> [BI] Busca registrada: {palavra} | {ufs}")
     except Exception as e:
-        print(f"--> [SHEETS TERMO ERROR] {e}")
+        print(f"--> [SHEETS BI ERROR] {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
@@ -289,21 +304,32 @@ def api_buscar():
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
     except: s_min = 0.0
 
-    # Captura os dados da busca
+    # Extrai filtros
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]
-    ufs = set(data.get('ufs', []))
-    for reg in data.get('regioes', []):
+    ufs_list = data.get('ufs', [])
+    regioes_list = data.get('regioes', [])
+    
+    # Prepara payload para salvar no Sheets (só se tiver algum filtro)
+    tem_filtro = any([data.get('palavra_chave'), data.get('salario_minimo'), ufs_list, regioes_list, excluir])
+    
+    if tem_filtro:
+        payload_sheets = {
+            'palavra_chave': data.get('palavra_chave', ''),
+            'salario_minimo': data.get('salario_minimo', ''),
+            'regioes': regioes_list,
+            'ufs': ufs_list,
+            'excluir_palavra': data.get('excluir_palavra', '')
+        }
+        # Dispara thread paralela para não travar o usuário
+        threading.Thread(target=salvar_busca_completa_sheets, args=(payload_sheets,)).start()
+
+    # Lógica de Filtragem
+    ufs = set(ufs_list)
+    for reg in regioes_list:
         if reg == 'Nacional': ufs.add('Nacional/Outro')
         elif reg in REGIOES: ufs.update(REGIOES[reg])
     
-    # --- NOVO: Business Intelligence (Salva o que foi buscado) ---
-    termo_bruto = data.get('palavra_chave', '').strip()
-    if termo_bruto and len(termo_bruto) > 2:
-        # Usa thread para não deixar a busca lenta
-        threading.Thread(target=salvar_termo_sheets, args=(termo_bruto,)).start()
-    # -------------------------------------------------------------
-
     todos = obter_dados()
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
@@ -315,7 +341,7 @@ def page_not_found(e): return render_template('404.html'), 404
 @app.errorhandler(500)
 def internal_server_error(e): return render_template('500.html'), 500
 
-# --- NEWSLETTER (LIMPA: SÓ SALVA, NÃO ENVIA EMAIL) ---
+# --- NEWSLETTER ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
@@ -324,16 +350,13 @@ def api_newsletter():
     
     if not email or '@' not in email: return jsonify({'error': 'E-mail inválido'}), 400
     
-    # 1. Log Visual
     print(f"\n{'='*40}\n🎯 NOVO LEAD: {email}\n{'='*40}\n")
     
-    # 2. Arquivo Local
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 3. Google Sheets (Salva na nuvem silenciosamente)
     threading.Thread(target=salvar_lead_sheets, args=(email,)).start()
 
     return jsonify({'message': 'Sucesso!'})
