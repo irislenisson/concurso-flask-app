@@ -13,8 +13,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>{{ meta_title | default('CONCURSO IDEAL | Encontre sua Vaga em 2025') }}</title>
+    <meta name="theme-color" content="#2c3e50"> <title>{{ meta_title | default('CONCURSO IDEAL | Encontre sua Vaga em 2025') }}</title>
     <meta name="description" content="{{ meta_description | default('O CONCURSO IDEAL monitora editais e inscrições de concursos públicos em todo o Brasil. Filtre por salário, região e cargo.') }}">
     
     <meta name="robots" content="index,follow">
@@ -32,17 +31,19 @@
 </head>
 <body>
     <div class="container">
-        <div class="theme-switch-wrapper">
-            <label class="theme-switch" for="checkbox">
-                <input type="checkbox" id="checkbox" />
-                <div class="slider round">
-                    <i class="fas fa-sun sun-icon"></i>
-                    <i class="fas fa-moon moon-icon"></i>
-                </div>
-            </label>
+        <div class="header-container">
+            <h1>🚀 CONCURSO IDEAL</h1>
+            
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox">
+                    <input type="checkbox" id="checkbox" />
+                    <div class="slider round">
+                        <i class="fas fa-sun sun-icon"></i>
+                        <i class="fas fa-moon moon-icon"></i>
+                    </div>
+                </label>
+            </div>
         </div>
-
-        <h1>🚀 CONCURSO IDEAL</h1>
 
         {% block content %}{% endblock %}
 

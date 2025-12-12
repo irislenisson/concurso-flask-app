@@ -1,4 +1,4 @@
-/* static/css/style.css - Versão Final com Newsletter */
+/* static/css/style.css - RESTORED & OPTIMIZED */
 
 /* VARIÁVEIS DE CORES (TEMA CLARO PADRÃO) */
 :root {
@@ -43,7 +43,31 @@ body {
 }
 
 .container { max-width: 850px; margin: 0 auto; padding-bottom: 60px; position: relative; }
-h1 { text-align: center; color: var(--text-primary); margin-bottom: 25px; font-weight: 800; }
+
+/* --- CORREÇÃO DO CABEÇALHO (Lado a Lado) --- */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 0 10px;
+}
+
+h1 { 
+    text-align: left; 
+    color: var(--text-primary); 
+    margin: 0; 
+    font-weight: 800;
+    /* Ajuste de tamanho para não quebrar no mobile */
+    font-size: 1.8rem; 
+}
+
+/* Ajuste do botão switch para não flutuar solto */
+.theme-switch-wrapper { 
+    position: static; /* Remove position absolute anterior */
+    display: flex;
+    align-items: center;
+}
 
 form { 
     background: var(--bg-container); 
@@ -86,6 +110,15 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
 .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
+/* --- CORREÇÃO DOS BOTÕES DE ESTADO (Tamanho Uniforme) --- */
+/* Mantivemos seu estilo, só forçamos a largura mínima para ficarem iguais */
+.uf-btn {
+    min-width: 45px; 
+    text-align: center;
+    justify-content: center;
+    display: flex;
+}
+
 .section-divider { border-top: 1px solid var(--border-color); margin: 10px 0; }
 .help-text { font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; font-style: italic; opacity: 0.7;}
 
@@ -98,7 +131,7 @@ input[type="submit"] {
 }
 input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2px); }
 
-/* --- NEWSLETTER BOX (NOVO) --- */
+/* --- NEWSLETTER BOX (SEU DESIGN ORIGINAL) --- */
 .newsletter-box {
     margin-top: 30px;
     background: linear-gradient(135deg, #2c3e50, #4ca1af);
@@ -125,7 +158,6 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 .news-form button:hover { transform: scale(1.05); background-color: #e67e22; }
 
 /* THEME SWITCH */
-.theme-switch-wrapper { position: absolute; top: 0; right: 0; display: flex; align-items: center; z-index: 100; }
 .theme-switch { display: inline-block; height: 34px; position: relative; width: 60px; }
 .theme-switch input { display: none; }
 .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; display: flex; align-items: center; justify-content: space-between; padding: 0 5px; }
@@ -211,4 +243,11 @@ input:checked + .slider .moon-icon { opacity: 1; }
     .cookie-content { flex-direction: column; text-align: center; }
     .cookie-btn { width: 100%; }
     .news-form { width: 100%; }
+    
+    /* MANTÉM OS INPUTS EMPILHADOS NO MOBILE */
+    form { grid-template-columns: 1fr; }
+    .form-group { grid-column: span 1; }
+    
+    /* AJUSTE PARA NÃO QUEBRAR O TÍTULO NO MOBILE */
+    h1 { font-size: 1.4rem; }
 }
