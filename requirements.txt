@@ -1,9 +1,9 @@
 flask
 flask-cors
+flask-compress
+flask-limiter
 requests
 beautifulsoup4
 gunicorn
-flask-compress
-flask-limiter
-gspread
-oauth2client
+gspread  <-- NOVO
+oauth2client <-- NOVO

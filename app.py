@@ -15,7 +15,14 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports locais com tratamento de erro para evitar crash inicial
+# Imports Google Sheets (Protegido contra erro de importação)
+try:
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+except ImportError:
+    gspread = None
+
+# Imports locais
 try:
     from constants import UFS_SIGLAS, REGIOES, REGEX_BANCAS
     from services.scraper import raspar_dados_online, filtrar_concursos, extrair_link_final
@@ -28,11 +35,9 @@ except ImportError:
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# Segurança de Sessão (Admin)
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_padrao_dev_segura')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-# Proxy Fix para Render (IP Real)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 Compress(app)
 
@@ -59,6 +64,39 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- FUNÇÃO GOOGLE SHEETS (NOVA) ---
+def salvar_lead_sheets(email):
+    # 1. Verifica se temos a biblioteca e a credencial configurada
+    if not gspread: 
+        print("--> [SHEETS] Biblioteca gspread não instalada.")
+        return
+
+    creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    if not creds_json: 
+        print("--> [SHEETS] Variável GOOGLE_CREDENTIALS_JSON não encontrada.")
+        return
+
+    try:
+        # 2. Conecta ao Google
+        creds_dict = json.loads(creds_json)
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        
+        # 3. Abre a planilha e adiciona a linha
+        # IMPORTANTE: A planilha deve se chamar exatamente "Leads Concurso Ideal"
+        # e deve estar compartilhada com o e-mail do client_email do JSON.
+        sheet = client.open("Leads Concurso Ideal").sheet1
+        
+        # Data e Hora de Brasília (aproximada)
+        data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
+        sheet.append_row([data_hora, email])
+        
+        print(f"--> [SHEETS SUCESSO] Lead {email} salvo na nuvem!")
+        
+    except Exception as e:
+        print(f"--> [SHEETS ERROR] Falha ao salvar: {e}")
+
 # --- FUNÇÃO EMAIL ---
 def enviar_emails_sistema(email_usuario):
     smtp_server = os.environ.get('SMTP_SERVER')
@@ -72,7 +110,6 @@ def enviar_emails_sistema(email_usuario):
         return
 
     try:
-        # Lógica inteligente para Portas (465 SSL vs 587 TLS)
         if smtp_port == 465:
             server = smtplib.SMTP_SSL(smtp_server, smtp_port)
         else:
@@ -81,7 +118,7 @@ def enviar_emails_sistema(email_usuario):
 
         server.login(smtp_user, smtp_pass)
 
-        # 1. Admin Alert
+        # Admin Alert
         msg_admin = MIMEMultipart()
         msg_admin['From'] = f"Sistema <{smtp_user}>"
         msg_admin['To'] = admin_email
@@ -89,7 +126,7 @@ def enviar_emails_sistema(email_usuario):
         msg_admin.attach(MIMEText(f"Novo Lead: {email_usuario}", 'html'))
         server.sendmail(smtp_user, admin_email, msg_admin.as_string())
 
-        # 2. Usuário (Boas-vindas)
+        # Usuário
         msg_user = MIMEMultipart()
         msg_user['From'] = f"Concurso Ideal <{smtp_user}>"
         msg_user['To'] = email_usuario
@@ -157,15 +194,11 @@ def add_header(response):
         response.cache_control.public = True
     return response
 
-# ROTA INTELIGENTE DE REDIRECIONAMENTO (Deep Link Server-Side)
 @app.route('/ir')
 def redirecionar_externo():
     target_url = request.args.get('url')
     tipo = request.args.get('tipo', 'edital')
-    
-    if not target_url:
-        return redirect('/')
-    
+    if not target_url: return redirect('/')
     try:
         final_url = extrair_link_final(target_url, tipo)
         return redirect(final_url)
@@ -197,7 +230,7 @@ def termos(): return render_template('termos.html')
 @app.route('/privacidade')
 def privacidade(): return render_template('privacidade.html')
 
-# --- ROTAS ADMIN ---
+# --- ADMIN ---
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -278,7 +311,7 @@ def sitemap():
 def ping():
     return jsonify({ "status": "ok", "cache_timestamp": CACHE_MEMORIA.get("timestamp", 0) }), 200
 
-# --- APIS ---
+# --- API BUSCA ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
 def api_link_profundo():
@@ -307,14 +340,12 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- TRATAMENTO DE ERROS (NOVO) ---
+# --- ERROS ---
 @app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
+def page_not_found(e): return render_template('404.html'), 404
 
 @app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
+def internal_server_error(e): return render_template('500.html'), 500
 
 # --- NEWSLETTER ---
 @app.route('/api/newsletter', methods=['POST'])
@@ -325,18 +356,20 @@ def api_newsletter():
     
     if not email or '@' not in email: return jsonify({'error': 'E-mail inválido'}), 400
     
-    # 1. Log Visual (Backup no Render Console)
+    # 1. Log Visual
     print(f"\n{'='*40}\n🎯 NOVO LEAD: {email}\n{'='*40}\n")
     
-    # 2. Arquivo Local (Backup no Admin)
+    # 2. Arquivo Local
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
 
-    # 3. Envio de E-mail (Segundo Plano)
-    thread = threading.Thread(target=enviar_emails_sistema, args=(email,))
-    thread.start()
+    # 3. Google Sheets (Paralelo)
+    threading.Thread(target=salvar_lead_sheets, args=(email,)).start()
+
+    # 4. Email (Paralelo)
+    threading.Thread(target=enviar_emails_sistema, args=(email,)).start()
 
     return jsonify({'message': 'Sucesso!'})
 
