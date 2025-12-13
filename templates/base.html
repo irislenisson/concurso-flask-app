@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
-    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -18,7 +17,6 @@
     <title>{% block title %}{{ meta_title if meta_title else 'CONCURSO IDEAL | Encontre sua Vaga em 2025' }}{% endblock %}</title>
     
     <meta name="description" content="{{ meta_description | default('O CONCURSO IDEAL monitora editais e inscrições de concursos públicos em todo o Brasil. Filtre por salário, região e cargo.') }}">
-    
     <meta name="robots" content="index,follow">
     <link rel="canonical" href="https://concurso-app-2.onrender.com/">
     
@@ -52,14 +50,20 @@
         <div class="header-row">
             <h1>🚀 CONCURSO IDEAL</h1>
             
-            <div class="theme-switch-wrapper">
-                <label class="theme-switch" for="checkbox">
-                    <input type="checkbox" id="checkbox" />
-                    <div class="slider round">
-                        <i class="fas fa-sun sun-icon"></i>
-                        <i class="fas fa-moon moon-icon"></i>
-                    </div>
-                </label>
+            <div style="display: flex; align-items: center;">
+                <button id="btn-fav-global" class="btn-fav-header" onclick="toggleTelaFavoritos()" title="Ver Favoritos Salvos" style="display: none;">
+                    ❤️
+                </button>
+
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" />
+                        <div class="slider round">
+                            <i class="fas fa-sun sun-icon"></i>
+                            <i class="fas fa-moon moon-icon"></i>
+                        </div>
+                    </label>
+                </div>
             </div>
         </div>
 

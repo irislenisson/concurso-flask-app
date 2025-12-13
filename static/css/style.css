@@ -1,4 +1,4 @@
-/* static/css/style.css - Versão "Padrão Ouro" Compacta com Pílulas */
+/* static/css/style.css - Versão Final: Padrão Ouro + Favoritos + Pílulas */
 
 /* VARIÁVEIS DE CORES */
 :root {
@@ -14,8 +14,8 @@
     --skeleton-mid: #f8f9fa;
     --skeleton-end: #e9ecef;
     --input-bg: #f8f9fa;
-    /* Novas cores para o botão Limpar */
-    --btn-clear-bg: #e9ecef; 
+    /* Cores Botão Limpar */
+    --btn-clear-bg: #e9ecef;
     --btn-clear-text: #495057;
     --btn-clear-border: #ced4da;
 }
@@ -50,12 +50,12 @@ body {
 
 .container { max-width: 850px; margin: 0 auto; padding-bottom: 50px; position: relative; }
 
-/* CABEÇALHO LADO A LADO */
+/* --- CABEÇALHO --- */
 .header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px; /* Reduzido levemente */
+    margin-bottom: 20px;
     padding: 0 5px;
 }
 
@@ -69,26 +69,27 @@ h1 {
 
 .theme-switch-wrapper { position: static; display: flex; align-items: center; } 
 
+/* --- FORMULÁRIO --- */
 form { 
     background: var(--bg-container); 
-    padding: 20px; /* Padding um pouco mais compacto */
+    padding: 25px; 
     border-radius: 15px; 
     box-shadow: 0 10px 25px var(--card-shadow); 
     display: grid; 
-    gap: 10px; /* GAP REDUZIDO PARA 10PX (SOLICITADO) */
+    gap: 15px; /* Gap confortável */
 }
 
 /* Coluna dupla PC / Única Mobile */
 .form-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px; /* Gap interno dos inputs */
+    gap: 20px;
 }
 
 label { 
     font-weight: 700; 
     color: var(--text-secondary); 
-    margin-bottom: 4px; 
+    margin-bottom: 6px; 
     display: block; 
     font-size: 0.85em; 
     text-transform: uppercase; 
@@ -122,11 +123,12 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
 .filter-btn:hover { background-color: var(--border-color); transform: translateY(-1px); }
 .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
 
-/* --- ESTADOS (UF) ESTILO PÍLULA --- */
+/* --- ESTADOS ESTILO PÍLULA (LARGOS) --- */
 .uf-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px; /* Gap um pouco menor entre as pílulas */
+    /* Mínimo 55px garante o formato oval/pílula */
+    grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+    gap: 8px;
 }
 
 .uf-btn {
@@ -137,18 +139,20 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
     display: flex;
     width: 100%; 
     font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-container);
+    color: var(--text-secondary);
+    transition: all 0.2s;
 }
+.uf-btn:hover { background-color: var(--border-color); }
+.uf-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
 
 .region-btn { padding: 10px 20px; font-size: 0.95em; border-radius: 8px; }
 .region-btn[data-value="Nacional"] { border-color: #28a745; color: #28a745; }
 .region-btn[data-value="Nacional"].active { background-color: #28a745; color: white; }
 
-.section-divider { 
-    border-top: 1px solid var(--border-color); 
-    margin: 5px 0; /* Margem reduzida */
-    opacity: 0.5; 
-}
-
+/* --- OTIMIZAÇÃO DE ESPAÇO --- */
 .help-text { 
     font-size: 0.8em; 
     color: var(--text-secondary); 
@@ -158,10 +162,17 @@ input:focus { border-color: var(--primary-color); background: var(--bg-container
     margin-bottom: 0;
 }
 
-/* --- GRID DE AÇÃO (BUSCAR + LIMPAR) --- */
+/* Divisor compacto para subir o botão de busca */
+.section-divider { 
+    border-top: 1px solid var(--border-color); 
+    margin: 2px 0; 
+    opacity: 0.5; 
+}
+
+/* --- GRID DE AÇÃO (75% BUSCAR / 25% LIMPAR) --- */
 .search-grid {
     display: grid;
-    grid-template-columns: 3fr 1fr; /* 75% / 25% */
+    grid-template-columns: 3fr 1fr;
     gap: 10px;
     margin-top: 5px;
 }
@@ -179,19 +190,19 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 
 /* Botão Limpar (Cinza Claro Visível) */
 .btn-clear {
-    background-color: var(--btn-clear-bg); /* Cinza Claro definido no root */
-    color: var(--btn-clear-text); /* Texto cinza escuro */
-    border: 1px solid var(--btn-clear-border); /* Borda visível */
+    background-color: var(--btn-clear-bg);
+    color: var(--btn-clear-text);
+    border: 1px solid var(--btn-clear-border);
     border-radius: 8px;
     cursor: pointer;
-    font-weight: 800; /* Letra grossa para leitura em tamanho pequeno */
-    font-size: 0.7rem; /* Tamanho reduzido para caber "LIMPAR FILTROS" */
+    font-weight: 800; 
+    font-size: 0.7rem; 
     height: 48px;
     display: flex;
-    flex-direction: column; /* Ícone em cima do texto ou ao lado, vamos tentar centralizar */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 0;
     transition: all 0.2s;
     line-height: 1.1;
     text-transform: uppercase;
@@ -199,9 +210,8 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
     padding: 0 5px;
 }
 .btn-clear:hover { background-color: #ced4da; color: #dc3545; border-color: #dc3545; }
-.btn-clear i { font-size: 1.1em; } /* Ícone um pouco maior */
 
-/* Área Compartilhar */
+/* Botões de Compartilhar */
 .share-row {
     display: flex;
     justify-content: center;
@@ -218,9 +228,55 @@ input[type="submit"]:hover { background-color: #1a252f; transform: translateY(-2
 }
 .share-btn:hover { opacity: 0.7; }
 
+/* --- FAVORITOS (NOVO) --- */
+.btn-fav-header {
+    background: none;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+}
+.btn-fav-header:hover {
+    border-color: #ef5350;
+    color: #ef5350;
+    transform: scale(1.1);
+}
+
+.btn-fav-card {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: #ccc;
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+.btn-fav-card:hover { border-color: #ef5350; color: #ef5350; }
+.btn-fav-card.favorited {
+    background-color: #ef5350;
+    color: white;
+    border-color: #ef5350;
+    animation: heartPulse 0.3s ease-in-out;
+}
+@keyframes heartPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
 /* NEWSLETTER */
 .newsletter-box {
-    margin-top: 25px;
+    margin-top: 30px;
     background: linear-gradient(135deg, #2c3e50, #4ca1af);
     border-radius: 12px;
     padding: 20px;
@@ -292,7 +348,6 @@ input:checked + .slider .moon-icon { opacity: 1; }
 .btn-zap-small { background-color: #25D366; }
 .btn-zap-small:hover { background-color: #128C7E; transform: translateY(-2px); }
 
-/* FOOTER & EXTRAS */
 .legal-footer { margin-top: 40px; text-align: center; font-size: 0.75em; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 20px; }
 .legal-footer a { color: var(--text-secondary); text-decoration: none; margin: 0 5px; }
 .legal-footer a:hover { text-decoration: underline; }
