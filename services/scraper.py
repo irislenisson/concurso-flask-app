@@ -2,25 +2,21 @@ import re
 import requests
 import random
 import logging
+import unicodedata # <--- Nova importação para lidar com acentos
 from datetime import datetime
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# --- CONFIGURAÇÃO DE LOGS ---
+# Configuração de Logs
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# --- IMPORTAÇÃO DE CONSTANTES (COM FALLBACK) ---
-try:
-    from constants import URL_BASE, REGEX_SALARIOS, REGEX_DATAS, REGEX_UF, REGEX_BANCAS
-except ImportError:
-    URL_BASE = "https://www.pciconcursos.com.br/concursos/"
-    REGEX_SALARIOS = [r'R\$\s*(\d+(?:\.\d{3})*(?:,\d{1,2})?)']
-    REGEX_DATAS = [r'\d{2}/\d{2}/\d{4}', r'\d{2}/\d{2}']
-    REGEX_UF = re.compile(r'\b([A-Z]{2})\b')
-    REGEX_BANCAS = re.compile(r'banca|instituto|fundacao', re.IGNORECASE)
+# Constantes de Fallback
+URL_BASE = "https://www.pciconcursos.com.br/concursos/"
+REGEX_DATAS = [r'\d{2}/\d{2}/\d{4}', r'\d{2}/\d{2}']
+REGEX_UF = re.compile(r'\b([A-Z]{2})\b')
 
-# --- CONFIGURAÇÃO ANTI-BLOQUEIO (ÚNICA ADIÇÃO AO SEU CÓDIGO) ---
+# User-Agents
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
@@ -28,165 +24,184 @@ USER_AGENTS = [
 ]
 
 def get_session():
-    """Cria sessão blindada com retries. Essencial para o Render não dar timeout."""
+    """Cria uma sessão HTTP persistente com reconexão automática."""
     session = requests.Session()
-    retry = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     return session
 
-# --- SUAS FUNÇÕES ORIGINAIS (MANTIDAS) ---
+# --- NOVA FUNÇÃO DE NORMALIZAÇÃO ---
+def normalizar_texto(texto):
+    """
+    Remove acentos e caracteres especiais, deixando tudo em minúsculo.
+    Ex: 'Médico Veterinário' -> 'medico veterinario'
+    """
+    if not texto: return ""
+    # 1. Normaliza para NFD (decompõe caracteres)
+    # 2. Filtra caracteres que não são espaçamento (tira os acentos)
+    # 3. Codifica para ASCII e decodifica de volta para string
+    return ''.join(c for c in unicodedata.normalize('NFD', texto)
+                   if unicodedata.category(c) != 'Mn').lower()
 
 def formatar_real(valor):
-    if valor <= 0: return "Ver Edital/Variável"
-    formatado = f"{valor:,.2f}"
-    return "R$ " + formatado.replace(",", "X").replace(".", ",").replace("X", ".")
+    if not valor or valor <= 0: return "A consultar / Variável"
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def extrair_salario(texto):
-    # Lógica original sua, que funcionava bem
-    for padrao in REGEX_SALARIOS:
-        m = re.search(padrao, texto, re.IGNORECASE)
-        if m:
-            try:
-                return float(m.group(1).replace('.', '').replace(',', '.'))
-            except: pass
-    return 0.0
+    valores = re.findall(r'R\$\s*(\d+(?:\.\d{3})*(?:,\d{1,2})?)', texto)
+    lista_vals = []
+    for v in valores:
+        try:
+            limpo = v.replace('.', '').replace(',', '.')
+            val_float = float(limpo)
+            if val_float > 400:
+                lista_vals.append(val_float)
+        except: pass
+    return max(lista_vals) if lista_vals else 0.0
 
 def extrair_data(texto):
     hoje = datetime.now().date()
     ano_atual = hoje.year
+    datas = []
+    
     for padrao in REGEX_DATAS:
-        m = re.findall(padrao, texto)
-        if m:
-            data_str = m[-1]
+        matches = re.findall(padrao, texto)
+        for m in matches:
             try:
-                partes = data_str.split('/')
-                if len(partes) == 2:
-                    data_str = f"{partes[0]}/{partes[1]}/{ano_atual}"
-                elif len(partes) == 3 and len(partes[2]) == 2:
-                    partes[2] = "20" + partes[2]
-                    data_str = "/".join(partes)
-                
-                data_obj = datetime.strptime(data_str, '%d/%m/%Y').date()
-                return data_obj
+                partes = m.split('/')
+                if len(partes) == 2: # dd/mm
+                    ano = ano_atual + 1 if int(partes[1]) < hoje.month else ano_atual
+                    dt = datetime(ano, int(partes[1]), int(partes[0])).date()
+                else: # dd/mm/yyyy
+                    dt = datetime.strptime(m, '%d/%m/%Y').date()
+                datas.append(dt)
             except: pass
+    
+    if datas:
+        datas.sort()
+        return datas[-1]
     return None
 
 def extrair_uf(texto):
     m = REGEX_UF.search(texto)
-    if m: return m.group(0).upper()
-    m2 = re.search(r'prefeitura de ([A-Za-zà-ú]+)', texto, re.IGNORECASE)
-    if m2: return "Nacional/Outro" # Mantido seu fallback
+    if m: return m.group(1).upper()
+    
+    estados = {
+        'acre': 'AC', 'alagoas': 'AL', 'amapá': 'AP', 'amazonas': 'AM', 'bahia': 'BA', 'ceará': 'CE',
+        'distrito federal': 'DF', 'espírito santo': 'ES', 'goiás': 'GO', 'maranhão': 'MA',
+        'mato grosso': 'MT', 'minas gerais': 'MG', 'pará': 'PA', 'paraíba': 'PB', 'paraná': 'PR',
+        'pernambuco': 'PE', 'piauí': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
+        'rio grande do sul': 'RS', 'rondônia': 'RO', 'roraima': 'RR', 'santa catarina': 'SC',
+        'são paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO'
+    }
+    texto_lower = texto.lower()
+    for nome, sigla in estados.items():
+        if nome in texto_lower: return sigla
     return "Nacional/Outro"
 
-# --- FUNÇÃO PRINCIPAL (COM A CORREÇÃO DE REDE APENAS) ---
-
 def raspar_dados_online():
-    # Aqui usamos a sessão blindada e user-agent rotativo
     session = get_session()
     headers = {'User-Agent': random.choice(USER_AGENTS)}
     
-    print("--> [SCRAPER] Iniciando raspagem baseada no modelo original...")
+    print("--> [SCRAPER] Iniciando varredura TOTAL (Normalizada)...")
     
     try:
-        # Timeout aumentado para 30s como no seu original
-        resp = session.get(URL_BASE, timeout=30, headers=headers)
+        resp = session.get(URL_BASE, timeout=25, headers=headers)
         resp.raise_for_status()
-        
-        # Encoding forçado para evitar caracteres estranhos
-        resp.encoding = resp.apparent_encoding 
+        resp.encoding = resp.apparent_encoding
         
         soup = BeautifulSoup(resp.text, 'html.parser')
+        itens_brutos = soup.find_all('div', attrs={'class': True}) 
         
-        # MANTIDO ESTRITAMENTE O SEU SELETOR ORIGINAL
-        itens_brutos = soup.find_all('div', class_='ca')
-        
-        if not itens_brutos:
-            # Fallback de segurança: se 'ca' falhar, tenta pegar tudo, mas prioriza seu metodo
-            print("--> Aviso: Classe 'ca' não retornou itens. Tentando fallback amplo.")
-            itens_brutos = soup.find_all('div', attrs={'class': True})
-
-        lista_processada = []
+        lista = []
         hoje = datetime.now().date()
+        links_processados = set()
 
-        for c in itens_brutos:
-            # Sua lógica de extração
-            texto = c.get_text(separator=' ', strip=True)
-            
-            # Filtro básico para evitar lixo HTML
-            if len(texto) < 20: continue 
+        for item in itens_brutos:
+            classes = item.get('class', [])
+            if not any(c in classes for c in ['ca', 'cd', 'ce', 'na', 'nc', 'nd']):
+                continue
 
-            link_original = "#"
             try:
-                tag_link = c.find('a')
-                if tag_link and 'href' in tag_link.attrs:
-                    link_original = tag_link['href']
-            except: pass
+                link_tag = item.find('a')
+                if not link_tag: continue
+                
+                texto = item.get_text(" ", strip=True)
+                link = link_tag['href']
+                
+                if link in links_processados or len(texto) < 15: continue
+                links_processados.add(link)
 
-            data_fim_obj = extrair_data(texto)
-            salario_num = extrair_salario(texto)
-            uf_detectada = extrair_uf(texto)
+                data_fim = extrair_data(texto)
+                data_display = "Inscrições Abertas"
+                if data_fim:
+                    if data_fim < hoje: continue
+                    data_display = data_fim.strftime('%d/%m/%Y')
+                
+                salario = extrair_salario(texto)
+                uf = extrair_uf(texto)
+                
+                # AQUI ESTÁ A MÁGICA:
+                # Criamos um campo 'tokens' totalmente sem acentos para facilitar a busca
+                texto_normalizado = normalizar_texto(texto)
+                tokens = set(re.sub(r'[^\w\s]', '', texto_normalizado).split())
 
-            data_str = "Indefinida"
-            if data_fim_obj:
-                if data_fim_obj < hoje: continue # Ignora vencidos
-                data_str = data_fim_obj.strftime('%d/%m/%Y')
+                lista.append({
+                    'texto': texto, # Mantemos o texto original bonito para exibir
+                    'texto_normalized': texto_normalizado, # Campo oculto para busca
+                    'tokens': tokens, # Tokens sem acento
+                    'link': link,
+                    'data_fim': data_display,
+                    'salario_num': salario,
+                    'salario_formatado': formatar_real(salario),
+                    'uf': uf
+                })
+            except: continue
 
-            texto_limpo = re.sub(r'[^\w\s]', ' ', texto.lower())
-            tokens_set = list(set(texto_limpo.split()))
-
-            lista_processada.append({
-                'texto': texto,
-                'texto_lower': texto.lower(),
-                'tokens': tokens_set,
-                'link': link_original,
-                'data_fim': data_str,
-                'salario_num': salario_num,
-                'salario_formatado': formatar_real(salario_num),
-                'uf': uf_detectada
-            })
-        
-        # Ordenação original
-        lista_processada.sort(key=lambda x: x['salario_num'], reverse=True)
-        print(f"--> [SCRAPER] Sucesso! {len(lista_processada)} itens recuperados.")
-        return lista_processada
+        lista.sort(key=lambda x: x['salario_num'], reverse=True)
+        print(f"--> [SCRAPER] Sucesso! {len(lista)} concursos encontrados.")
+        return lista
 
     except Exception as e:
-        print(f"--> ERRO CRÍTICO NA RASPAGEM: {e}")
+        print(f"--> [ERRO CRÍTICO] Scraper falhou: {e}")
         return []
 
 def extrair_link_final(url, tipo='edital'):
-    # Mantendo simples para evitar erros de execução no Render
-    return url
+    return url 
 
-def filtrar_concursos(todos_dados, salario_min, lista_palavras_chave, lista_ufs_alvo, excluir_palavras):
-    # Sua lógica de filtro exata
-    resultados = []
-    modo_restritivo = len(lista_ufs_alvo) > 0
-    set_exclusao = set(p.lower() for p in excluir_palavras) if excluir_palavras else None
-
-    for item in todos_dados:
-        if set_exclusao and 'tokens' in item:
-            if not set_exclusao.isdisjoint(item['tokens']): continue
-        elif excluir_palavras and any(ex.lower() in item['texto_lower'] for ex in excluir_palavras):
-            continue
-
-        if lista_palavras_chave:
-            encontrou = any(chave.lower() in item['texto_lower'] for chave in lista_palavras_chave)
-            if not encontrou: continue
-
-        if salario_min > 0 and item['salario_num'] < salario_min: continue
-
-        if modo_restritivo:
-            if item['uf'] not in lista_ufs_alvo: continue
-
-        resultados.append({
+def filtrar_concursos(todos, sal_min, chaves, ufs, excluir):
+    res = []
+    
+    # Normalizamos as palavras de exclusão do usuário (ex: 'Estágio' -> 'estagio')
+    excluir_set = set(normalizar_texto(p) for p in excluir) if excluir else set()
+    
+    # Normalizamos as palavras-chave de busca (ex: 'Médico' -> 'medico')
+    chaves_norm = [normalizar_texto(k) for k in chaves] if chaves else []
+    
+    for item in todos:
+        # 1. Filtro Exclusão (Compara tokens sem acento com exclusão sem acento)
+        if excluir_set and not excluir_set.isdisjoint(item['tokens']): continue
+        
+        # 2. Filtro Salário
+        if sal_min > 0 and item['salario_num'] < sal_min: continue
+        
+        # 3. Filtro UF
+        if ufs:
+            if item['uf'] not in ufs and item['uf'] != 'Nacional/Outro':
+                if not any(u in item['texto'] for u in ufs): continue
+        
+        # 4. Filtro Palavra-Chave (Agora insensível a acentos)
+        if chaves_norm:
+            # Verifica se 'medico' está dentro de 'prefeitura de medico...'
+            if not any(k in item['texto_normalized'] for k in chaves_norm): continue
+            
+        res.append({
             'Salário': item['salario_formatado'],
             'UF': item['uf'],
             'Data Fim Inscrição': item['data_fim'],
             'Informações do Concurso': item['texto'],
             'Link': item['link']
         })
-
-    return resultados
+    return res
