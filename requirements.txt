@@ -1,9 +1,10 @@
-flask
+Flask
+gunicorn
+requests
+beautifulsoup4
 flask-cors
 flask-compress
 flask-limiter
-requests
-beautifulsoup4
-gunicorn
+flask-caching
 gspread
-oauth2client 
+oauth2client
