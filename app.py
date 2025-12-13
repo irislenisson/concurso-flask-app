@@ -3,6 +3,7 @@ import locale
 import json
 import time
 import threading
+from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, url_for, session, redirect, make_response
 from flask_cors import CORS
@@ -11,7 +12,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
-from flask_caching import Cache # <--- NOVA IMPORTAÇÃO
+from flask_caching import Cache
 
 # Imports Google Sheets
 try:
@@ -39,11 +40,10 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 Compress(app)
 
-# --- CONFIGURAÇÃO DO CACHE (NOVO) ---
-# Adiciona camada de cache na memória RAM para aliviar rotas frequentes
+# Cache na memória RAM (5 min padrão)
 cache = Cache(app, config={
     'CACHE_TYPE': 'SimpleCache',
-    'CACHE_DEFAULT_TIMEOUT': 300 # 5 minutos padrão
+    'CACHE_DEFAULT_TIMEOUT': 300 
 })
 
 limiter = Limiter(
@@ -69,14 +69,11 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- FUNÇÕES GOOGLE SHEETS (LEADS, BI & REPORT) ---
-
+# --- FUNÇÕES GOOGLE SHEETS ---
 def get_gspread_client():
-    """Conecta ao Google Sheets"""
     if not gspread: return None
     creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
     if not creds_json: return None
-    
     try:
         creds_dict = json.loads(creds_json)
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -87,49 +84,32 @@ def get_gspread_client():
         return None
 
 def salvar_lead_sheets(email):
-    """Salva Lead na aba padrao"""
     client = get_gspread_client()
     if not client: return
     try:
         sheet = client.open("Leads Concurso Ideal").sheet1
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
         sheet.append_row([data_hora, email])
-        print(f"--> [SHEETS] Lead {email} salvo!")
-    except Exception as e:
-        print(f"--> [SHEETS LEAD ERROR] {e}")
+    except: pass
 
 def salvar_busca_completa_sheets(payload):
-    """Salva filtros na aba 'Termos'"""
     client = get_gspread_client()
     if not client: return
     try:
         try: sheet = client.open("Leads Concurso Ideal").worksheet("Termos")
         except: sheet = client.open("Leads Concurso Ideal").sheet1
-        
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
-        palavra = payload.get('palavra_chave', '')
-        salario = payload.get('salario_minimo', '')
-        regioes = ", ".join(payload.get('regioes', []))
-        ufs = ", ".join(payload.get('ufs', []))
-        excluir = payload.get('excluir_palavra', '')
-
-        sheet.append_row([data_hora, palavra, salario, regioes, ufs, excluir])
-    except Exception as e:
-        print(f"--> [SHEETS BI ERROR] {e}")
+        sheet.append_row([data_hora, payload.get('palavra_chave', ''), payload.get('salario_minimo', ''), ", ".join(payload.get('regioes', [])), ", ".join(payload.get('ufs', [])), payload.get('excluir_palavra', '')])
+    except: pass
 
 def salvar_report_sheets(texto_erro):
-    """Salva Report de Erro na aba 'Report'"""
     client = get_gspread_client()
     if not client: return
     try:
         try: sheet = client.open("Leads Concurso Ideal").worksheet("Report")
         except: sheet = client.open("Leads Concurso Ideal").sheet1
-        
-        data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
-        sheet.append_row([data_hora, "ERRO REPORTADO", texto_erro])
-        print(f"--> [SHEETS REPORT] Erro salvo: {texto_erro}")
-    except Exception as e:
-        print(f"--> [SHEETS REPORT ERROR] {e}")
+        sheet.append_row([time.strftime('%d/%m/%Y %H:%M:%S'), "ERRO REPORTADO", texto_erro])
+    except: pass
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
@@ -190,6 +170,33 @@ def redirecionar_externo():
 def index():
     query = request.args.get('q')
     meta = {}
+    
+    # --- PREPARAÇÃO SEO (GOOGLE JOBS SCHEMA) ---
+    dados_brutos = obter_dados()
+    schema_jobs = []
+    hoje_iso = datetime.now().strftime('%Y-%m-%d')
+    
+    # Limitamos aos 30 primeiros para o Googlebot ler rápido
+    for item in dados_brutos[:30]:
+        try:
+            # Converte dd/mm/yyyy para yyyy-mm-dd
+            data_fim_iso = datetime.strptime(item.get('data_fim', ''), '%d/%m/%Y').strftime('%Y-%m-%d')
+        except:
+            data_fim_iso = None 
+
+        salario_val = item.get('salario_num', 0)
+        
+        job = {
+            "titulo": item.get('texto'),
+            "data_postagem": hoje_iso,
+            "validade": data_fim_iso,
+            "local": item.get('uf', 'BR'),
+            "salario": salario_val,
+            "url": url_for('redirecionar_externo', url=item.get('link'), tipo='edital', _external=True)
+        }
+        schema_jobs.append(job)
+    # -------------------------------------------
+
     if query:
         termo = query.strip()
         meta['title'] = f"Concurso: {termo} | CONCURSO IDEAL"
@@ -197,10 +204,11 @@ def index():
     else:
         meta['title'] = None
         meta['description'] = None
-    return render_template('index.html', meta_title=meta['title'], meta_description=meta['description'])
-
-# --- ROTAS ESTÁTICAS (AGORA COM CACHE) ---
-# Essas rotas não mudam com frequência, então cacheamos por 1 hora (3600s)
+        
+    return render_template('index.html', 
+                           meta_title=meta['title'], 
+                           meta_description=meta['description'], 
+                           schema_jobs=schema_jobs) # Passando JSON-LD para o template
 
 @app.route('/sobre')
 @cache.cached(timeout=3600) 
@@ -265,23 +273,21 @@ def download_leads():
 @login_required
 def force_update():
     obter_dados(force=True)
-    # Limpa o cache das rotas se forçarmos atualização
     cache.clear() 
     return redirect('/admin')
 
 @app.route('/robots.txt')
-@cache.cached(timeout=86400) # Cache de 24 horas para robots
+@cache.cached(timeout=86400)
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
 @app.route('/ads.txt')
-@cache.cached(timeout=86400) # Cache de 24 horas para ads
+@cache.cached(timeout=86400)
 def ads_txt(): return send_from_directory(basedir, 'ads.txt')
 
 @app.route('/sitemap.xml')
-@cache.cached(timeout=3600) # Cache de 1 hora para sitemap (Processamento pesado evitado!)
+@cache.cached(timeout=3600)
 def sitemap():
-    xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
-    xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    xml_content = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     estaticas = [('index', 'daily', '1.0'), ('sobre', 'monthly', '0.8'), ('contato', 'monthly', '0.8'), ('termos', 'yearly', '0.5'), ('privacidade', 'yearly', '0.5')]
     for endpoint, freq, prio in estaticas:
         try:
@@ -307,8 +313,6 @@ def ping():
 # --- API BUSCA ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
-# Não aplicamos cache simples aqui pois é POST com corpo JSON variável,
-# e o cache padrão do Flask ignora o corpo do JSON.
 def api_link_profundo():
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
@@ -329,16 +333,8 @@ def api_buscar():
     ufs_list = data.get('ufs', [])
     regioes_list = data.get('regioes', [])
     
-    tem_filtro = any([data.get('palavra_chave'), data.get('salario_minimo'), ufs_list, regioes_list, excluir])
-    
-    if tem_filtro:
-        payload_sheets = {
-            'palavra_chave': data.get('palavra_chave', ''),
-            'salario_minimo': data.get('salario_minimo', ''),
-            'regioes': regioes_list,
-            'ufs': ufs_list,
-            'excluir_palavra': data.get('excluir_palavra', '')
-        }
+    if any([data.get('palavra_chave'), data.get('salario_minimo'), ufs_list, regioes_list, excluir]):
+        payload_sheets = {'palavra_chave': data.get('palavra_chave', ''), 'salario_minimo': data.get('salario_minimo', ''), 'regioes': regioes_list, 'ufs': ufs_list, 'excluir_palavra': data.get('excluir_palavra', '')}
         threading.Thread(target=salvar_busca_completa_sheets, args=(payload_sheets,)).start()
 
     ufs = set(ufs_list)
@@ -350,30 +346,21 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- API REPORTAR ERRO (NOVA) ---
 @app.route('/api/reportar', methods=['POST'])
 @limiter.limit("10 per minute")
 def api_reportar():
     data = request.json or {}
-    texto = data.get('texto', '').strip()
-    if not texto: return jsonify({'error': 'Vazio'}), 400
-    
-    # Salva na planilha em background
-    threading.Thread(target=salvar_report_sheets, args=(texto,)).start()
+    threading.Thread(target=salvar_report_sheets, args=(data.get('texto', ''),)).start()
     return jsonify({'message': 'Reportado'})
 
-# --- NEWSLETTER ---
 @app.route('/api/newsletter', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_newsletter():
     data = request.json or {}
     email = data.get('email', '').strip()
     if not email or '@' not in email: return jsonify({'error': 'E-mail inválido'}), 400
-    
-    print(f"\n{'='*40}\n🎯 NOVO LEAD: {email}\n{'='*40}\n")
     try:
-        with open(LEADS_FILE, 'a', encoding='utf-8') as f:
-            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
+        with open(LEADS_FILE, 'a', encoding='utf-8') as f: f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
     threading.Thread(target=salvar_lead_sheets, args=(email,)).start()
     return jsonify({'message': 'Sucesso!'})

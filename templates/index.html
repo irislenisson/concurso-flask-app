@@ -1,5 +1,36 @@
 {% extends "base.html" %}
 
+{% block head_extra %}
+    {% if schema_jobs %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "itemListElement": [
+        {% for job in schema_jobs %}
+        {
+          "@type": "ListItem",
+          "position": {{ loop.index }},
+          "item": {
+            "@type": "JobPosting",
+            "title": "{{ job.titulo }}",
+            "description": "Concurso Público: {{ job.titulo }}. Local: {{ job.local }}. Confira edital e inscrição.",
+            "identifier": { "@type": "PropertyValue", "name": "Concurso Ideal", "value": "{{ loop.index }}" },
+            "datePosted": "{{ job.data_postagem }}",
+            {% if job.validade %}"validThrough": "{{ job.validade }}",{% endif %}
+            "hiringOrganization": { "@type": "Organization", "name": "Órgão Público", "sameAs": "https://www.pciconcursos.com.br" },
+            "jobLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressRegion": "{{ job.local }}", "addressCountry": "BR" } },
+            "baseSalary": { "@type": "MonetaryAmount", "currency": "BRL", "value": { "@type": "QuantitativeValue", "value": {{ job.salario }}, "unitText": "MONTH" } },
+            "url": "{{ job.url }}"
+          }
+        }{{ "," if not loop.last }}
+        {% endfor %}
+      ]
+    }
+    </script>
+    {% endif %}
+{% endblock %}
+
 {% block title %}CONCURSO IDEAL | Vagas Abertas 2025{% endblock %}
 
 {% block content %}
@@ -8,9 +39,7 @@
             <h2 style="margin:0; color: var(--primary-color);">❤️ Vagas Salvas</h2>
             <button onclick="toggleTelaFavoritos()" style="background:none; border:none; font-size:1.5em; cursor:pointer; color:var(--text-secondary);">&times;</button>
         </div>
-        
         <div id="favorites-list-container"></div>
-        
         <div style="text-align: center; margin-top: 20px;">
             <button onclick="toggleTelaFavoritos()" class="action-btn" style="background: var(--text-secondary); color: white;">
                 <i class="fas fa-arrow-left"></i> Voltar para Busca
@@ -101,6 +130,7 @@
         </div>
 
         <div id="status-msg"></div>
+        
         <div id="resultados-container"></div>
         
         <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
