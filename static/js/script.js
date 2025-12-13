@@ -423,4 +423,13 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         statusDiv.style.display = 'none';
         renderizarLote();
 
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = '';
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'error';
+        statusDiv.innerHTML = `❌ Erro de conexão ou instabilidade no servidor. Tente novamente em instantes.`;
+        btnBuscar.value = "Buscar Oportunidades";
+        btnBuscar.disabled = false;
     }
+});
