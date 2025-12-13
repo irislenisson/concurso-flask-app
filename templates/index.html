@@ -14,11 +14,9 @@
           "item": {
             "@type": "JobPosting",
             "title": "{{ job.titulo }}",
-            "description": "Concurso Público: {{ job.titulo }}. Local: {{ job.local }}. Confira edital e inscrição.",
-            "identifier": { "@type": "PropertyValue", "name": "Concurso Ideal", "value": "{{ loop.index }}" },
+            "description": "Concurso Público: {{ job.titulo }}. Local: {{ job.local }}. Confira edital.",
             "datePosted": "{{ job.data_postagem }}",
             {% if job.validade %}"validThrough": "{{ job.validade }}",{% endif %}
-            "hiringOrganization": { "@type": "Organization", "name": "Órgão Público", "sameAs": "https://www.pciconcursos.com.br" },
             "jobLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressRegion": "{{ job.local }}", "addressCountry": "BR" } },
             "baseSalary": { "@type": "MonetaryAmount", "currency": "BRL", "value": { "@type": "QuantitativeValue", "value": {{ job.salario }}, "unitText": "MONTH" } },
             "url": "{{ job.url }}"
@@ -41,9 +39,7 @@
         </div>
         <div id="favorites-list-container"></div>
         <div style="text-align: center; margin-top: 20px;">
-            <button onclick="toggleTelaFavoritos()" class="action-btn" style="background: var(--text-secondary); color: white;">
-                <i class="fas fa-arrow-left"></i> Voltar para Busca
-            </button>
+            <button onclick="toggleTelaFavoritos()" class="action-btn" style="background: var(--text-secondary); color: white;">Voltar</button>
         </div>
     </div>
 
@@ -60,10 +56,19 @@
                 </div>
             </div>
 
+            <div style="margin-top: 15px;">
+                <label>🎓 Escolaridade</label>
+                <div class="btn-grid">
+                    <div class="filter-btn level-btn" data-value="fundamental">Fundamental</div>
+                    <div class="filter-btn level-btn" data-value="medio">Médio / Técnico</div>
+                    <div class="filter-btn level-btn" data-value="superior">Superior</div>
+                </div>
+            </div>
+
             <div class="section-divider"></div>
 
             <div>
-                <label>🌎 Regiões (Clique para ativar)</label>
+                <label>🌎 Regiões</label>
                 <div class="btn-grid">
                     <div class="filter-btn region-btn" data-value="Nacional">Nacional</div>
                     <div class="filter-btn region-btn" data-value="Norte">Norte</div>
@@ -75,7 +80,7 @@
             </div>
 
             <div>
-                <label>📍 Estados Específicos</label>
+                <label>📍 Estados</label>
                 <div class="uf-grid">
                     <div class="uf-btn" data-value="AC">AC</div> <div class="uf-btn" data-value="AL">AL</div>
                     <div class="uf-btn" data-value="AP">AP</div> <div class="uf-btn" data-value="AM">AM</div>
@@ -92,7 +97,6 @@
                     <div class="uf-btn" data-value="SP">SP</div> <div class="uf-btn" data-value="SE">SE</div>
                     <div class="uf-btn" data-value="TO">TO</div>
                 </div>
-                <p class="help-text">Dica: O filtro soma Regiões + Estados selecionados.</p>
             </div>
 
             <div class="section-divider"></div>
@@ -104,14 +108,13 @@
 
             <div class="search-grid">
                 <input type="submit" id="btn-buscar" value="Buscar Oportunidades">
-                <button type="button" class="btn-clear" onclick="limparFiltros()" title="Limpar todos os filtros">
-                    <i class="fas fa-eraser"></i> 
-                    <span>LIMPAR FILTROS</span>
+                <button type="button" class="btn-clear" onclick="limparFiltros()">
+                    <i class="fas fa-eraser"></i> LIMPAR
                 </button>
             </div>
-
+            
             <div class="share-row">
-                <button type="button" class="share-btn" onclick="compartilharNativo()" style="width: 100%; justify-content: center; padding: 10px;">
+                 <button type="button" class="share-btn" onclick="compartilharNativo()" style="width: 100%; justify-content: center; padding: 10px;">
                     <i class="fas fa-share-alt"></i> Compartilhar com Amigos
                 </button>
             </div>
@@ -121,23 +124,21 @@
             <div class="news-icon">🔔</div>
             <div class="news-text">
                 <h3>Seja avisado primeiro!</h3>
-                <p>Receba os melhores editais no seu e-mail.</p>
+                <p>Receba os editais no seu e-mail.</p>
             </div>
             <div class="news-form">
-                <input type="email" id="email-lead" placeholder="Seu melhor e-mail...">
+                <input type="email" id="email-lead" placeholder="Seu e-mail...">
                 <button onclick="cadastrarLead()">Cadastrar</button>
             </div>
         </div>
 
         <div id="status-msg"></div>
-        
         <div id="resultados-container"></div>
-        
         <button id="btn-load-more" onclick="carregarMais()">👇 Carregar mais resultados</button>
     </div>
 
-    <button id="btn-back-to-top" onclick="scrollToTop()" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
-    <div id="toast">Link copiado com sucesso!</div>
+    <button id="btn-back-to-top" onclick="scrollToTop()"><i class="fas fa-arrow-up"></i></button>
+    <div id="toast">Copiado!</div>
 {% endblock %}
 
 {% block scripts %}
