@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4697233336143262" crossorigin="anonymous"></script>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEU-ID-AQUI"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -26,6 +27,13 @@
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
     <link rel="icon" href="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}">
+    
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Concurso Ideal">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -90,6 +98,19 @@
             <button onclick="aceitarCookies()" class="cookie-btn">Aceitar e Fechar</button>
         </div>
     </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .then((registration) => {
+            console.log('PWA ServiceWorker registrado com sucesso:', registration.scope);
+          }, (err) => {
+            console.log('Falha ao registrar PWA ServiceWorker:', err);
+          });
+        });
+      }
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>
