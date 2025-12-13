@@ -42,14 +42,20 @@ def normalizar_texto(texto):
                    if unicodedata.category(c) != 'Mn').lower()
 
 def identificar_niveis(texto_normalizado):
-    """Detecta escolaridade no texto."""
+    """Detecta escolaridade no texto (Lista Ampliada)."""
     niveis = set()
-    if any(k in texto_normalizado for k in ['fundamental', 'alfabetizado', 'elementar', 'operacional']):
+    # Fundamental
+    if any(k in texto_normalizado for k in ['fundamental', 'alfabetizado', 'elementar', 'operacional', '1o grau', 'primeiro grau']):
         niveis.add('fundamental')
-    if any(k in texto_normalizado for k in ['medio', 'tecnico', 'assistente', 'ensino medio']):
+    
+    # Médio/Técnico
+    if any(k in texto_normalizado for k in ['medio', 'tecnico', 'assistente', 'ensino medio', '2o grau', 'segundo grau', 'nivel medio']):
         niveis.add('medio')
-    if any(k in texto_normalizado for k in ['superior', 'graduacao', 'bacharel', 'licenciatura', 'analista', 'especialista', 'medico', 'enfermeiro', 'engenheiro', 'advogado', 'procurador', 'juiz', 'promotor']):
+    
+    # Superior
+    if any(k in texto_normalizado for k in ['superior', 'graduacao', 'bacharel', 'licenciatura', 'analista', 'especialista', 'medico', 'enfermeiro', 'engenheiro', 'advogado', 'procurador', 'juiz', 'promotor', 'professor', 'auditor', 'gestor']):
         niveis.add('superior')
+        
     return niveis
 
 def formatar_real(valor):
@@ -100,15 +106,15 @@ def extrair_uf(texto):
 def raspar_dados_online():
     session = get_session()
     headers = {'User-Agent': random.choice(USER_AGENTS)}
-    print("--> [SCRAPER] Iniciando varredura COMPLETA (Broad Search)...")
+    print("--> [SCRAPER] Iniciando varredura TOTAL (Modo Aspirador)...")
     
     try:
-        resp = session.get(URL_BASE, timeout=25, headers=headers)
+        resp = session.get(URL_BASE, timeout=30, headers=headers)
         resp.raise_for_status()
         resp.encoding = resp.apparent_encoding
         soup = BeautifulSoup(resp.text, 'html.parser')
         
-        # PEGA TUDO: Procura qualquer div que tenha classe (ca, cd, ce, na, etc)
+        # PEGA TUDO: Qualquer div que tenha alguma classe definida
         itens_brutos = soup.find_all('div', attrs={'class': True}) 
         
         lista = []
@@ -116,9 +122,8 @@ def raspar_dados_online():
         links_processados = set()
 
         for item in itens_brutos:
-            # Filtro básico de classes conhecidas do PCI
-            classes = item.get('class', [])
-            if not any(c in classes for c in ['ca', 'cd', 'ce', 'na', 'nc', 'nd']): continue
+            # REMOVIDO: O filtro de classes que estava bloqueando resultados.
+            # Agora confiamos apenas se tem Link e Texto válido.
 
             try:
                 link_tag = item.find('a')
@@ -127,19 +132,24 @@ def raspar_dados_online():
                 texto = item.get_text(" ", strip=True)
                 link = link_tag['href']
                 
-                if link in links_processados or len(texto) < 15: continue
+                # Validação básica: Texto curto demais é lixo
+                if link in links_processados or len(texto) < 20: continue
+                
+                # Se for link interno de ancora ou javascript, ignora
+                if not link.startswith('http') and not link.startswith('/'): continue
+
                 links_processados.add(link)
 
                 data_fim = extrair_data(texto)
                 data_display = "Inscrições Abertas"
                 if data_fim:
-                    if data_fim < hoje: continue
+                    if data_fim < hoje: continue # Ignora vencidos
                     data_display = data_fim.strftime('%d/%m/%Y')
                 
                 salario = extrair_salario(texto)
                 uf = extrair_uf(texto)
                 
-                # Normalização e Escolaridade
+                # Processamento de Texto
                 texto_normalizado = normalizar_texto(texto)
                 tokens = set(re.sub(r'[^\w\s]', '', texto_normalizado).split())
                 niveis = identificar_niveis(texto_normalizado)
@@ -157,6 +167,7 @@ def raspar_dados_online():
                 })
             except: continue
 
+        # Ordena: Maior salário primeiro
         lista.sort(key=lambda x: x['salario_num'], reverse=True)
         print(f"--> [SCRAPER] Sucesso! {len(lista)} concursos encontrados.")
         return lista
@@ -173,6 +184,7 @@ def filtrar_concursos(todos, sal_min, chaves, ufs, excluir, niveis_filtro=None):
     set_niveis_alvo = set(niveis_filtro) if niveis_filtro else set()
 
     for item in todos:
+        # Filtros Padrão
         if excluir_set and not excluir_set.isdisjoint(item['tokens']): continue
         if sal_min > 0 and item['salario_num'] < sal_min: continue
         
@@ -184,6 +196,7 @@ def filtrar_concursos(todos, sal_min, chaves, ufs, excluir, niveis_filtro=None):
             if not any(k in item['texto_normalized'] for k in chaves_norm): continue
             
         # Filtro de Escolaridade
+        # Só filtra SE o usuário clicou em algum botão. Se não clicou, mostra tudo.
         if set_niveis_alvo:
             if set_niveis_alvo.isdisjoint(item['niveis']): continue 
 
