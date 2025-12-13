@@ -1,10 +1,10 @@
-/* static/js/script.js - Com Favoritos e Visual Padrão Ouro */
+/* static/js/script.js - Versão Padrão Ouro (Favoritos + Pílulas + Auto-Load) */
 
 let todosConcursos = [];
 let paginaAtual = 0;
 const itensPorPagina = 20;
 
-// --- SISTEMA DE FAVORITOS ---
+// --- SISTEMA DE FAVORITOS (LOCALSTORAGE) ---
 function getFavoritos() {
     const salvos = localStorage.getItem('concursosFavoritos');
     return salvos ? JSON.parse(salvos) : [];
@@ -123,7 +123,8 @@ function criarHTMLCard(c, isFavPage = false) {
     `;
     return div;
 }
-// --- FIM FAVORITOS ---
+
+// --- UTILITÁRIOS GERAIS ---
 
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
@@ -148,13 +149,17 @@ function limparFiltros() {
     document.getElementById('btn-load-more').style.display = 'none';
     document.getElementById('status-msg').style.display = 'none';
     window.history.pushState({}, '', window.location.pathname);
+    
+    // Opcional: Recarregar lista geral ao limpar
+    document.getElementById('searchForm').dispatchEvent(new Event('submit'));
 }
 
-// Theme & Init
+// Theme & Init & Cookies
 const themeCheckbox = document.getElementById('checkbox');
 const htmlElement = document.documentElement;
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Tema
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
@@ -164,10 +169,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (themeCheckbox) themeCheckbox.checked = true;
     }
     
+    // Cookies
     if (!localStorage.getItem("cookieConsent")) {
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
     }
+
+    // Ativa botão de favoritos global se existir (base.html)
+    const btnGlobal = document.getElementById('btn-fav-global');
+    if(btnGlobal) btnGlobal.style.display = 'flex';
 });
 
 if (themeCheckbox) {
@@ -187,6 +197,7 @@ function aceitarCookies() {
     document.getElementById("cookie-banner").style.display = "none";
 }
 
+// Botão Voltar ao Topo
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (btn) {
@@ -196,6 +207,8 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
+// --- COMPARTILHAMENTO E REPORT ---
+
 function reportarErro(texto) {
     const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
     const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
@@ -204,10 +217,7 @@ function reportarErro(texto) {
 
 function copiarLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
-        const toast = document.getElementById("toast");
-        toast.innerText = "Link copiado!";
-        toast.className = "show";
-        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        mostrarToast("Link copiado!");
     });
 }
 
@@ -221,10 +231,7 @@ function copiarLinkUnico(texto) {
     const urlBase = window.location.origin + window.location.pathname;
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
     navigator.clipboard.writeText(linkUnico).then(() => {
-        const toast = document.getElementById("toast");
-        toast.innerText = "Link copiado!";
-        toast.className = "show";
-        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        mostrarToast("Link copiado!");
     });
 }
 
@@ -235,6 +242,14 @@ function compartilharZapUnico(texto) {
     window.open(`https://api.whatsapp.com/send?text=${mensagem}`, '_blank');
 }
 
+function mostrarToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    toast.className = "show";
+    setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+}
+
+// --- NEWSLETTER ---
 async function cadastrarLead() {
     const emailInput = document.getElementById('email-lead');
     const email = emailInput.value;
@@ -267,6 +282,8 @@ async function cadastrarLead() {
     }
 }
 
+// --- RENDERIZAÇÃO E BUSCA ---
+
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -276,13 +293,14 @@ function renderizarLote() {
 
     lote.forEach((c, index) => {
         const indiceAbsoluto = inicio + index;
+        // Injeção de Publicidade a cada 5 itens
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
             adDiv.innerHTML = `<span class="ad-label">Publicidade</span><div style="background:var(--border-color); height:90px; display:flex; align-items:center; justify-content:center; border-radius:4px; opacity:0.7;">Espaço para Anúncio</div>`;
             container.appendChild(adDiv);
         }
-        // USA A FUNÇÃO UNIFICADA AQUI:
+        
         container.appendChild(criarHTMLCard(c));
     });
 
@@ -299,32 +317,38 @@ function carregarMais() {
     renderizarLote();
 }
 
+// --- AUTO-CARREGAMENTO (TELA VIVA) ---
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
-    let deveBuscar = false;
+    let temFiltrosURL = false;
 
-    if (params.has('q')) { document.getElementById('palavra_chave').value = params.get('q'); deveBuscar = true; }
-    if (params.has('salario')) { document.getElementById('salario_minimo').value = params.get('salario'); deveBuscar = true; }
-    if (params.has('excluir')) { document.getElementById('excluir_palavra').value = params.get('excluir'); deveBuscar = true; }
+    // 1. Verifica se veio algum filtro pronto pelo Link Compartilhado
+    if (params.has('q')) { document.getElementById('palavra_chave').value = params.get('q'); temFiltrosURL = true; }
+    if (params.has('salario')) { document.getElementById('salario_minimo').value = params.get('salario'); temFiltrosURL = true; }
+    if (params.has('excluir')) { document.getElementById('excluir_palavra').value = params.get('excluir'); temFiltrosURL = true; }
     
     if (params.has('uf')) {
         params.get('uf').split(',').forEach(uf => {
             const btn = document.querySelector(`.uf-btn[data-value="${uf}"]`);
             if (btn) btn.classList.add('active');
         });
-        deveBuscar = true;
+        temFiltrosURL = true;
     }
     if (params.has('regiao')) {
         params.get('regiao').split(',').forEach(reg => {
             const btn = document.querySelector(`.region-btn[data-value="${reg}"]`);
             if (btn) btn.classList.add('active');
         });
-        deveBuscar = true;
+        temFiltrosURL = true;
     }
 
-    if (deveBuscar) { document.getElementById('searchForm').dispatchEvent(new Event('submit')); }
+    // 2. DISPARO AUTOMÁTICO
+    // Se tiver filtros, busca com filtros.
+    // Se NÃO tiver, busca "vazio" (retorna os recentes/todos) para preencher a tela.
+    document.getElementById('searchForm').dispatchEvent(new Event('submit'));
 });
 
+// Evento de Busca (Manual ou Automático)
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btnBuscar = document.getElementById('btn-buscar');
@@ -338,6 +362,8 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 
     container.innerHTML = '';
     statusDiv.style.display = 'none';
+    
+    // Skeleton Loading (Efeito visual de carregamento)
     let skeletonsHTML = '';
     for(let i=0; i<5; i++) {
         skeletonsHTML += `<div class="skeleton-card"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-title" style="width: 60%"></div><div style="margin-top: 20px;"><div class="skeleton skeleton-badge"></div></div></div>`;
@@ -352,6 +378,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     const palavraChave = document.getElementById('palavra_chave').value;
     const excluir = document.getElementById('excluir_palavra').value;
 
+    // Atualiza URL sem recarregar (se houver filtros ativos)
     const params = new URLSearchParams();
     if (palavraChave) params.set('q', palavraChave);
     if (salario) params.set('salario', salario);
@@ -359,7 +386,10 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
     if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
     
-    window.history.pushState({}, '', window.location.pathname + '?' + params.toString());
+    // Só mexe na URL se realmente tiver parâmetros, para manter a home limpa se for busca geral
+    if ([...params].length > 0) {
+        window.history.pushState({}, '', window.location.pathname + '?' + params.toString());
+    }
 
     const payload = {
         salario_minimo: salario,
@@ -393,13 +423,4 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         statusDiv.style.display = 'none';
         renderizarLote();
 
-    } catch (error) {
-        console.error(error);
-        container.innerHTML = '';
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'error';
-        statusDiv.innerHTML = `❌ Erro de conexão ou instabilidade no servidor. Tente novamente em instantes.`;
-        btnBuscar.value = "Buscar Oportunidades";
-        btnBuscar.disabled = false;
     }
-});
