@@ -11,6 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
+from flask_caching import Cache # <--- NOVA IMPORTAÇÃO
 
 # Imports Google Sheets
 try:
@@ -37,6 +38,13 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 Compress(app)
+
+# --- CONFIGURAÇÃO DO CACHE (NOVO) ---
+# Adiciona camada de cache na memória RAM para aliviar rotas frequentes
+cache = Cache(app, config={
+    'CACHE_TYPE': 'SimpleCache',
+    'CACHE_DEFAULT_TIMEOUT': 300 # 5 minutos padrão
+})
 
 limiter = Limiter(
     get_remote_address,
@@ -191,16 +199,23 @@ def index():
         meta['description'] = None
     return render_template('index.html', meta_title=meta['title'], meta_description=meta['description'])
 
+# --- ROTAS ESTÁTICAS (AGORA COM CACHE) ---
+# Essas rotas não mudam com frequência, então cacheamos por 1 hora (3600s)
+
 @app.route('/sobre')
+@cache.cached(timeout=3600) 
 def sobre(): return render_template('sobre.html')
 
 @app.route('/contato')
+@cache.cached(timeout=3600)
 def contato(): return render_template('contato.html')
 
 @app.route('/termos')
+@cache.cached(timeout=3600)
 def termos(): return render_template('termos.html')
 
 @app.route('/privacidade')
+@cache.cached(timeout=3600)
 def privacidade(): return render_template('privacidade.html')
 
 # --- ADMIN ---
@@ -250,15 +265,20 @@ def download_leads():
 @login_required
 def force_update():
     obter_dados(force=True)
+    # Limpa o cache das rotas se forçarmos atualização
+    cache.clear() 
     return redirect('/admin')
 
 @app.route('/robots.txt')
+@cache.cached(timeout=86400) # Cache de 24 horas para robots
 def robots(): return Response("User-agent: *\nAllow: /", mimetype="text/plain")
 
 @app.route('/ads.txt')
+@cache.cached(timeout=86400) # Cache de 24 horas para ads
 def ads_txt(): return send_from_directory(basedir, 'ads.txt')
 
 @app.route('/sitemap.xml')
+@cache.cached(timeout=3600) # Cache de 1 hora para sitemap (Processamento pesado evitado!)
 def sitemap():
     xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
@@ -287,6 +307,8 @@ def ping():
 # --- API BUSCA ---
 @app.route('/api/link-profundo', methods=['POST'])
 @limiter.limit("20 per minute") 
+# Não aplicamos cache simples aqui pois é POST com corpo JSON variável,
+# e o cache padrão do Flask ignora o corpo do JSON.
 def api_link_profundo():
     data = request.json or {}
     return jsonify({'url': extrair_link_final(data.get('url', ''), data.get('tipo', 'edital'))})
