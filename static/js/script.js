@@ -1,4 +1,4 @@
-/* static/js/script.js - Versão Padrão Ouro (Favoritos + Pílulas + Auto-Load) */
+/* static/js/script.js - Versão Final (Share Nativo + Report API + Tela Viva) */
 
 let todosConcursos = [];
 let paginaAtual = 0;
@@ -20,16 +20,14 @@ function toggleFavorito(texto, link, salario, uf, dataFim, btnElement) {
     const index = favs.findIndex(f => f.texto === texto);
 
     if (index > -1) {
-        favs.splice(index, 1); // Remove
+        favs.splice(index, 1);
         if(btnElement) btnElement.classList.remove('favorited');
     } else {
-        favs.push({ texto, link, salario, uf, dataFim }); // Adiciona
+        favs.push({ texto, link, salario, uf, dataFim });
         if(btnElement) btnElement.classList.add('favorited');
     }
-    
     localStorage.setItem('concursosFavoritos', JSON.stringify(favs));
     
-    // Se estiver na tela de favoritos, atualiza a lista em tempo real
     if (document.getElementById('favorites-view').style.display === 'block') {
         renderizarMeusFavoritos();
     }
@@ -38,19 +36,17 @@ function toggleFavorito(texto, link, salario, uf, dataFim, btnElement) {
 function toggleTelaFavoritos() {
     const mainView = document.getElementById('main-view');
     const favView = document.getElementById('favorites-view');
-    const btnGlobal = document.getElementById('btn-fav-global'); // Botão do header
+    const btnGlobal = document.getElementById('btn-fav-global'); 
     
     if (favView.style.display === 'none' || favView.style.display === '') {
-        // Mostrar Favoritos
         mainView.style.display = 'none';
         favView.style.display = 'block';
-        if(btnGlobal) btnGlobal.innerHTML = '🏠'; // Muda ícone para Home
+        if(btnGlobal) btnGlobal.innerHTML = '🏠';
         renderizarMeusFavoritos();
     } else {
-        // Voltar para Busca
         favView.style.display = 'none';
         mainView.style.display = 'block';
-        if(btnGlobal) btnGlobal.innerHTML = '❤️'; // Muda ícone para Coração
+        if(btnGlobal) btnGlobal.innerHTML = '❤️';
     }
 }
 
@@ -58,19 +54,16 @@ function renderizarMeusFavoritos() {
     const container = document.getElementById('favorites-list-container');
     const favs = getFavoritos();
     container.innerHTML = '';
-
     if (favs.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:40px; color:#666;"><i class="fas fa-heart-broken" style="font-size:3em; margin-bottom:10px; opacity:0.3;"></i><br>Você ainda não salvou nenhum concurso.<br>Clique no ❤️ nos cards para salvar!</div>';
         return;
     }
-
     favs.forEach(c => {
-        const card = criarHTMLCard(c, true); 
-        container.appendChild(card);
+        container.appendChild(criarHTMLCard(c, true));
     });
 }
 
-// Função Unificada para Criar Cards (Usa na busca e nos favoritos)
+// Função Unificada para Criar Cards
 function criarHTMLCard(c, isFavPage = false) {
     const div = document.createElement('div');
     div.className = 'concurso-card';
@@ -80,52 +73,32 @@ function criarHTMLCard(c, isFavPage = false) {
     const salario = c.salario || c['Salário'];
     const uf = c.uf || c['UF'];
     const dataFim = c.dataFim || c['Data Fim Inscrição'];
-
     const linkEdital = `/ir?url=${encodeURIComponent(linkBase)}&tipo=edital`;
     const linkInscricao = `/ir?url=${encodeURIComponent(linkBase)}&tipo=inscricao`;
-    
     const classeFav = (isFavPage || isFavorito(c.texto || c['Informações do Concurso'])) ? 'favorited' : '';
 
     div.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:start;">
             <h3 style="flex:1; margin-right:10px;">${c.texto || c['Informações do Concurso']}</h3>
-            <button class="btn-fav-card ${classeFav}" 
-                onclick="toggleFavorito('${textoConcurso}', '${linkBase}', '${salario}', '${uf}', '${dataFim}', this)" 
-                title="Salvar/Remover vaga">
-                ❤️
-            </button>
+            <button class="btn-fav-card ${classeFav}" onclick="toggleFavorito('${textoConcurso}', '${linkBase}', '${salario}', '${uf}', '${dataFim}', this)" title="Salvar/Remover vaga">❤️</button>
         </div>
-        
         <div class="meta-line">
             <span class="badge money"><i class="fas fa-money-bill-wave"></i> ${salario}</span>
             <span class="badge uf"><i class="fas fa-map-marker-alt"></i> ${uf}</span>
             <span class="badge date"><i class="far fa-calendar-alt"></i> ${dataFim}</span>
-            
-            <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link">
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="WhatsApp">
-                <i class="fab fa-whatsapp"></i>
-            </button>
-
-            <a href="${linkEdital}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital">
-                <i class="fas fa-file-pdf"></i> Edital
-            </a>
-            <a href="${linkInscricao}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">
-                ✍️ Inscrição
-            </a>
+            <button class="icon-btn btn-copy-small" onclick="copiarLinkUnico('${textoConcurso}')" title="Copiar link"><i class="fas fa-link"></i></button>
+            <button class="icon-btn btn-zap-small" onclick="compartilharZapUnico('${textoConcurso}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>
+            <a href="${linkEdital}" target="_blank" rel="noopener noreferrer" class="action-btn btn-edital"><i class="fas fa-file-pdf"></i> Edital</a>
+            <a href="${linkInscricao}" target="_blank" rel="noopener noreferrer" class="action-btn btn-inscricao">✍️ Inscrição</a>
         </div>
         <div style="text-align: right;">
-            <button class="btn-report" onclick="reportarErro('${textoConcurso}')">
-                <i class="fas fa-flag"></i> Reportar
-            </button>
+            <button class="btn-report" onclick="reportarErro('${textoConcurso}')"><i class="fas fa-flag"></i> Reportar</button>
         </div>
     `;
     return div;
 }
 
 // --- UTILITÁRIOS GERAIS ---
-
 function formatarMoeda(elemento) {
     let valor = elemento.value.replace(/\D/g, "");
     if (valor === "") { elemento.value = ""; return; }
@@ -135,7 +108,6 @@ function formatarMoeda(elemento) {
     elemento.value = "R$ " + valor;
 }
 
-// Botões de Estado/Região (Visual Pílula - Seleção)
 document.querySelectorAll('.uf-btn, .region-btn').forEach(btn => {
     btn.addEventListener('click', () => { btn.classList.toggle('active'); });
 });
@@ -149,8 +121,6 @@ function limparFiltros() {
     document.getElementById('btn-load-more').style.display = 'none';
     document.getElementById('status-msg').style.display = 'none';
     window.history.pushState({}, '', window.location.pathname);
-    
-    // Opcional: Recarregar lista geral ao limpar
     document.getElementById('searchForm').dispatchEvent(new Event('submit'));
 }
 
@@ -159,7 +129,6 @@ const themeCheckbox = document.getElementById('checkbox');
 const htmlElement = document.documentElement;
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Tema
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
@@ -168,14 +137,10 @@ document.addEventListener("DOMContentLoaded", () => {
         htmlElement.setAttribute('data-theme', 'dark');
         if (themeCheckbox) themeCheckbox.checked = true;
     }
-    
-    // Cookies
     if (!localStorage.getItem("cookieConsent")) {
         const banner = document.getElementById("cookie-banner");
         if (banner) banner.style.display = "block";
     }
-
-    // Ativa botão de favoritos global se existir (base.html)
     const btnGlobal = document.getElementById('btn-fav-global');
     if(btnGlobal) btnGlobal.style.display = 'flex';
 });
@@ -197,7 +162,6 @@ function aceitarCookies() {
     document.getElementById("cookie-banner").style.display = "none";
 }
 
-// Botão Voltar ao Topo
 window.onscroll = function() {
     const btn = document.getElementById("btn-back-to-top");
     if (btn) {
@@ -207,32 +171,39 @@ window.onscroll = function() {
 };
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// --- COMPARTILHAMENTO E REPORT ---
+// --- COMPARTILHAMENTO INTELIGENTE E REPORTAR API ---
 
-function reportarErro(texto) {
-    const assunto = encodeURIComponent(`Erro no concurso: ${texto}`);
-    const corpo = encodeURIComponent(`Olá, encontrei um problema no link ou nas informações deste concurso:\n\n"${texto}"\n\nPoderia verificar?`);
-    window.open(`mailto:?subject=${assunto}&body=${corpo}`);
+async function compartilharNativo() {
+    const dadosShare = {
+        title: 'Concurso Ideal 🚀',
+        text: 'Encontrei vagas de concursos incríveis! Dá uma olhada:',
+        url: window.location.href
+    };
+    if (navigator.share) {
+        try { await navigator.share(dadosShare); } 
+        catch (err) { console.log(err); }
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => { mostrarToast("Link copiado!"); });
+    }
 }
 
-function copiarLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-        mostrarToast("Link copiado!");
-    });
-}
-
-function compartilharWhatsApp() {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent("Olha esses concursos que encontrei:");
-    window.open(`https://api.whatsapp.com/send?text=${text}%20${url}`, '_blank');
+async function reportarErro(texto) {
+    if(!confirm("Deseja reportar um erro neste concurso para a equipe?")) return;
+    try {
+        const response = await fetch('/api/reportar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto: texto })
+        });
+        if (response.ok) mostrarToast("Erro reportado. Obrigado!");
+        else alert("Erro ao enviar reporte.");
+    } catch (e) { alert("Erro de conexão."); }
 }
 
 function copiarLinkUnico(texto) {
     const urlBase = window.location.origin + window.location.pathname;
     const linkUnico = `${urlBase}?q=${encodeURIComponent(texto)}`;
-    navigator.clipboard.writeText(linkUnico).then(() => {
-        mostrarToast("Link copiado!");
-    });
+    navigator.clipboard.writeText(linkUnico).then(() => { mostrarToast("Link copiado!"); });
 }
 
 function compartilharZapUnico(texto) {
@@ -254,11 +225,7 @@ async function cadastrarLead() {
     const emailInput = document.getElementById('email-lead');
     const email = emailInput.value;
     const btn = document.querySelector('.news-form button');
-
-    if (!email || !email.includes('@')) {
-        alert("Por favor, digite um e-mail válido.");
-        return;
-    }
+    if (!email || !email.includes('@')) { alert("E-mail inválido."); return; }
 
     const textoOriginal = btn.innerText;
     btn.innerText = "Enviando...";
@@ -270,7 +237,6 @@ async function cadastrarLead() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email })
         });
-        
         if (response.ok) {
             btn.innerText = "Cadastrado! ✅";
             emailInput.value = "";
@@ -283,7 +249,6 @@ async function cadastrarLead() {
 }
 
 // --- RENDERIZAÇÃO E BUSCA ---
-
 function renderizarLote() {
     const container = document.getElementById('resultados-container');
     const btnLoadMore = document.getElementById('btn-load-more');
@@ -293,14 +258,12 @@ function renderizarLote() {
 
     lote.forEach((c, index) => {
         const indiceAbsoluto = inicio + index;
-        // Injeção de Publicidade a cada 5 itens
         if (indiceAbsoluto > 0 && indiceAbsoluto % 5 === 0) {
             const adDiv = document.createElement('div');
             adDiv.className = 'ad-slot';
             adDiv.innerHTML = `<span class="ad-label">Publicidade</span><div style="background:var(--border-color); height:90px; display:flex; align-items:center; justify-content:center; border-radius:4px; opacity:0.7;">Espaço para Anúncio</div>`;
             container.appendChild(adDiv);
         }
-        
         container.appendChild(criarHTMLCard(c));
     });
 
@@ -321,12 +284,9 @@ function carregarMais() {
 window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     let temFiltrosURL = false;
-
-    // 1. Verifica se veio algum filtro pronto pelo Link Compartilhado
     if (params.has('q')) { document.getElementById('palavra_chave').value = params.get('q'); temFiltrosURL = true; }
     if (params.has('salario')) { document.getElementById('salario_minimo').value = params.get('salario'); temFiltrosURL = true; }
     if (params.has('excluir')) { document.getElementById('excluir_palavra').value = params.get('excluir'); temFiltrosURL = true; }
-    
     if (params.has('uf')) {
         params.get('uf').split(',').forEach(uf => {
             const btn = document.querySelector(`.uf-btn[data-value="${uf}"]`);
@@ -341,14 +301,9 @@ window.addEventListener('load', () => {
         });
         temFiltrosURL = true;
     }
-
-    // 2. DISPARO AUTOMÁTICO
-    // Se tiver filtros, busca com filtros.
-    // Se NÃO tiver, busca "vazio" (retorna os recentes/todos) para preencher a tela.
     document.getElementById('searchForm').dispatchEvent(new Event('submit'));
 });
 
-// Evento de Busca (Manual ou Automático)
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btnBuscar = document.getElementById('btn-buscar');
@@ -359,17 +314,14 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     todosConcursos = [];
     paginaAtual = 0;
     btnLoadMore.style.display = 'none';
-
     container.innerHTML = '';
     statusDiv.style.display = 'none';
     
-    // Skeleton Loading (Efeito visual de carregamento)
     let skeletonsHTML = '';
     for(let i=0; i<5; i++) {
         skeletonsHTML += `<div class="skeleton-card"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-title" style="width: 60%"></div><div style="margin-top: 20px;"><div class="skeleton skeleton-badge"></div></div></div>`;
     }
     container.innerHTML = skeletonsHTML;
-
     btnBuscar.disabled = true;
 
     const activeUfs = Array.from(document.querySelectorAll('.uf-btn.active')).map(btn => btn.getAttribute('data-value'));
@@ -378,7 +330,6 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     const palavraChave = document.getElementById('palavra_chave').value;
     const excluir = document.getElementById('excluir_palavra').value;
 
-    // Atualiza URL sem recarregar (se houver filtros ativos)
     const params = new URLSearchParams();
     if (palavraChave) params.set('q', palavraChave);
     if (salario) params.set('salario', salario);
@@ -386,18 +337,11 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     if (activeUfs.length > 0) params.set('uf', activeUfs.join(','));
     if (activeRegions.length > 0) params.set('regiao', activeRegions.join(','));
     
-    // Só mexe na URL se realmente tiver parâmetros, para manter a home limpa se for busca geral
     if ([...params].length > 0) {
         window.history.pushState({}, '', window.location.pathname + '?' + params.toString());
     }
 
-    const payload = {
-        salario_minimo: salario,
-        palavra_chave: palavraChave,
-        excluir_palavra: excluir,
-        regioes: activeRegions,
-        ufs: activeUfs
-    };
+    const payload = { salario_minimo: salario, palavra_chave: palavraChave, excluir_palavra: excluir, regioes: activeRegions, ufs: activeUfs };
 
     try {
         const response = await fetch('/api/buscar', {
@@ -408,7 +352,6 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 
         if (!response.ok) throw new Error(`Erro: ${response.status}`);
         todosConcursos = await response.json();
-        
         btnBuscar.value = `Buscar Oportunidades (${todosConcursos.length})`;
         btnBuscar.disabled = false;
         container.innerHTML = '';
@@ -419,10 +362,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
             statusDiv.innerHTML = `❌ Não foi possível encontrar concursos com esses filtros.<br>Tente ajustar os filtros ou palavras-chave e buscar novamente.`;
             return;
         }
-
-        statusDiv.style.display = 'none';
         renderizarLote();
-
     } catch (error) {
         console.error(error);
         container.innerHTML = '';

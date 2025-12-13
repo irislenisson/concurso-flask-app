@@ -10,6 +10,14 @@
       gtag('js', new Date());
       gtag('config', 'G-SEU-ID-AQUI');
     </script>
+    
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "ukmr1tbyv2");
+    </script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +35,6 @@
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2910/2910793.png">
     
     <link rel="icon" href="{{ url_for('static', filename='img/LogomarcaCI.jpg') }}">
-    
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -57,12 +64,8 @@
     <div class="container">
         <div class="header-row">
             <h1>🚀 CONCURSO IDEAL</h1>
-            
             <div style="display: flex; align-items: center;">
-                <button id="btn-fav-global" class="btn-fav-header" onclick="toggleTelaFavoritos()" title="Ver Favoritos Salvos" style="display: none;">
-                    ❤️
-                </button>
-
+                <button id="btn-fav-global" class="btn-fav-header" onclick="toggleTelaFavoritos()" title="Ver Favoritos Salvos" style="display: none;">❤️</button>
                 <div class="theme-switch-wrapper">
                     <label class="theme-switch" for="checkbox">
                         <input type="checkbox" id="checkbox" />
@@ -91,10 +94,7 @@
 
     <div id="cookie-banner" class="cookie-banner">
         <div class="cookie-content">
-            <p>
-                Usamos cookies para melhorar sua experiência no <strong>CONCURSO IDEAL</strong>. 
-                Ao continuar, você concorda com nossa <a href="/privacidade" target="_blank">Política de Privacidade</a>.
-            </p>
+            <p>Usamos cookies para melhorar sua experiência no <strong>CONCURSO IDEAL</strong>. Ao continuar, você concorda com nossa <a href="/privacidade" target="_blank">Política de Privacidade</a>.</p>
             <button onclick="aceitarCookies()" class="cookie-btn">Aceitar e Fechar</button>
         </div>
     </div>
@@ -102,12 +102,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-          .then((registration) => {
-            console.log('PWA ServiceWorker registrado com sucesso:', registration.scope);
-          }, (err) => {
-            console.log('Falha ao registrar PWA ServiceWorker:', err);
-          });
+          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").then((registration) => { console.log('PWA ServiceWorker OK'); }, (err) => { console.log('PWA ServiceWorker Falha', err); });
         });
       }
     </script>

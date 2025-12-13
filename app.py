@@ -12,7 +12,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from urllib.parse import quote
 
-# Imports Google Sheets (Protegido contra erro)
+# Imports Google Sheets
 try:
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
@@ -61,7 +61,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- FUNÇÕES GOOGLE SHEETS (BI & LEADS) ---
+# --- FUNÇÕES GOOGLE SHEETS (LEADS, BI & REPORT) ---
 
 def get_gspread_client():
     """Conecta ao Google Sheets"""
@@ -79,10 +79,9 @@ def get_gspread_client():
         return None
 
 def salvar_lead_sheets(email):
-    """Salva Lead na aba 'Sheet1'"""
+    """Salva Lead na aba padrao"""
     client = get_gspread_client()
     if not client: return
-
     try:
         sheet = client.open("Leads Concurso Ideal").sheet1
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
@@ -92,38 +91,37 @@ def salvar_lead_sheets(email):
         print(f"--> [SHEETS LEAD ERROR] {e}")
 
 def salvar_busca_completa_sheets(payload):
-    """
-    Salva TODOS os filtros da busca para Inteligência de Negócio.
-    Espera uma aba chamada 'Termos' ou 'Buscas'.
-    """
+    """Salva filtros na aba 'Termos'"""
     client = get_gspread_client()
     if not client: return
-
     try:
-        # Tenta abrir aba 'Termos', se não, cria ou usa sheet1
-        try:
-            sheet = client.open("Leads Concurso Ideal").worksheet("Termos")
-        except:
-            # Se você ainda não criou a aba, ele vai salvar na primeira mesmo
-            sheet = client.open("Leads Concurso Ideal").sheet1
+        try: sheet = client.open("Leads Concurso Ideal").worksheet("Termos")
+        except: sheet = client.open("Leads Concurso Ideal").sheet1
         
-        # Prepara os dados para ficarem bonitos na planilha
         data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
         palavra = payload.get('palavra_chave', '')
         salario = payload.get('salario_minimo', '')
-        
-        # Transforma listas em strings separadas por vírgula
         regioes = ", ".join(payload.get('regioes', []))
         ufs = ", ".join(payload.get('ufs', []))
         excluir = payload.get('excluir_palavra', '')
 
-        # Salva a linha completa
-        # Ordem: Data | Palavra | Salário | Regiões | UFs | Excluídas
         sheet.append_row([data_hora, palavra, salario, regioes, ufs, excluir])
-        
-        print(f"--> [BI] Busca registrada: {palavra} | {ufs}")
     except Exception as e:
         print(f"--> [SHEETS BI ERROR] {e}")
+
+def salvar_report_sheets(texto_erro):
+    """Salva Report de Erro na aba 'Report'"""
+    client = get_gspread_client()
+    if not client: return
+    try:
+        try: sheet = client.open("Leads Concurso Ideal").worksheet("Report")
+        except: sheet = client.open("Leads Concurso Ideal").sheet1
+        
+        data_hora = time.strftime('%d/%m/%Y %H:%M:%S')
+        sheet.append_row([data_hora, "ERRO REPORTADO", texto_erro])
+        print(f"--> [SHEETS REPORT] Erro salvo: {texto_erro}")
+    except Exception as e:
+        print(f"--> [SHEETS REPORT ERROR] {e}")
 
 # --- GERENCIAMENTO DE DADOS ---
 def obter_dados(force=False):
@@ -304,13 +302,11 @@ def api_buscar():
         s_min = float(s_clean.replace(',', '.')) if s_clean else 0.0
     except: s_min = 0.0
 
-    # Extrai filtros
     palavras = [p.strip() for p in data.get('palavra_chave', '').split(',') if p.strip()]
     excluir = [p.strip() for p in data.get('excluir_palavra', '').split(',') if p.strip()]
     ufs_list = data.get('ufs', [])
     regioes_list = data.get('regioes', [])
     
-    # Prepara payload para salvar no Sheets (só se tiver algum filtro)
     tem_filtro = any([data.get('palavra_chave'), data.get('salario_minimo'), ufs_list, regioes_list, excluir])
     
     if tem_filtro:
@@ -321,10 +317,8 @@ def api_buscar():
             'ufs': ufs_list,
             'excluir_palavra': data.get('excluir_palavra', '')
         }
-        # Dispara thread paralela para não travar o usuário
         threading.Thread(target=salvar_busca_completa_sheets, args=(payload_sheets,)).start()
 
-    # Lógica de Filtragem
     ufs = set(ufs_list)
     for reg in regioes_list:
         if reg == 'Nacional': ufs.add('Nacional/Outro')
@@ -334,12 +328,17 @@ def api_buscar():
     res = filtrar_concursos(todos, s_min, palavras, list(ufs), excluir)
     return jsonify(res)
 
-# --- ERROS ---
-@app.errorhandler(404)
-def page_not_found(e): return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_server_error(e): return render_template('500.html'), 500
+# --- API REPORTAR ERRO (NOVA) ---
+@app.route('/api/reportar', methods=['POST'])
+@limiter.limit("10 per minute")
+def api_reportar():
+    data = request.json or {}
+    texto = data.get('texto', '').strip()
+    if not texto: return jsonify({'error': 'Vazio'}), 400
+    
+    # Salva na planilha em background
+    threading.Thread(target=salvar_report_sheets, args=(texto,)).start()
+    return jsonify({'message': 'Reportado'})
 
 # --- NEWSLETTER ---
 @app.route('/api/newsletter', methods=['POST'])
@@ -347,18 +346,14 @@ def internal_server_error(e): return render_template('500.html'), 500
 def api_newsletter():
     data = request.json or {}
     email = data.get('email', '').strip()
-    
     if not email or '@' not in email: return jsonify({'error': 'E-mail inválido'}), 400
     
     print(f"\n{'='*40}\n🎯 NOVO LEAD: {email}\n{'='*40}\n")
-    
     try:
         with open(LEADS_FILE, 'a', encoding='utf-8') as f:
             f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {email}\n")
     except: pass
-
     threading.Thread(target=salvar_lead_sheets, args=(email,)).start()
-
     return jsonify({'message': 'Sucesso!'})
 
 if __name__ == '__main__':

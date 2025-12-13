@@ -82,11 +82,8 @@
             </div>
 
             <div class="share-row">
-                <button type="button" class="share-btn" onclick="compartilharWhatsApp()">
-                    <i class="fab fa-whatsapp"></i> Compartilhar
-                </button>
-                <button type="button" class="share-btn" onclick="copiarLink()">
-                    <i class="fas fa-link"></i> Copiar Link
+                <button type="button" class="share-btn" onclick="compartilharNativo()" style="width: 100%; justify-content: center; padding: 10px;">
+                    <i class="fas fa-share-alt"></i> Compartilhar com Amigos
                 </button>
             </div>
         </form>
@@ -116,11 +113,7 @@
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-        // Ativa o botão de favoritos no header apenas na Home
         document.addEventListener("DOMContentLoaded", () => {
-            const btnFav = document.getElementById('btn-fav-header');
-            if(btnFav) btnFav.style.display = 'flex';
-            // Se o botão estiver no base.html com id diferente, ajusta aqui
             const btnGlobal = document.getElementById('btn-fav-global');
             if(btnGlobal) btnGlobal.style.display = 'flex';
         });
